@@ -842,3 +842,16 @@
   - Added Ed25519 SSH signing key to GitLab account for commit authentication and verified badges.
   - Created isolated packaging branch `add-wasm`.
   - Submitted official Merge Request to upstream F-Droid repository: [MR #50096](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/50096).
+
+## [2026-09-27 12:00:00 IST] - Codeberg Remote Architecture & SSH Verification
+- **Action:** Added Codeberg remote (`codeberg.org/mrdarksidetm/wasm`) and verified SSH signed commit integration.
+- **Changes:**
+  - **Remote Architecture:** Configured `codeberg` remote `git@codeberg.org:mrdarksidetm/wasm.git`.
+- **Status:** 100% (Configured).
+
+## [2026-10-01 12:47:00 IST] - README Documentation GitHub Links Migration
+- **Action**: Updated README.md documentation links, badges, and author references to point to active GitHub account `junksidetm` while preserving GitLab and Codeberg mappings.
+- **Files Modified**:
+  - `README.md`
+  - `Version.md`
+- **Status**: 100% (Completed & Synced)

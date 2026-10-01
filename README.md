@@ -5,11 +5,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/mrdarksidetm/wasm/actions/workflows/main.yml"><img src="https://github.com/mrdarksidetm/wasm/actions/workflows/main.yml/badge.svg" alt="CI Build Status" /></a>
+  <a href="https://github.com/junksidetm/wasm/actions/workflows/main.yml"><img src="https://github.com/junksidetm/wasm/actions/workflows/main.yml/badge.svg" alt="CI Build Status" /></a>
   <a href="https://m3.material.io/"><img src="https://img.shields.io/badge/Design-Material_3_Expressive-0061A4?style=flat-square" alt="Material 3 Expressive" /></a>
   <a href="https://developer.android.com/jetpack/compose"><img src="https://img.shields.io/badge/UI-Jetpack_Compose-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white" alt="Jetpack Compose" /></a>
   <a href="https://developer.android.com/training/data-storage/room"><img src="https://img.shields.io/badge/Storage-Room_SQLite-3DDC84?style=flat-square&logo=sqlite&logoColor=white" alt="Room SQLite" /></a>
-  <a href="https://github.com/mrdarksidetm/wasm/releases/tag/latest-apk"><img src="https://img.shields.io/badge/Release-v0.7.0-blue?style=flat-square" alt="Latest Release" /></a>
+  <a href="https://github.com/junksidetm/wasm/releases/tag/latest-apk"><img src="https://img.shields.io/badge/Release-v0.7.0-blue?style=flat-square" alt="Latest Release" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/Privacy-100%25_Offline-success?style=flat-square" alt="100% Offline" /></a>
 </p>
 
@@ -22,7 +22,7 @@
 ## 📱 Download Latest Production APK
 
 <p align="center">
-  <a href="https://github.com/mrdarksidetm/wasm/releases/download/latest-apk/wasm-universal-release.apk">
+  <a href="https://github.com/junksidetm/wasm/releases/download/latest-apk/wasm-universal-release.apk">
     <img src="assests/images/Direct%20Link%20Frame%20Badge.svg" alt="Direct APK Download" height="100" />
   </a>
 </p>
@@ -32,8 +32,8 @@
 > Click the **Direct Download** badge above to download `wasm-universal-release.apk` directly to your phone ready to install.
 > If downloading via the GitHub Actions "Artifacts" table at the bottom of the workflow page, GitHub automatically bundles artifacts into `.zip` archives. Use the direct link above for the pure `.apk`.
 
-- 🔒 **SHA-256 Checksum**: [wasm-universal-release.apk.sha256](https://github.com/mrdarksidetm/wasm/releases/download/latest-apk/wasm-universal-release.apk.sha256)
-- 📦 **GitHub Releases Portal**: [Browse `latest-apk` Release](https://github.com/mrdarksidetm/wasm/releases/tag/latest-apk)
+- 🔒 **SHA-256 Checksum**: [wasm-universal-release.apk.sha256](https://github.com/junksidetm/wasm/releases/download/latest-apk/wasm-universal-release.apk.sha256)
+- 📦 **GitHub Releases Portal**: [Browse `latest-apk` Release](https://github.com/junksidetm/wasm/releases/tag/latest-apk)
 
 ---
 
@@ -124,7 +124,7 @@ Wasm/
 
 ## 👤 Developer & Philosophy
 
-Built with ❤️ by **Abhijeet Yadav** ([@mrdarksidetm](https://github.com/mrdarksidetm)).
+Built with ❤️ by **Abhijeet Yadav** ([@junksidetm](https://github.com/junksidetm)).
 
 Wasm is built on the **Local-First Privacy Philosophy**: personal chat archives and memories belong solely on the user's device, never on a third-party server.
 
