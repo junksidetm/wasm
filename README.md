@@ -5,6 +5,9 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/junksidetm/wasm"><img src="https://img.shields.io/badge/GitHub-Main-181717?style=flat-square&logo=github&logoColor=white" alt="GitHub Main" /></a>
+  <a href="https://codeberg.org/mrdarksidetm/wasm"><img src="https://img.shields.io/badge/Codeberg-Mirror-2185d0?style=flat-square&logo=codeberg&logoColor=white" alt="Codeberg Mirror" /></a>
+  <a href="https://gitlab.com/mrdarksidetm/wasm"><img src="https://img.shields.io/badge/GitLab-Mirror-fc6d26?style=flat-square&logo=gitlab&logoColor=white" alt="GitLab Mirror" /></a>
   <a href="https://github.com/junksidetm/wasm/actions/workflows/main.yml"><img src="https://github.com/junksidetm/wasm/actions/workflows/main.yml/badge.svg" alt="CI Build Status" /></a>
   <a href="https://m3.material.io/"><img src="https://img.shields.io/badge/Design-Material_3_Expressive-0061A4?style=flat-square" alt="Material 3 Expressive" /></a>
   <a href="https://developer.android.com/jetpack/compose"><img src="https://img.shields.io/badge/UI-Jetpack_Compose-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white" alt="Jetpack Compose" /></a>
@@ -127,6 +130,14 @@ Wasm/
 Built with ❤️ by **Abhijeet Yadav** ([@junksidetm](https://github.com/junksidetm)).
 
 Wasm is built on the **Local-First Privacy Philosophy**: personal chat archives and memories belong solely on the user's device, never on a third-party server.
+
+---
+
+## 🌐 Source Mirrors
+
+- **Main (GitHub)**: [github.com/junksidetm/wasm](https://github.com/junksidetm/wasm)
+- **Mirror (Codeberg)**: [codeberg.org/mrdarksidetm/wasm](https://codeberg.org/mrdarksidetm/wasm)
+- **Mirror (GitLab)**: [gitlab.com/mrdarksidetm/wasm](https://gitlab.com/mrdarksidetm/wasm)
 
 ---
 
