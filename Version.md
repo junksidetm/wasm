@@ -1096,3 +1096,9 @@
 
 ### Status
 - 100% Implemented; committing, signing, pushing to GitHub/GitLab/Codeberg, and triggering `v0.8.0` release verification.
+
+## [0.8.0-r1] - 2026-11-25 23:19:00 IST
+### Apple-Style Animated Multi-Language "Hello", Stroke-Accurate SVG Icons & CI Build Fixes
+- **Onboarding Screen 2**: Added Apple-style vertical slide, fade, and scale cycling animation on the big `"Hello"` greeting across all 11 supported languages (`Hello`, `नमस्ते`, `こんにちは`, `Hola`, `Привет`, `হ্যালো`, `Olá`, `Halo`, `ہیلو`, `Hallo`, `ਸਤ ਸ੍ਰੀ ਅਕਾਲ`).
+- **Vector Rendering Fidelity**: Added `iconStrokeWidths`, `iconFillFlags`, and `PathFillType.EvenOdd` support in `OnboardingShapes.kt` so `file-plus` (`+` stroke + document fill) and `chats-2` (outlined + filled speech bubbles) match Figma strokes exactly.
+- **Compilation & Pages CI Fixes**: Fixed `OnboardingSvgPaths.whatsappIconPath` list wrapping in `OnboardingScreen.kt` and split `.github/workflows/pages.yml` into `build` and `deploy` jobs to prevent artifact lookup race conditions.

@@ -117,11 +117,18 @@ fun ExpressiveGroupedBadge(
     iconSrcHeight: Float,
     iconScaleFraction: Float = 0.46f,
     iconOffsetFraction: Offset = Offset.Zero,
+    iconStrokeWidths: List<Float> = emptyList(),
+    iconFillFlags: List<Boolean> = emptyList(),
+    useEvenOddFill: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val shapePath = rememberSvgPath(shapePathData)
-    val parsedIcons = remember(iconPaths) {
-        iconPaths.map { PathParser().parsePathString(it).toPath() }
+    val parsedIcons = remember(iconPaths, useEvenOddFill) {
+        iconPaths.map { d ->
+            PathParser().parsePathString(d).toPath().apply {
+                if (useEvenOddFill) fillType = PathFillType.EvenOdd
+            }
+        }
     }
 
     Box(
@@ -163,7 +170,22 @@ fun ExpressiveGroupedBadge(
             }) {
                 parsedIcons.forEachIndexed { index, path ->
                     val tint = iconColors.getOrElse(index) { Color.Black }
-                    drawPath(path = path, color = tint)
+                    val shouldFill = iconFillFlags.getOrElse(index) { true }
+                    val strokeW = iconStrokeWidths.getOrElse(index) { 0f }
+                    if (shouldFill) {
+                        drawPath(path = path, color = tint)
+                    }
+                    if (strokeW > 0f) {
+                        drawPath(
+                            path = path,
+                            color = tint,
+                            style = Stroke(
+                                width = strokeW,
+                                cap = StrokeCap.Round,
+                                join = StrokeJoin.Round
+                            )
+                        )
+                    }
                 }
             }
         }

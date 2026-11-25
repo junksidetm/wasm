@@ -418,7 +418,7 @@ fun OnboardingFlow(
                             shapeSrcHeight = OnboardingSvgPaths.verySunnyHeight,
                             shapeColor = badgeColor,
                             shapeRotation = verySunnyRotation,
-                            iconPaths = OnboardingSvgPaths.whatsappIconPaths,
+                            iconPaths = listOf(OnboardingSvgPaths.whatsappIconPath),
                             iconColors = listOf(Color.White),
                             iconSrcWidth = OnboardingSvgPaths.whatsappIconWidth,
                             iconSrcHeight = OnboardingSvgPaths.whatsappIconHeight,
@@ -454,6 +454,8 @@ fun OnboardingFlow(
                             iconSrcWidth = OnboardingSvgPaths.chatsIconWidth,
                             iconSrcHeight = OnboardingSvgPaths.chatsIconHeight,
                             iconScaleFraction = 0.44f,
+                            iconStrokeWidths = listOf(3.94f, 3.94f),
+                            iconFillFlags = listOf(false, true),
                             modifier = Modifier.fillMaxSize()
                         )
                     }
@@ -479,6 +481,9 @@ fun OnboardingFlow(
                     iconSrcWidth = OnboardingSvgPaths.filePlusIconWidth,
                     iconSrcHeight = OnboardingSvgPaths.filePlusIconHeight,
                     iconScaleFraction = 0.48f,
+                    iconStrokeWidths = listOf(3.94f, 0f),
+                    iconFillFlags = listOf(false, true),
+                    useEvenOddFill = true,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -907,23 +912,67 @@ private fun OnboardingScreen2Content(
     ) {
         val h = maxHeight
 
-        // Middle Section: "Hello"
+        // Middle Section: Apple-style animated multi-language "Hello"
+        val helloGreetings = remember(helloText) {
+            listOf(
+                helloText,
+                "Hello",
+                "नमस्ते",
+                "こんにちは",
+                "Hola",
+                "Привет",
+                "হ্যালো",
+                "Olá",
+                "Halo",
+                "ہیلو",
+                "Hallo",
+                "ਸਤ ਸ੍ਰੀ ਅਕਾਲ"
+            ).distinct()
+        }
+        var greetingIndex by remember { mutableIntStateOf(0) }
+        LaunchedEffect(helloGreetings) {
+            greetingIndex = 0
+            while (true) {
+                delay(1850L)
+                greetingIndex = (greetingIndex + 1) % helloGreetings.size
+            }
+        }
+        val activeGreeting = helloGreetings[greetingIndex]
+        val greetingFontSize = if (activeGreeting.length > 9) 46.sp else 60.sp
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .offset(y = h * 0.34f),
+                .offset(y = h * 0.34f)
+                .padding(horizontal = 16.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = helloText,
-                style = MaterialTheme.typography.displayLarge.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 62.sp,
-                    letterSpacing = (-1.0).sp
-                ),
-                color = Color.White,
-                textAlign = TextAlign.Center
-            )
+            AnimatedContent(
+                targetState = activeGreeting,
+                transitionSpec = {
+                    (slideInVertically(tween(520, easing = FastOutSlowInEasing)) { it / 2 } +
+                        fadeIn(tween(480)) +
+                        scaleIn(initialScale = 0.92f, animationSpec = tween(520)))
+                        .togetherWith(
+                            slideOutVertically(tween(420, easing = FastOutSlowInEasing)) { -it / 2 } +
+                                fadeOut(tween(340)) +
+                                scaleOut(targetScale = 1.05f, animationSpec = tween(420))
+                        )
+                },
+                label = "AppleStyleHelloTransition"
+            ) { greeting ->
+                Text(
+                    text = greeting,
+                    style = MaterialTheme.typography.displayLarge.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = greetingFontSize,
+                        letterSpacing = (-1.0).sp
+                    ),
+                    color = Color.White,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1
+                )
+            }
         }
 
         // Middle - Bottom Section: "Natively Supports" & "Whatsapp & Instagram*" below shared social icons
