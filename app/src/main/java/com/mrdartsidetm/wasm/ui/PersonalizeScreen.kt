@@ -35,6 +35,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mrdartsidetm.wasm.data.UserPreferencesRepository
+import com.mrdartsidetm.wasm.ui.localization.LocalWasmStrings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
@@ -57,6 +58,7 @@ fun PersonalizeScreen(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    val strings = LocalWasmStrings.current
 
     // Intercept system back navigation to smoothly close personalization screen
     BackHandler(onBack = onDismiss)
@@ -147,7 +149,7 @@ fun PersonalizeScreen(
 
             // Centered Title: "Let's Personalize"
             Text(
-                text = "Let's Personalize",
+                text = strings.letsPersonalize,
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
@@ -228,7 +230,7 @@ fun PersonalizeScreen(
 
             // Option to write the person name
             Text(
-                text = "What should we call you?",
+                text = strings.whatShouldWeCallYou,
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -243,7 +245,7 @@ fun PersonalizeScreen(
                     }
                 },
                 placeholder = {
-                    Text(text = "Enter your name")
+                    Text(text = strings.enterYourName)
                 },
                 leadingIcon = {
                     Icon(
@@ -291,7 +293,7 @@ fun PersonalizeScreen(
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = "Settings",
+                    text = strings.settingsTitle,
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.SemiBold
                     )

@@ -3,6 +3,7 @@ name: Android CI / Production Build
 on:
   push:
     branches: [ "main" ]
+    tags: [ "v*" ]
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
@@ -242,19 +243,25 @@ jobs:
           retention-days: 30
 
       - name: Publish Direct-Download Standalone APK to GitHub Releases (Pure APK, No Zip)
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="latest-apk"
-          echo "Publishing unzipped direct-download APK and checksum to GitHub Releases..."
-          gh release delete "$TAG" --yes --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
-          git push origin ":refs/tags/$TAG" 2>/dev/null || true
-          git tag -d "$TAG" 2>/dev/null || true
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            TAG="${{ github.ref_name }}"
+            TITLE="${{ github.ref_name }}"
+          else
+            TAG="latest-apk"
+            TITLE="latest-apk"
+            gh release delete "$TAG" --yes --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
+            git push origin ":refs/tags/$TAG" 2>/dev/null || true
+            git tag -d "$TAG" 2>/dev/null || true
+          fi
+          echo "Publishing unzipped direct-download APK and checksum to GitHub Releases ($TAG)..."
 
           if ! gh release create "$TAG" \
             --repo "$GITHUB_REPOSITORY" \
-            --title "Wasm Production Universal Release (Direct Download)" \
+            --title "$TITLE" \
             --notes "### 📱 Direct Standalone Download (No Unzipping Required)
           - **Production APK:** [wasm-universal-release.apk](https://github.com/${{ github.repository }}/releases/download/$TAG/wasm-universal-release.apk)
           - **F-Droid Universal APK:** [wasm-fdroid-universal.apk](https://github.com/${{ github.repository }}/releases/download/$TAG/wasm-fdroid-universal.apk)

@@ -20,6 +20,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mrdartsidetm.wasm.R
+import com.mrdartsidetm.wasm.ui.localization.LocalWasmStrings
 
 /**
  * PlatformChooserScreen allows users to choose between WhatsApp and Instagram chat archives.
@@ -38,14 +39,15 @@ fun PlatformChooserScreen(
     onBackToHome: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val strings = LocalWasmStrings.current
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Messages", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
+                title = { Text(strings.messagesTitle, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     if (onBackToHome != null) {
                         IconButton(onClick = onBackToHome) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back to Home")
+                            Icon(Icons.Default.ArrowBack, contentDescription = strings.back)
                         }
                     }
                 }
@@ -85,7 +87,7 @@ fun PlatformChooserScreen(
 
             // Heading: Choose the Platform
             Text(
-                text = "Choose the Platform",
+                text = strings.chooseThePlatform,
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
@@ -95,7 +97,7 @@ fun PlatformChooserScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Select a messaging platform to browse and manage your saved chat archives.",
+                text = strings.choosePlatformSubtitle,
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -106,11 +108,11 @@ fun PlatformChooserScreen(
 
             // Big WhatsApp Button
             PlatformChoiceCard(
-                title = "WhatsApp",
+                title = strings.whatsapp,
                 subtitle = if (whatsappChatCount > 0) {
-                    "$whatsappChatCount individual ${if (whatsappChatCount == 1) "chat" else "chats"} saved"
+                    "$whatsappChatCount ${strings.chatsCountLabel}"
                 } else {
-                    "Exported .txt & .zip chat archives"
+                    strings.whatsappPlatformSubtitleEmpty
                 },
                 iconResId = R.drawable.ic_nav_whatsapp,
                 accentColor = Color(0xFF25D366),
@@ -122,11 +124,11 @@ fun PlatformChooserScreen(
 
             // Big Instagram Button
             PlatformChoiceCard(
-                title = "Instagram",
+                title = strings.instagram,
                 subtitle = if (instagramConversationCount > 0) {
-                    "$instagramConversationCount ${if (instagramConversationCount == 1) "conversation" else "conversations"} saved"
+                    "$instagramConversationCount ${strings.conversationsCountLabel}"
                 } else {
-                    "Direct messages, media & voice notes"
+                    strings.instagramPlatformSubtitleEmpty
                 },
                 iconResId = R.drawable.ic_nav_instagram,
                 accentColor = Color(0xFFE1306C),

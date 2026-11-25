@@ -12,8 +12,8 @@ android {
         applicationId = "com.mrdartsidetm.wasm"
         minSdk = 26
         targetSdk = 34
-        versionCode = 9
-        versionName = "0.7.0"
+        versionCode = 10
+        versionName = "0.8.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -97,6 +97,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
+    implementation("androidx.graphics:graphics-shapes:1.0.1")
     implementation("com.google.android.material:material:1.10.0")
 
     // Room Database

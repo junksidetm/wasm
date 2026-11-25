@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mrdartsidetm.wasm.data.UserPreferencesRepository
 import com.mrdartsidetm.wasm.ui.instagram.InstagramViewModel
+import com.mrdartsidetm.wasm.ui.localization.LocalWasmStrings
 import java.io.File
 import java.text.NumberFormat
 import java.util.Calendar
@@ -89,12 +90,13 @@ fun HomeScreen(
     }
 
     // Dynamic greeting based on current system time
+    val strings = LocalWasmStrings.current
     val currentHour = remember { Calendar.getInstance().get(Calendar.HOUR_OF_DAY) }
-    val timeGreeting = remember(currentHour) {
+    val timeGreeting = remember(currentHour, strings) {
         when (currentHour) {
-            in 4..11 -> "Good Morning"
-            in 12..16 -> "Good Afternoon"
-            else -> "Good Evening"
+            in 4..11 -> strings.goodMorning
+            in 12..16 -> strings.goodAfternoon
+            else -> strings.goodEvening
         }
     }
 
@@ -323,7 +325,7 @@ fun HomeScreen(
                         }
 
                         Text(
-                            text = "Imported Archives",
+                            text = strings.importedArchives,
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.SemiBold
                             ),
@@ -348,7 +350,7 @@ fun HomeScreen(
                     )
 
                     Text(
-                        text = "Total Messages Imported",
+                        text = strings.totalMessagesSaved,
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.Medium
                         ),

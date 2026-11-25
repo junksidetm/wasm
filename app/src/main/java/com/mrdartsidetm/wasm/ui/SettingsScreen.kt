@@ -22,11 +22,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mrdartsidetm.wasm.R
+import com.mrdartsidetm.wasm.data.UserPreferencesRepository
 import com.mrdartsidetm.wasm.ui.instagram.InstagramViewModel
+import com.mrdartsidetm.wasm.ui.localization.LocalWasmStrings
+import com.mrdartsidetm.wasm.ui.localization.languageByCode
+import com.mrdartsidetm.wasm.ui.onboarding.LanguageChangerScreen
+import kotlinx.coroutines.launch
 
 /**
  * Material 3 Expressive Settings Screen.
- * Allows managing user identity, checking storage usage for WhatsApp and Instagram,
+ * Allows managing user identity, app language, onboarding replay, checking storage usage for WhatsApp and Instagram,
  * and performing data clearance or cache pruning.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,9 +39,14 @@ import com.mrdartsidetm.wasm.ui.instagram.InstagramViewModel
 fun SettingsScreen(
     whatsappViewModel: ChatViewModel,
     instagramViewModel: InstagramViewModel,
+    prefs: UserPreferencesRepository,
+    selectedLanguageCode: String = "en",
+    onReplayOnboarding: () -> Unit = {},
     onBackToHome: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val strings = LocalWasmStrings.current
+    val scope = rememberCoroutineScope()
     val currentUser by whatsappViewModel.currentUser.collectAsStateWithLifecycle()
     val waConversations by whatsappViewModel.conversations.collectAsStateWithLifecycle()
     val waTotalMessages by whatsappViewModel.totalMessageCount.collectAsStateWithLifecycle()
@@ -50,6 +60,7 @@ fun SettingsScreen(
     var newIdentityText by remember { mutableStateOf("") }
     var showCacheClearedToast by remember { mutableStateOf(false) }
     var showAboutScreen by rememberSaveable { mutableStateOf(false) }
+    var showLanguageChanger by rememberSaveable { mutableStateOf(false) }
 
     val scrollState = rememberScrollState()
 
@@ -144,6 +155,20 @@ fun SettingsScreen(
         )
     }
  
+    if (showLanguageChanger) {
+        LanguageChangerScreen(
+            selectedLanguageCode = selectedLanguageCode,
+            onSelectLanguage = { lang ->
+                scope.launch {
+                    prefs.saveAppLanguage(lang.code)
+                }
+                showLanguageChanger = false
+            },
+            onBack = { showLanguageChanger = false }
+        )
+        return
+    }
+
     if (showAboutScreen) {
         AboutScreen(
             onBack = { showAboutScreen = false }
@@ -156,7 +181,7 @@ fun SettingsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Settings",
+                        text = strings.settingsTitle,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -164,7 +189,7 @@ fun SettingsScreen(
                 navigationIcon = {
                     if (onBackToHome != null) {
                         IconButton(onClick = onBackToHome) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back to Home")
+                            Icon(Icons.Default.ArrowBack, contentDescription = strings.back)
                         }
                     }
                 }
@@ -179,9 +204,84 @@ fun SettingsScreen(
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
+            // Language & Onboarding Section
+            Text(
+                text = strings.languageSectionTitle,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            val activeLanguage = languageByCode(selectedLanguageCode)
+            Card(
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(text = activeLanguage.flagEmoji, fontSize = 22.sp)
+                            }
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = strings.appLanguageLabel,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "${activeLanguage.nativeName} (${activeLanguage.code.uppercase()})",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { showLanguageChanger = true },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.Translate, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(strings.changeLanguage)
+                        }
+                        FilledTonalButton(
+                            onClick = onReplayOnboarding,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(strings.replayOnboarding)
+                        }
+                    }
+                }
+            }
+
             // Identity Section
             Text(
-                text = "Account & Identity",
+                text = strings.accountAndIdentity,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -431,7 +531,7 @@ fun SettingsScreen(
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "Version 0.7.0 • Abhijeet Yadav",
+                                text = "Version 0.8.0 • Abhijeet Yadav",
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary
                             )

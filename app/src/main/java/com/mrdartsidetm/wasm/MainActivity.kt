@@ -8,7 +8,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -23,6 +25,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -36,19 +40,36 @@ import com.mrdartsidetm.wasm.ui.PlatformChooserScreen
 import com.mrdartsidetm.wasm.ui.SettingsScreen
 import com.mrdartsidetm.wasm.ui.instagram.InstagramScreen
 import com.mrdartsidetm.wasm.ui.instagram.InstagramViewModel
+import com.mrdartsidetm.wasm.ui.localization.LocalWasmStrings
+import com.mrdartsidetm.wasm.ui.localization.languageByCode
+import com.mrdartsidetm.wasm.ui.localization.wasmStringsFor
+import com.mrdartsidetm.wasm.ui.onboarding.OnboardingBgBottom
+import com.mrdartsidetm.wasm.ui.onboarding.OnboardingFlow
 import com.mrdartsidetm.wasm.ui.theme.WasmTheme
+import kotlinx.coroutines.launch
 import java.io.File
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
         setContent {
             WasmTheme {
                 val db = remember { ChatDatabase.getDatabase(applicationContext) }
                 val prefs = remember { UserPreferencesRepository(applicationContext) }
+                val coroutineScope = rememberCoroutineScope()
                 val whatsappMediaDir = remember { File(applicationContext.filesDir, "media") }
                 val instagramBaseDir = remember { File(applicationContext.filesDir, "instagram_data") }
+
+                val appLanguage by prefs.appLanguage.collectAsStateWithLifecycle(initialValue = "en")
+                val onboardingCompleted by prefs.onboardingCompleted.collectAsStateWithLifecycle(initialValue = null)
+                var forceShowOnboarding by rememberSaveable { mutableStateOf(false) }
+
+                val strings = remember(appLanguage) { wasmStringsFor(appLanguage) }
+                val layoutDirection = remember(appLanguage) {
+                    if (languageByCode(appLanguage).isRtl) LayoutDirection.Rtl else LayoutDirection.Ltr
+                }
 
                 // WhatsApp ViewModel
                 val whatsappViewModel: ChatViewModel = viewModel(
@@ -75,6 +96,40 @@ class MainActivity : ComponentActivity() {
 
                 // Inside Messages: null = Platform Chooser, "whatsapp" = WhatsApp, "instagram" = Instagram
                 var activeMessagesPlatform by rememberSaveable { mutableStateOf<String?>(null) }
+
+                CompositionLocalProvider(
+                    LocalWasmStrings provides strings,
+                    LocalLayoutDirection provides layoutDirection
+                ) {
+                    when {
+                        onboardingCompleted == null -> {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(OnboardingBgBottom)
+                            )
+                        }
+                        onboardingCompleted == false || forceShowOnboarding -> {
+                            OnboardingFlow(
+                                whatsappViewModel = whatsappViewModel,
+                                instagramViewModel = instagramViewModel,
+                                prefs = prefs,
+                                selectedLanguageCode = appLanguage,
+                                onFinishOnboarding = { importedPlatform ->
+                                    coroutineScope.launch {
+                                        prefs.setOnboardingCompleted(true)
+                                    }
+                                    forceShowOnboarding = false
+                                    if (importedPlatform != null) {
+                                        selectedTab = 1
+                                        activeMessagesPlatform = importedPlatform
+                                    } else {
+                                        selectedTab = 0
+                                    }
+                                }
+                            )
+                        }
+                        else -> {
 
                 val waConversations by whatsappViewModel.conversations.collectAsStateWithLifecycle()
                 val igConversations by instagramViewModel.conversations.collectAsStateWithLifecycle()
@@ -189,10 +244,10 @@ class MainActivity : ComponentActivity() {
                                 icon = {
                                     Icon(
                                         imageVector = if (selectedTab == 0) Icons.Filled.Home else Icons.Outlined.Home,
-                                        contentDescription = "Home"
+                                        contentDescription = strings.navHome
                                     )
                                 },
-                                label = { Text("Home") }
+                                label = { Text(strings.navHome) }
                             )
                             NavigationBarItem(
                                 selected = selectedTab == 1,
@@ -207,10 +262,10 @@ class MainActivity : ComponentActivity() {
                                 icon = {
                                     Icon(
                                         imageVector = if (selectedTab == 1) Icons.Filled.Forum else Icons.Outlined.Forum,
-                                        contentDescription = "Messages"
+                                        contentDescription = strings.navMessages
                                     )
                                 },
-                                label = { Text("Messages") }
+                                label = { Text(strings.navMessages) }
                             )
                             NavigationBarItem(
                                 selected = selectedTab == 2,
@@ -218,10 +273,10 @@ class MainActivity : ComponentActivity() {
                                 icon = {
                                     Icon(
                                         imageVector = if (selectedTab == 2) Icons.Filled.Settings else Icons.Outlined.Settings,
-                                        contentDescription = "Settings"
+                                        contentDescription = strings.navSettings
                                     )
                                 },
-                                label = { Text("Settings") }
+                                label = { Text(strings.navSettings) }
                             )
                         }
                     }
@@ -312,8 +367,14 @@ class MainActivity : ComponentActivity() {
                             2 -> SettingsScreen(
                                 whatsappViewModel = whatsappViewModel,
                                 instagramViewModel = instagramViewModel,
+                                prefs = prefs,
+                                selectedLanguageCode = appLanguage,
+                                onReplayOnboarding = { forceShowOnboarding = true },
                                 onBackToHome = { selectedTab = 0 }
                             )
+                        }
+                    }
+                }
                         }
                     }
                 }

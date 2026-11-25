@@ -12,7 +12,7 @@
   <a href="https://m3.material.io/"><img src="https://img.shields.io/badge/Design-Material_3_Expressive-0061A4?style=flat-square" alt="Material 3 Expressive" /></a>
   <a href="https://developer.android.com/jetpack/compose"><img src="https://img.shields.io/badge/UI-Jetpack_Compose-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white" alt="Jetpack Compose" /></a>
   <a href="https://developer.android.com/training/data-storage/room"><img src="https://img.shields.io/badge/Storage-Room_SQLite-3DDC84?style=flat-square&logo=sqlite&logoColor=white" alt="Room SQLite" /></a>
-  <a href="https://github.com/junksidetm/wasm/releases/tag/latest-apk"><img src="https://img.shields.io/badge/Release-v0.7.0-blue?style=flat-square" alt="Latest Release" /></a>
+  <a href="https://github.com/junksidetm/wasm/releases/tag/v0.8.0"><img src="https://img.shields.io/badge/Release-v0.8.0-blue?style=flat-square" alt="Latest Release" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/Privacy-100%25_Offline-success?style=flat-square" alt="100% Offline" /></a>
 </p>
 
@@ -20,25 +20,22 @@
   A modern, high-performance Android application built with <b>Jetpack Compose</b> and <b>Material 3 Expressive</b> for offline-first chat archive management, multi-platform message visualization, and multimedia playback.
 </p>
 
----
 
 ## 📱 Download Latest Production APK
-
-<p align="center">
-  <a href="https://github.com/junksidetm/wasm/releases/download/latest-apk/wasm-universal-release.apk">
-    <img src="assests/images/Direct%20Link%20Frame%20Badge.svg" alt="Direct APK Download" height="100" />
-  </a>
-</p>
 
 > [!NOTE]
 > **Direct Standalone APK (No Unzipping Required)**:
 > Click the **Direct Download** badge above to download `wasm-universal-release.apk` directly to your phone ready to install.
 > If downloading via the GitHub Actions "Artifacts" table at the bottom of the workflow page, GitHub automatically bundles artifacts into `.zip` archives. Use the direct link above for the pure `.apk`.
 
+<p align="center">
+  <a href="https://github.com/junksidetm/wasm/releases/download/latest-apk/wasm-universal-release.apk">
+    <img src="assests/images/Direct%20Link%20Frame%20Badge.svg" alt="Direct APK Download" width="250" />
+  </a>
+</p>
+
 - 🔒 **SHA-256 Checksum**: [wasm-universal-release.apk.sha256](https://github.com/junksidetm/wasm/releases/download/latest-apk/wasm-universal-release.apk.sha256)
 - 📦 **GitHub Releases Portal**: [Browse `latest-apk` Release](https://github.com/junksidetm/wasm/releases/tag/latest-apk)
-
----
 
 ## 🌟 Key Features
 
@@ -116,8 +113,10 @@ Wasm/
 │       │   ├── data/               # Room DB, DAOs, Entities, UserPreferences
 │       │   ├── ui/                 # Screens: Home, Chat, Personalize, PlatformChooser, About, Settings
 │       │   ├── ui/instagram/       # Instagram archive viewer & ViewModel
+│       │   ├── ui/localization/    # 11-language live localization strings & RTL support
+│       │   ├── ui/onboarding/      # 5-step Expressive Onboarding & Language Changer
 │       │   ├── ui/theme/           # Material 3 Expressive color, typography, shapes
-│       │   └── util/               # WhatsAppParser, InstagramHtmlParser, InstagramZipExtractor, AudioPlayerManager
+│       │   └── util/               # WhatsAppParser, InstagramHtmlParser, ZipArchiveDetector, AudioPlayerManager
 │       └── res/                    # Vector drawables, launcher icons, strings, colors
 ├── assests/                        # Brand vectors, badge graphics, fonts
 └── Version.md                      # Source of truth changelog

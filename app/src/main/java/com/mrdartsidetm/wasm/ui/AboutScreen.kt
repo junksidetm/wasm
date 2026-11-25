@@ -58,6 +58,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.mrdartsidetm.wasm.R
+import com.mrdartsidetm.wasm.ui.localization.LocalWasmStrings
 
 /**
  * Material 3 Expressive About Screen for Wasm.
@@ -71,6 +72,7 @@ fun AboutScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val strings = LocalWasmStrings.current
 
     // Hardware and gesture back handler returns cleanly to previous screen
     BackHandler {
@@ -83,7 +85,7 @@ fun AboutScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "About",
+                        text = strings.aboutTitle,
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                     )
                 },
@@ -91,7 +93,7 @@ fun AboutScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = strings.back
                         )
                     }
                 },
@@ -142,7 +144,7 @@ fun AboutScreen(
                 color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
             ) {
                 Text(
-                    text = "Version 0.7.0 (Universal Release)",
+                    text = "Version 0.8.0 (Universal Release)",
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
@@ -312,7 +314,7 @@ fun AboutScreen(
             Spacer(modifier = Modifier.height(36.dp))
 
             Text(
-                text = "Made with ❤️",
+                text = strings.madeWithLove,
                 style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
             )

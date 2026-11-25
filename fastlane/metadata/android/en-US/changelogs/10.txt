@@ -1,0 +1,4 @@
+- Added Material 3 Expressive 5-step onboarding flow faithful to Figma Android Compact designs with responsive section- and group-relative layout across all screen sizes.
+- Added continuous axis rotations for "Move" and "Outer-Yellow" vector shapes, seamless cross-screen shared-element transitions, Screen 3 Fan-to-Flower morph, WhatsApp arrow burst + down-to-up transition, and Instagram full-screen Expressive Flower fill + up-to-down transition.
+- Added Screen 4 Instructions card morphing into a shape-morphing Material 3 Expressive loading indicator during import, auto-detecting WhatsApp (.txt/.zip) and Instagram (.zip) archives with Snackbar confirmation.
+- Added Language Changer screen and full-app live localization across 11 languages (English, Japanese, Hindi, Russian, Spanish, Bengali, Portuguese, Indonesian, Urdu RTL, German, Punjabi).

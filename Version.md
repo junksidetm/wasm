@@ -899,3 +899,200 @@
   - `README.md`
   - `Version.md`
 - **Status**: 100% (Completed & Synced)
+
+## [2026-10-21 00:30:00 IST] - Comprehensive Repository Directory & File System Index
+- **Action**: Fully indexed all repository directories (52) and files (115), mapping structural hierarchy and defining the functional responsibility of each component.
+- **Directory Structure & Purpose**:
+  - `.forgejo/`: Forgejo / Codeberg platform repository configuration.
+  - `.forgejo/workflows/`: Forgejo Actions workflows automating CI/CD on Codeberg mirror.
+  - `.github/`: GitHub platform repository configuration and community templates.
+  - `.github/workflows/`: GitHub Actions CI/CD workflows for builds, releases, and tests.
+  - `app/`: Primary Android application module housing manifests, source code, and resources.
+  - `app/src/`: Application source code root divided into main and test variants.
+  - `app/src/main/`: Production source set containing Kotlin/Java application code and resources.
+  - `app/src/main/assets/`: Repository directory component: `app/src/main/assets`.
+  - `app/src/main/assets/fonts/`: Repository directory component: `app/src/main/assets/fonts`.
+  - `app/src/main/java/`: Android Kotlin/Java source root directory.
+  - `app/src/main/java/com/`: Android Kotlin/Java package: `com`.
+  - `app/src/main/java/com/mrdartsidetm/`: Android Kotlin/Java package: `com/mrdartsidetm`.
+  - `app/src/main/java/com/mrdartsidetm/wasm/`: Android Kotlin/Java package: `com/mrdartsidetm/wasm`.
+  - `app/src/main/java/com/mrdartsidetm/wasm/data/`: Android Kotlin/Java package: `com/mrdartsidetm/wasm/data`.
+  - `app/src/main/java/com/mrdartsidetm/wasm/ui/`: Android Kotlin/Java package: `com/mrdartsidetm/wasm/ui`.
+  - `app/src/main/java/com/mrdartsidetm/wasm/ui/instagram/`: Android Kotlin/Java package: `com/mrdartsidetm/wasm/ui/instagram`.
+  - `app/src/main/java/com/mrdartsidetm/wasm/ui/theme/`: Android Kotlin/Java package: `com/mrdartsidetm/wasm/ui/theme`.
+  - `app/src/main/java/com/mrdartsidetm/wasm/util/`: Android Kotlin/Java package: `com/mrdartsidetm/wasm/util`.
+  - `app/src/main/res/`: Android application UI resources root.
+  - `app/src/main/res/drawable/`: Android vector and raster drawable assets.
+  - `app/src/main/res/drawable-nodpi/`: Android vector and raster drawable assets.
+  - `app/src/main/res/font/`: Repository directory component: `app/src/main/res/font`.
+  - `app/src/main/res/mipmap-anydpi-v26/`: Android application launcher icons for various device densities.
+  - `app/src/main/res/mipmap-hdpi/`: Android application launcher icons for various device densities.
+  - `app/src/main/res/mipmap-mdpi/`: Android application launcher icons for various device densities.
+  - `app/src/main/res/mipmap-xhdpi/`: Android application launcher icons for various device densities.
+  - `app/src/main/res/mipmap-xxhdpi/`: Android application launcher icons for various device densities.
+  - `app/src/main/res/mipmap-xxxhdpi/`: Android application launcher icons for various device densities.
+  - `app/src/main/res/values/`: Android XML resource values (colors, themes, strings, dimensions).
+  - `app/src/test/`: JVM unit test suite and mock test cases.
+  - `app/src/test/java/`: JVM unit test suite and mock test cases.
+  - `app/src/test/java/com/`: JVM unit test suite and mock test cases.
+  - `app/src/test/java/com/mrdartsidetm/`: JVM unit test suite and mock test cases.
+  - `app/src/test/java/com/mrdartsidetm/wasm/`: JVM unit test suite and mock test cases.
+  - `app/src/test/java/com/mrdartsidetm/wasm/util/`: JVM unit test suite and mock test cases.
+  - `assests/`: Visual assets, iconography, vector drawables, images, and fonts.
+  - `assests/app-icons/`: Asset directory storing app-icons resources.
+  - `assests/fonts/`: Asset directory storing fonts resources.
+  - `assests/fonts/Emoji/`: Asset directory storing fonts/Emoji resources.
+  - `assests/fonts/SanFransico-PRO/`: Asset directory storing fonts/SanFransico-PRO resources.
+  - `assests/images/`: Asset directory storing images resources.
+  - `assests/nav-icons/`: Asset directory storing nav-icons resources.
+  - `docs/`: Project documentation, architectural specifications, and web showcase.
+  - `fastlane/`: Repository directory component: `fastlane`.
+  - `fastlane/metadata/`: Repository directory component: `fastlane/metadata`.
+  - `fastlane/metadata/android/`: Repository directory component: `fastlane/metadata/android`.
+  - `fastlane/metadata/android/en-US/`: Repository directory component: `fastlane/metadata/android/en-US`.
+  - `fastlane/metadata/android/en-US/changelogs/`: Repository directory component: `fastlane/metadata/android/en-US/changelogs`.
+  - `gradle/`: Gradle wrapper distribution configurations and wrapper JAR binary.
+  - `gradle/wrapper/`: Gradle wrapper bootstrapping properties and executable JAR.
+  - `metadata/`: Repository directory component: `metadata`.
+  - `scripts/`: Operational scripts, automation workflows, build hooks, and utility tooling.
+- **File System Manifest & Functional Roles**:
+  - `.forgejo/workflows/ci.yml`: Automated CI/CD workflow (`Android CI / Production Build`) managing pipeline stages, builds, tests, or releases.
+  - `.github/workflows/main.yml`: Automated CI/CD workflow (`Android CI / Production Build`) managing pipeline stages, builds, tests, or releases.
+  - `.github/workflows/pages.yml`: Automated CI/CD workflow (`Deploy GitHub Pages`) managing pipeline stages, builds, tests, or releases.
+  - `.gitignore`: Git exclusion specifications ignoring build artifacts, local secrets, and IDE temporary caches.
+  - `.gitlab-ci.yml`: GitLab CI/CD automated pipeline specification for test execution and mirror synchronization.
+  - `app/build.gradle.kts`: Gradle build script defining compiler plugins, dependencies, and build configurations.
+  - `app/proguard-rules.pro`: R8 / ProGuard code shrinking, obfuscation, and optimization rules.
+  - `app/src/main/AndroidManifest.xml`: Android application manifest defining package identity, permissions, services, and activities.
+  - `app/src/main/assets/fonts/ios_emoji.ttf`: Typography font asset utilized for application text rendering.
+  - `app/src/main/java/com/mrdartsidetm/wasm/data/ChatDao.kt`: Conversation operations (Individual WhatsApp Chats).
+  - `app/src/main/java/com/mrdartsidetm/wasm/data/ChatDatabase.kt`: Defines `ChatDatabase` implementing application logic, UI composable, or data entity.
+  - `app/src/main/java/com/mrdartsidetm/wasm/data/InstagramDao.kt`: Account operations.
+  - `app/src/main/java/com/mrdartsidetm/wasm/data/InstagramEntities.kt`: Represents the Instagram account profile detected from export metadata (start_here.html / chats.html).
+  - `app/src/main/java/com/mrdartsidetm/wasm/data/MessageEntity.kt`: MessageEntity represents a single chat bubble in the database.
+  - `app/src/main/java/com/mrdartsidetm/wasm/data/UserPreferencesRepository.kt`: Extension property to create the DataStore instance.
+  - `app/src/main/java/com/mrdartsidetm/wasm/data/WhatsAppConversationEntity.kt`: Represents an individual WhatsApp conversation thread saved in the local database.
+  - `app/src/main/java/com/mrdartsidetm/wasm/MainActivity.kt`: Defines `MainActivity` implementing application logic, UI composable, or data entity.
+  - `app/src/main/java/com/mrdartsidetm/wasm/ui/AboutScreen.kt`: Defines `AboutScreen` implementing application logic, UI composable, or data entity.
+  - `app/src/main/java/com/mrdartsidetm/wasm/ui/ChatScreen.kt`: Defines `BitmapMemoryCache` implementing application logic, UI composable, or data entity.
+  - `app/src/main/java/com/mrdartsidetm/wasm/ui/ChatViewModel.kt`: Persistent Conversations List (all individual WhatsApp chats saved).
+  - `app/src/main/java/com/mrdartsidetm/wasm/ui/HomeScreen.kt`: Material 3 Expressive Home Screen for Wasm.
+  - `app/src/main/java/com/mrdartsidetm/wasm/ui/instagram/InstagramScreen.kt`: Defines `InstagramScreen` implementing application logic, UI composable, or data entity.
+  - `app/src/main/java/com/mrdartsidetm/wasm/ui/instagram/InstagramViewModel.kt`: Defines `InstagramConversationFilter` implementing application logic, UI composable, or data entity.
+  - `app/src/main/java/com/mrdartsidetm/wasm/ui/PersonalizeScreen.kt`: Material 3 Expressive Personalize Screen.
+  - `app/src/main/java/com/mrdartsidetm/wasm/ui/PlatformChooserScreen.kt`: PlatformChooserScreen allows users to choose between WhatsApp and Instagram chat archives.
+  - `app/src/main/java/com/mrdartsidetm/wasm/ui/SettingsScreen.kt`: Material 3 Expressive Settings Screen.
+  - `app/src/main/java/com/mrdartsidetm/wasm/ui/theme/Theme.kt`: Defines `WasmTheme` implementing application logic, UI composable, or data entity.
+  - `app/src/main/java/com/mrdartsidetm/wasm/ui/theme/Type.kt`: San Francisco Pro Display Font Family.
+  - `app/src/main/java/com/mrdartsidetm/wasm/util/AudioPlayerManager.kt`: Manages native audio playback for Instagram voice notes (.mp4 audio container).
+  - `app/src/main/java/com/mrdartsidetm/wasm/util/ChatMediaExportHelper.kt`: Architectural groundwork for exporting media from WhatsApp and Instagram chat archives.
+  - `app/src/main/java/com/mrdartsidetm/wasm/util/GalleryDownloader.kt`: Saves a photo, video, or GIF file into the user's Android device Gallery / Photos app.
+  - `app/src/main/java/com/mrdartsidetm/wasm/util/InstagramHtmlParser.kt`: Date formatter for Instagram timestamps: "Aug 16, 2024 10:58 am".
+  - `app/src/main/java/com/mrdartsidetm/wasm/util/InstagramZipExtractor.kt`: Extracts an Instagram export ZIP archive safely with Zip Slip protection.
+  - `app/src/main/java/com/mrdartsidetm/wasm/util/WhatsAppParser.kt`: WhatsAppParser decodes exported chat transcripts from WhatsApp (.txt exports).
+  - `app/src/main/res/drawable/app_icon.png`: Raster graphic image or icon asset used in application UI or documentation.
+  - `app/src/main/res/drawable/ic_android_logo.xml`: Android XML layout, value dictionary, or system configuration definition.
+  - `app/src/main/res/drawable/ic_jetpack_compose_logo.xml`: Android XML layout, value dictionary, or system configuration definition.
+  - `app/src/main/res/drawable/ic_launcher_background.xml`: Android XML layout, value dictionary, or system configuration definition.
+  - `app/src/main/res/drawable/ic_launcher_foreground.xml`: Android XML layout, value dictionary, or system configuration definition.
+  - `app/src/main/res/drawable/ic_nav_instagram.xml`: Android XML layout, value dictionary, or system configuration definition.
+  - `app/src/main/res/drawable/ic_nav_whatsapp.xml`: Android XML layout, value dictionary, or system configuration definition.
+  - `app/src/main/res/drawable-nodpi/developer.png`: Raster graphic image or icon asset used in application UI or documentation.
+  - `app/src/main/res/font/sf_pro_display_black_italic.otf`: Typography font asset utilized for application text rendering.
+  - `app/src/main/res/font/sf_pro_display_black.otf`: Typography font asset utilized for application text rendering.
+  - `app/src/main/res/font/sf_pro_display_bold_italic.otf`: Typography font asset utilized for application text rendering.
+  - `app/src/main/res/font/sf_pro_display_bold.otf`: Typography font asset utilized for application text rendering.
+  - `app/src/main/res/font/sf_pro_display_heavy_italic.otf`: Typography font asset utilized for application text rendering.
+  - `app/src/main/res/font/sf_pro_display_heavy.otf`: Typography font asset utilized for application text rendering.
+  - `app/src/main/res/font/sf_pro_display_light_italic.otf`: Typography font asset utilized for application text rendering.
+  - `app/src/main/res/font/sf_pro_display_light.otf`: Typography font asset utilized for application text rendering.
+  - `app/src/main/res/font/sf_pro_display_medium_italic.otf`: Typography font asset utilized for application text rendering.
+  - `app/src/main/res/font/sf_pro_display_medium.otf`: Typography font asset utilized for application text rendering.
+  - `app/src/main/res/font/sf_pro_display_regular_italic.otf`: Typography font asset utilized for application text rendering.
+  - `app/src/main/res/font/sf_pro_display_regular.otf`: Typography font asset utilized for application text rendering.
+  - `app/src/main/res/font/sf_pro_display_semibold_italic.otf`: Typography font asset utilized for application text rendering.
+  - `app/src/main/res/font/sf_pro_display_semibold.otf`: Typography font asset utilized for application text rendering.
+  - `app/src/main/res/font/sf_pro_display_thin_italic.otf`: Typography font asset utilized for application text rendering.
+  - `app/src/main/res/font/sf_pro_display_thin.otf`: Typography font asset utilized for application text rendering.
+  - `app/src/main/res/font/sf_pro_display_ultralight_italic.otf`: Typography font asset utilized for application text rendering.
+  - `app/src/main/res/font/sf_pro_display_ultralight.otf`: Typography font asset utilized for application text rendering.
+  - `app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml`: Android XML layout, value dictionary, or system configuration definition.
+  - `app/src/main/res/mipmap-hdpi/ic_launcher.png`: Raster graphic image or icon asset used in application UI or documentation.
+  - `app/src/main/res/mipmap-mdpi/ic_launcher.png`: Raster graphic image or icon asset used in application UI or documentation.
+  - `app/src/main/res/mipmap-xhdpi/ic_launcher.png`: Raster graphic image or icon asset used in application UI or documentation.
+  - `app/src/main/res/mipmap-xxhdpi/ic_launcher.png`: Raster graphic image or icon asset used in application UI or documentation.
+  - `app/src/main/res/mipmap-xxxhdpi/ic_launcher.png`: Raster graphic image or icon asset used in application UI or documentation.
+  - `app/src/main/res/values/strings.xml`: Android XML layout, value dictionary, or system configuration definition.
+  - `app/src/main/res/values/themes.xml`: Android XML layout, value dictionary, or system configuration definition.
+  - `app/src/test/java/com/mrdartsidetm/wasm/util/InstagramHtmlParserTest.kt`: Defines `InstagramHtmlParserTest` implementing application logic, UI composable, or data entity.
+  - `app/src/test/java/com/mrdartsidetm/wasm/util/WhatsAppParserTest.kt`: Defines `WhatsAppParserTest` implementing application logic, UI composable, or data entity.
+  - `assests/app-icons/Background.svg`: Scalable vector graphic resource for UI iconography and branding.
+  - `assests/app-icons/Foreground.svg`: Scalable vector graphic resource for UI iconography and branding.
+  - `assests/app-icons/Wasm - Original AppIcon.png`: Raster graphic image or icon asset used in application UI or documentation.
+  - `assests/app-icons/Wasm - Original AppIcon.svg`: Scalable vector graphic resource for UI iconography and branding.
+  - `assests/fonts/Emoji/iOS 26.4.ttf`: Typography font asset utilized for application text rendering.
+  - `assests/fonts/SanFransico-PRO/SF-Pro-Display-Black.otf`: Typography font asset utilized for application text rendering.
+  - `assests/fonts/SanFransico-PRO/SF-Pro-Display-BlackItalic.otf`: Typography font asset utilized for application text rendering.
+  - `assests/fonts/SanFransico-PRO/SF-Pro-Display-Bold.otf`: Typography font asset utilized for application text rendering.
+  - `assests/fonts/SanFransico-PRO/SF-Pro-Display-BoldItalic.otf`: Typography font asset utilized for application text rendering.
+  - `assests/fonts/SanFransico-PRO/SF-Pro-Display-Heavy.otf`: Typography font asset utilized for application text rendering.
+  - `assests/fonts/SanFransico-PRO/SF-Pro-Display-HeavyItalic.otf`: Typography font asset utilized for application text rendering.
+  - `assests/fonts/SanFransico-PRO/SF-Pro-Display-Light.otf`: Typography font asset utilized for application text rendering.
+  - `assests/fonts/SanFransico-PRO/SF-Pro-Display-LightItalic.otf`: Typography font asset utilized for application text rendering.
+  - `assests/fonts/SanFransico-PRO/SF-Pro-Display-Medium.otf`: Typography font asset utilized for application text rendering.
+  - `assests/fonts/SanFransico-PRO/SF-Pro-Display-MediumItalic.otf`: Typography font asset utilized for application text rendering.
+  - `assests/fonts/SanFransico-PRO/SF-Pro-Display-Regular.otf`: Typography font asset utilized for application text rendering.
+  - `assests/fonts/SanFransico-PRO/SF-Pro-Display-RegularItalic.otf`: Typography font asset utilized for application text rendering.
+  - `assests/fonts/SanFransico-PRO/SF-Pro-Display-Semibold.otf`: Typography font asset utilized for application text rendering.
+  - `assests/fonts/SanFransico-PRO/SF-Pro-Display-SemiboldItalic.otf`: Typography font asset utilized for application text rendering.
+  - `assests/fonts/SanFransico-PRO/SF-Pro-Display-Thin.otf`: Typography font asset utilized for application text rendering.
+  - `assests/fonts/SanFransico-PRO/SF-Pro-Display-ThinItalic.otf`: Typography font asset utilized for application text rendering.
+  - `assests/fonts/SanFransico-PRO/SF-Pro-Display-Ultralight.otf`: Typography font asset utilized for application text rendering.
+  - `assests/fonts/SanFransico-PRO/SF-Pro-Display-UltralightItalic.otf`: Typography font asset utilized for application text rendering.
+  - `assests/images/Direct Link Frame Badge.svg`: Scalable vector graphic resource for UI iconography and branding.
+  - `assests/nav-icons/instagram-svgrepo-com.svg`: Scalable vector graphic resource for UI iconography and branding.
+  - `assests/nav-icons/whatsapp-svgrepo-com.svg`: Scalable vector graphic resource for UI iconography and branding.
+  - `build.gradle.kts`: Gradle build script defining compiler plugins, dependencies, and build configurations.
+  - `docs/index.html`: HTML web page markup or documentation entrypoint.
+  - `docs/logo.svg`: Scalable vector graphic resource for UI iconography and branding.
+  - `fastlane/metadata/android/en-US/changelogs/9.txt`: Repository asset file: `9.txt`.
+  - `fastlane/metadata/android/en-US/full_description.txt`: Repository asset file: `full_description.txt`.
+  - `fastlane/metadata/android/en-US/short_description.txt`: Repository asset file: `short_description.txt`.
+  - `GEMINI.md`: Project AI assistant operational instructions, framework architecture mandates, and platform-specific constraints.
+  - `gradle/wrapper/gradle-wrapper.jar`: Gradle wrapper Java runtime binary used to bootstrap Gradle.
+  - `gradle/wrapper/gradle-wrapper.properties`: Configures the pinned Gradle distribution version and download URL for the wrapper.
+  - `gradle.properties`: Gradle daemon runtime flags, JVM memory allocation limits, and AndroidX enablement.
+  - `gradlew`: Unix shell executable for the Gradle build wrapper.
+  - `gradlew.bat`: Windows batch script executable for the Gradle build wrapper.
+  - `LICENSE`: Open-source software license defining terms of use, distribution, and attribution.
+  - `local.properties`: Repository asset file: `local.properties`.
+  - `metadata/com.mrdartsidetm.wasm.yml`: Repository asset file: `com.mrdartsidetm.wasm.yml`.
+  - `README.md`: Repository documentation, architectural overview, usage instructions, and downstream integration guidelines.
+  - `scripts/generate-keystore.ps1`: PowerShell script to generate a production Android keystore and encode it for GitHub Secrets.
+  - `settings.gradle.kts`: Gradle settings script defining repository sources and module inclusion.
+  - `Version.md`: Permanent, immutable project ledger tracking historical changelogs, architecture evolution, and component manifests.
+- **Status**: 100% (Completed & Verified across repository)
+
+
+---
+
+## [0.8.0] - 2026-11-25 23:12:00 IST
+### Expressive Figma Onboarding Flow, 11-Language Live Localization & Auto-Detecting Archive Import
+- **Material 3 Expressive 5-Screen Onboarding (`ui/onboarding/`)**:
+  - Built `OnboardingFlow` (`OnboardingScreen.kt`), `OnboardingShapes.kt`, and `OnboardingSvgPaths.kt` faithfully from the Figma Android Compact SVGs (`412x917`) using responsive section- and group-relative positioning (`BoxWithConstraints`, `statusBarsPadding`, `navigationBarsPadding`, `absoluteOffset`) across all Android screen sizes.
+  - Configured continuous axis rotations for all `"Move"` elements (`Ghost-ish`, `Very Sunny`, `Fan`, `Arrow`, `4 Leaf Clover`, `Stars-All`, `shape - Move`) and `Outer-Yellow` across Screen 1 and Screen 5 (`WASM - Logo` card).
+  - Implemented seamless shared-element motion transitioning `Very Sunny`, `Ghost-ish`, `Arrow`, and `Fan`/`Flower` across Screens 1–5.
+  - Added Screen 3 Instagram `Fan`-to-`Flower` morph (`FanToFlowerMorphBadge`) via `androidx.graphics:graphics-shapes:1.0.1` (`RoundedPolygon` + `Morph`).
+  - Implemented Screen 3 platform launch transitions: clicking **WhatsApp** sweeps rotating neon-green `Arrow` shapes and transitions **down-to-up** to WhatsApp onboarding; clicking **Instagram** fills the screen with an expanding Expressive `Flower` and transitions **up-to-down** to Instagram onboarding.
+  - Implemented Screen 4 Instructions card morphing smoothly into a Material 3 Expressive shape-morphing loading indicator (`MorphingExpressiveLoadingIndicator`) during import, with `ZipArchiveDetector` auto-detecting WhatsApp (`.txt` / `.zip`) and Instagram (`.zip`) exports, showing a Snackbar confirmation of the detected platform, and auto-advancing to Screen 5 (`Everything is set` -> `Let's Dive In`).
+- **Language Changer & Full App Localization (`ui/localization/WasmLocalization.kt`, `LanguageChangerScreen.kt`)**:
+  - Built the `LanguageChangerScreen` featuring the rotating `4 Leaf Clover` + Globe icon and a 2-column scrollable grid of pill buttons with flags for 11 languages: English (`🇬🇧`), Japanese (`🇯🇵`), Hindi (`🇮🇳`), Russian (`🇷🇺`), Spanish (`🇪🇸`), Bengali (`🇧🇩`), Portuguese (`🇵🇹`), Indonesian (`🇮🇩`), Urdu (`🇵🇰`, RTL), German (`🇩🇪`), and Punjabi (`🇮🇳`).
+  - Persisted `appLanguage` and `onboardingCompleted` in `UserPreferencesRepository` (DataStore) and wired live `LocalWasmStrings` + `LocalLayoutDirection` across Onboarding, Home, Platform Chooser, Personalize, Settings, About, and bottom NavigationBar.
+  - Added Language & Onboarding replay controls in `SettingsScreen.kt`.
+- **Testing, Versioning & Multi-Platform Release CI (`v0.8.0`)**:
+  - Added `androidx.graphics:graphics-shapes:1.0.1` and bumped `versionCode = 10`, `versionName = "0.8.0"` in `app/build.gradle.kts`, `AboutScreen.kt`, `SettingsScreen.kt`, `README.md`, `docs/index.html`, and `fastlane/metadata/android/en-US/changelogs/10.txt`.
+  - Added `ZipArchiveDetectorTest.kt` covering `.txt`, WhatsApp `.zip`, and Instagram `.zip` detection (verified against synthetic archives and user test ZIP archives).
+  - Updated `.github/workflows/main.yml` and `.forgejo/workflows/ci.yml` to build and publish tagged `v*` releases with title matching the exact tag (`v0.8.0`).
+
+### Status
+- 100% Implemented; committing, signing, pushing to GitHub/GitLab/Codeberg, and triggering `v0.8.0` release verification.

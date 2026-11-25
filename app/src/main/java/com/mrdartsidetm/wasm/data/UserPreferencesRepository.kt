@@ -1,6 +1,7 @@
 package com.mrdartsidetm.wasm.data
 
 import android.content.Context
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -14,6 +15,8 @@ class UserPreferencesRepository(private val context: Context) {
     private val USER_NAME_KEY = stringPreferencesKey("user_identity")
     private val PERSON_NAME_KEY = stringPreferencesKey("person_name")
     private val PROFILE_IMAGE_PATH_KEY = stringPreferencesKey("profile_image_path")
+    private val APP_LANGUAGE_KEY = stringPreferencesKey("app_language")
+    private val ONBOARDING_COMPLETED_KEY = booleanPreferencesKey("onboarding_completed")
 
     // Flow that emits the current saved name (or empty string if not set)
     val userIdentity: Flow<String> = context.dataStore.data.map { prefs ->
@@ -28,6 +31,30 @@ class UserPreferencesRepository(private val context: Context) {
     // Flow for saved profile image local file path
     val profileImagePath: Flow<String?> = context.dataStore.data.map { prefs ->
         prefs[PROFILE_IMAGE_PATH_KEY]
+    }
+
+    // Flow for selected app language code (defaults to "en")
+    val appLanguage: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[APP_LANGUAGE_KEY] ?: "en"
+    }
+
+    // Flow tracking whether initial onboarding has been completed
+    val onboardingCompleted: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[ONBOARDING_COMPLETED_KEY] ?: false
+    }
+
+    // Function to save selected language code
+    suspend fun saveAppLanguage(languageCode: String) {
+        context.dataStore.edit { prefs ->
+            prefs[APP_LANGUAGE_KEY] = languageCode
+        }
+    }
+
+    // Function to persist onboarding completion status
+    suspend fun setOnboardingCompleted(completed: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[ONBOARDING_COMPLETED_KEY] = completed
+        }
     }
 
     // Function to save the selected "Who are you?" name
