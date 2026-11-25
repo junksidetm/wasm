@@ -502,7 +502,7 @@ fun OnboardingFlow(
                     shapeSrcHeight = OnboardingSvgPaths.arrowShapeHeight,
                     shapeColor = OnboardingWhatsAppArrowNeon,
                     shapeRotation = arrowRotation,
-                    iconPaths = OnboardingSvgPaths.whatsappIconPaths,
+                    iconPaths = listOf(OnboardingSvgPaths.whatsappIconPath),
                     iconColors = listOf(Color.Black),
                     iconSrcWidth = OnboardingSvgPaths.whatsappIconWidth,
                     iconSrcHeight = OnboardingSvgPaths.whatsappIconHeight,
