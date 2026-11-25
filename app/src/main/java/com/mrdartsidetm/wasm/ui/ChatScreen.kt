@@ -44,6 +44,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mrdartsidetm.wasm.R
 import com.mrdartsidetm.wasm.data.MessageEntity
 import com.mrdartsidetm.wasm.data.WhatsAppConversationEntity
+import com.mrdartsidetm.wasm.ui.onboarding.ContainedExpressiveLoadingIndicator
 import com.mrdartsidetm.wasm.ui.theme.SfProBold
 import com.mrdartsidetm.wasm.ui.theme.SfProBoldItalic
 import com.mrdartsidetm.wasm.ui.theme.SfProItalic
@@ -308,16 +309,22 @@ fun ChatScreen(
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(
+                Row(
                     modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
+                    ContainedExpressiveLoadingIndicator(
+                        indicatorColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        modifier = Modifier.size(44.dp)
+                    )
                     Text(
                         text = stepText,
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1f)
                     )
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 }
             }
         }

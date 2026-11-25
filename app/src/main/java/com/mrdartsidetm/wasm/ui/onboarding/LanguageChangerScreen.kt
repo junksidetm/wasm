@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import com.mrdartsidetm.wasm.ui.localization.LocalWasmStrings
 import com.mrdartsidetm.wasm.ui.localization.SupportedLanguage
 import com.mrdartsidetm.wasm.ui.localization.SupportedLanguages
+import com.mrdartsidetm.wasm.ui.theme.GoogleSansFlexOnboarding535
 
 /**
  * Language Changer screen matching the Figma "Language Changer" SVG:
@@ -126,7 +127,8 @@ fun LanguageChangerScreen(
             Text(
                 text = strings.chooseLanguage,
                 style = MaterialTheme.typography.displaySmall.copy(
-                    fontWeight = FontWeight.Bold,
+                    fontFamily = GoogleSansFlexOnboarding535,
+                    fontWeight = FontWeight(535),
                     lineHeight = 42.sp,
                     textAlign = TextAlign.Center
                 ),

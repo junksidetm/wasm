@@ -2,119 +2,252 @@ package com.mrdartsidetm.wasm.ui.theme
 
 import android.content.Context
 import android.graphics.Typeface
+import android.graphics.fonts.FontVariationAxis
 import android.os.Build
 import androidx.compose.material3.Typography
+import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.mrdartsidetm.wasm.R
 
 /**
- * San Francisco Pro Display Font Family.
- * Configured with all provided weights and italics.
+ * Creates a Google Sans Flex variable FontFamily with explicit axis controls.
  */
-val SfProDisplayFontFamily = FontFamily(
-    Font(R.font.sf_pro_display_thin, FontWeight.Thin),
-    Font(R.font.sf_pro_display_thin_italic, FontWeight.Thin, FontStyle.Italic),
-    Font(R.font.sf_pro_display_ultralight, FontWeight.ExtraLight),
-    Font(R.font.sf_pro_display_ultralight_italic, FontWeight.ExtraLight, FontStyle.Italic),
-    Font(R.font.sf_pro_display_light, FontWeight.Light),
-    Font(R.font.sf_pro_display_light_italic, FontWeight.Light, FontStyle.Italic),
-    Font(R.font.sf_pro_display_regular, FontWeight.Normal),
-    Font(R.font.sf_pro_display_regular_italic, FontWeight.Normal, FontStyle.Italic),
-    Font(R.font.sf_pro_display_medium, FontWeight.Medium),
-    Font(R.font.sf_pro_display_medium_italic, FontWeight.Medium, FontStyle.Italic),
-    Font(R.font.sf_pro_display_semibold, FontWeight.SemiBold),
-    Font(R.font.sf_pro_display_semibold_italic, FontWeight.SemiBold, FontStyle.Italic),
-    Font(R.font.sf_pro_display_bold, FontWeight.Bold),
-    Font(R.font.sf_pro_display_bold_italic, FontWeight.Bold, FontStyle.Italic),
-    Font(R.font.sf_pro_display_heavy, FontWeight.ExtraBold),
-    Font(R.font.sf_pro_display_heavy_italic, FontWeight.ExtraBold, FontStyle.Italic),
-    Font(R.font.sf_pro_display_black, FontWeight.Black),
-    Font(R.font.sf_pro_display_black_italic, FontWeight.Black, FontStyle.Italic)
-)
+@OptIn(ExperimentalTextApi::class)
+fun createGoogleSansFlexFamily(
+    weight: Int = 400,
+    width: Float = 100f,
+    grade: Float = 0f,
+    roundness: Float = 100f,
+    opticalSize: Float = 24f,
+    slant: Float = 0f,
+    style: FontStyle = FontStyle.Normal
+): FontFamily {
+    val w = weight.coerceIn(100, 1000)
+    val wd = width.coerceIn(50f, 150f)
+    val gr = grade.coerceIn(-200f, 150f)
+    val rn = roundness.coerceIn(0f, 100f)
+    val op = opticalSize.coerceIn(8f, 144f)
+    val sl = slant.coerceIn(-10f, 0f)
 
-// Explicit individual FontFamily instances directly referencing specific OTF weights and styles
-val SfProBold = FontFamily(Font(R.font.sf_pro_display_bold, FontWeight.Bold))
-val SfProItalic = FontFamily(Font(R.font.sf_pro_display_regular_italic, FontWeight.Normal, FontStyle.Italic))
-val SfProBoldItalic = FontFamily(Font(R.font.sf_pro_display_bold_italic, FontWeight.Bold, FontStyle.Italic))
-val SfProRegular = FontFamily(Font(R.font.sf_pro_display_regular, FontWeight.Normal))
-val SfProMedium = FontFamily(Font(R.font.sf_pro_display_medium, FontWeight.Medium))
-val SfProMediumItalic = FontFamily(Font(R.font.sf_pro_display_medium_italic, FontWeight.Medium, FontStyle.Italic))
-val SfProSemibold = FontFamily(Font(R.font.sf_pro_display_semibold, FontWeight.SemiBold))
-val SfProSemiboldItalic = FontFamily(Font(R.font.sf_pro_display_semibold_italic, FontWeight.SemiBold, FontStyle.Italic))
-val SfProLight = FontFamily(Font(R.font.sf_pro_display_light, FontWeight.Light))
-val SfProLightItalic = FontFamily(Font(R.font.sf_pro_display_light_italic, FontWeight.Light, FontStyle.Italic))
-val SfProThin = FontFamily(Font(R.font.sf_pro_display_thin, FontWeight.Thin))
-val SfProThinItalic = FontFamily(Font(R.font.sf_pro_display_thin_italic, FontWeight.Thin, FontStyle.Italic))
-val SfProUltralight = FontFamily(Font(R.font.sf_pro_display_ultralight, FontWeight.ExtraLight))
-val SfProUltralightItalic = FontFamily(Font(R.font.sf_pro_display_ultralight_italic, FontWeight.ExtraLight, FontStyle.Italic))
-val SfProHeavy = FontFamily(Font(R.font.sf_pro_display_heavy, FontWeight.ExtraBold))
-val SfProHeavyItalic = FontFamily(Font(R.font.sf_pro_display_heavy_italic, FontWeight.ExtraBold, FontStyle.Italic))
-val SfProBlack = FontFamily(Font(R.font.sf_pro_display_black, FontWeight.Black))
-val SfProBlackItalic = FontFamily(Font(R.font.sf_pro_display_black_italic, FontWeight.Black, FontStyle.Italic))
+    return FontFamily(
+        Font(
+            resId = R.font.google_sans_flex,
+            weight = FontWeight(w),
+            style = style,
+            variationSettings = FontVariation.Settings(
+                FontVariation.weight(w),
+                FontVariation.width(wd),
+                FontVariation.slant(sl),
+                FontVariation.Setting("GRAD", gr),
+                FontVariation.Setting("ROND", rn),
+                FontVariation.Setting("opsz", op)
+            )
+        )
+    )
+}
 
 /**
- * Creates a composite FontFamily where San Francisco Pro is the primary font
- * and the bundled iOS emoji font (iOS 26.4 CBDT/CBLC) is configured as the
- * custom fallback font on Android 10+ (API 29+) via Typeface.CustomFallbackBuilder.
+ * Exact Figma Google Sans Flex axis configurations for Wasm Onboarding & Language Changer:
+ * - GoogleSansFlexOnboarding535: wght=535, GRAD=36, ROND=100, wdth=119, opsz=24
+ *   ("Get started", "Choose Language", Screen 4 "Whatsapp"/"Instagram", "Everything is set",
+ *    "en", "Natively Supports", "Hello", "Next", "Let's Dive In")
+ * - GoogleSansFlexOnboarding875: wght=875, GRAD=36, ROND=100, wdth=105, opsz=24
+ *   ("Whatsapp & Instagram*", Screen 3 "Whatsapp"/"Instagram")
+ * - GoogleSansFlexMetaMedium: wght=500, ROND=100, opsz=24
+ *   ("Whatsapp and Instagram are copyright under Meta Services.")
+ */
+val GoogleSansFlexOnboarding535: FontFamily = createGoogleSansFlexFamily(
+    weight = 535,
+    width = 119f,
+    grade = 36f,
+    roundness = 100f,
+    opticalSize = 24f
+)
+
+val GoogleSansFlexOnboarding875: FontFamily = createGoogleSansFlexFamily(
+    weight = 875,
+    width = 105f,
+    grade = 36f,
+    roundness = 100f,
+    opticalSize = 24f
+)
+
+val GoogleSansFlexMetaMedium: FontFamily = createGoogleSansFlexFamily(
+    weight = 500,
+    width = 100f,
+    grade = 0f,
+    roundness = 100f,
+    opticalSize = 24f
+)
+
+@OptIn(ExperimentalTextApi::class)
+val GoogleSansFlexDisplayFontFamily = FontFamily(
+    Font(
+        resId = R.font.google_sans_flex,
+        weight = FontWeight.Thin,
+        variationSettings = FontVariation.Settings(
+            FontVariation.weight(100),
+            FontVariation.Setting("ROND", 100f),
+            FontVariation.Setting("opsz", 24f)
+        )
+    ),
+    Font(
+        resId = R.font.google_sans_flex,
+        weight = FontWeight.Light,
+        variationSettings = FontVariation.Settings(
+            FontVariation.weight(300),
+            FontVariation.Setting("ROND", 100f),
+            FontVariation.Setting("opsz", 24f)
+        )
+    ),
+    Font(
+        resId = R.font.google_sans_flex,
+        weight = FontWeight.Normal,
+        variationSettings = FontVariation.Settings(
+            FontVariation.weight(400),
+            FontVariation.Setting("ROND", 100f),
+            FontVariation.Setting("opsz", 24f)
+        )
+    ),
+    Font(
+        resId = R.font.google_sans_flex,
+        weight = FontWeight.Normal,
+        style = FontStyle.Italic,
+        variationSettings = FontVariation.Settings(
+            FontVariation.weight(400),
+            FontVariation.slant(-10f),
+            FontVariation.Setting("ROND", 100f),
+            FontVariation.Setting("opsz", 24f)
+        )
+    ),
+    Font(
+        resId = R.font.google_sans_flex,
+        weight = FontWeight.Medium,
+        variationSettings = FontVariation.Settings(
+            FontVariation.weight(500),
+            FontVariation.Setting("ROND", 100f),
+            FontVariation.Setting("opsz", 24f)
+        )
+    ),
+    Font(
+        resId = R.font.google_sans_flex,
+        weight = FontWeight.SemiBold,
+        variationSettings = FontVariation.Settings(
+            FontVariation.weight(600),
+            FontVariation.Setting("ROND", 100f),
+            FontVariation.Setting("opsz", 24f)
+        )
+    ),
+    Font(
+        resId = R.font.google_sans_flex,
+        weight = FontWeight.Bold,
+        variationSettings = FontVariation.Settings(
+            FontVariation.weight(700),
+            FontVariation.Setting("ROND", 100f),
+            FontVariation.Setting("opsz", 24f)
+        )
+    ),
+    Font(
+        resId = R.font.google_sans_flex,
+        weight = FontWeight.Bold,
+        style = FontStyle.Italic,
+        variationSettings = FontVariation.Settings(
+            FontVariation.weight(700),
+            FontVariation.slant(-10f),
+            FontVariation.Setting("ROND", 100f),
+            FontVariation.Setting("opsz", 24f)
+        )
+    ),
+    Font(
+        resId = R.font.google_sans_flex,
+        weight = FontWeight.ExtraBold,
+        variationSettings = FontVariation.Settings(
+            FontVariation.weight(800),
+            FontVariation.Setting("ROND", 100f),
+            FontVariation.Setting("opsz", 24f)
+        )
+    ),
+    Font(
+        resId = R.font.google_sans_flex,
+        weight = FontWeight.Black,
+        variationSettings = FontVariation.Settings(
+            FontVariation.weight(900),
+            FontVariation.Setting("ROND", 100f),
+            FontVariation.Setting("opsz", 24f)
+        )
+    )
+)
+
+// Individual FontFamily aliases mapped to Google Sans Flex so the entire UI uses Google Sans Flex uniformly
+val SfProBold = createGoogleSansFlexFamily(weight = 700)
+val SfProItalic = createGoogleSansFlexFamily(weight = 400, slant = -10f, style = FontStyle.Italic)
+val SfProBoldItalic = createGoogleSansFlexFamily(weight = 700, slant = -10f, style = FontStyle.Italic)
+val SfProRegular = createGoogleSansFlexFamily(weight = 400)
+val SfProMedium = createGoogleSansFlexFamily(weight = 500)
+val SfProMediumItalic = createGoogleSansFlexFamily(weight = 500, slant = -10f, style = FontStyle.Italic)
+val SfProSemibold = createGoogleSansFlexFamily(weight = 600)
+val SfProSemiboldItalic = createGoogleSansFlexFamily(weight = 600, slant = -10f, style = FontStyle.Italic)
+val SfProLight = createGoogleSansFlexFamily(weight = 300)
+val SfProLightItalic = createGoogleSansFlexFamily(weight = 300, slant = -10f, style = FontStyle.Italic)
+val SfProThin = createGoogleSansFlexFamily(weight = 100)
+val SfProThinItalic = createGoogleSansFlexFamily(weight = 100, slant = -10f, style = FontStyle.Italic)
+val SfProUltralight = createGoogleSansFlexFamily(weight = 200)
+val SfProUltralightItalic = createGoogleSansFlexFamily(weight = 200, slant = -10f, style = FontStyle.Italic)
+val SfProHeavy = createGoogleSansFlexFamily(weight = 800)
+val SfProHeavyItalic = createGoogleSansFlexFamily(weight = 800, slant = -10f, style = FontStyle.Italic)
+val SfProBlack = createGoogleSansFlexFamily(weight = 900)
+val SfProBlackItalic = createGoogleSansFlexFamily(weight = 900, slant = -10f, style = FontStyle.Italic)
+
+/**
+ * Builds the primary Google Sans Flex FontFamily with bundled iOS emoji fallback on Android 10+ (API 29+).
  */
 fun getAppFontFamily(context: Context): FontFamily {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         try {
-            val fontResList = intArrayOf(
-                R.font.sf_pro_display_thin,
-                R.font.sf_pro_display_thin_italic,
-                R.font.sf_pro_display_ultralight,
-                R.font.sf_pro_display_ultralight_italic,
-                R.font.sf_pro_display_light,
-                R.font.sf_pro_display_light_italic,
-                R.font.sf_pro_display_regular,
-                R.font.sf_pro_display_regular_italic,
-                R.font.sf_pro_display_medium,
-                R.font.sf_pro_display_medium_italic,
-                R.font.sf_pro_display_semibold,
-                R.font.sf_pro_display_semibold_italic,
-                R.font.sf_pro_display_bold,
-                R.font.sf_pro_display_bold_italic,
-                R.font.sf_pro_display_heavy,
-                R.font.sf_pro_display_heavy_italic,
-                R.font.sf_pro_display_black,
-                R.font.sf_pro_display_black_italic
-            )
-
-            val firstFont = android.graphics.fonts.Font.Builder(context.resources, fontResList[0]).build()
-            val familyBuilder = android.graphics.fonts.FontFamily.Builder(firstFont)
-            for (i in 1 until fontResList.size) {
-                try {
-                    familyBuilder.addFont(android.graphics.fonts.Font.Builder(context.resources, fontResList[i]).build())
-                } catch (fontEx: Throwable) {
-                    // Ignore single font builder errors if any
+            val weights = listOf(100, 300, 400, 500, 600, 700, 800, 900)
+            var familyBuilder: android.graphics.fonts.FontFamily.Builder? = null
+            for (w in weights) {
+                val f = android.graphics.fonts.Font.Builder(context.resources, R.font.google_sans_flex)
+                    .setFontVariationSettings(
+                        arrayOf(
+                            FontVariationAxis("wght", w.toFloat()),
+                            FontVariationAxis("ROND", 100f),
+                            FontVariationAxis("opsz", 24f)
+                        )
+                    )
+                    .build()
+                if (familyBuilder == null) {
+                    familyBuilder = android.graphics.fonts.FontFamily.Builder(f)
+                } else {
+                    familyBuilder.addFont(f)
                 }
             }
-            val primaryFamily = familyBuilder.build()
+            val primaryFamily = familyBuilder?.build()
+            if (primaryFamily != null) {
+                val emojiFont = android.graphics.fonts.Font.Builder(context.assets, "fonts/ios_emoji.ttf").build()
+                val emojiFamily = android.graphics.fonts.FontFamily.Builder(emojiFont).build()
 
-            // Custom fallback with bundled Apple color emoji font from assets
-            val emojiFont = android.graphics.fonts.Font.Builder(context.assets, "fonts/ios_emoji.ttf").build()
-            val emojiFamily = android.graphics.fonts.FontFamily.Builder(emojiFont).build()
+                val compositeTypeface = Typeface.CustomFallbackBuilder(primaryFamily)
+                    .addCustomFallback(emojiFamily)
+                    .build()
 
-            val compositeTypeface = Typeface.CustomFallbackBuilder(primaryFamily)
-                .addCustomFallback(emojiFamily)
-                .build()
-
-            return FontFamily(compositeTypeface)
-        } catch (e: Throwable) {
-            // Fallback gracefully to Compose font family
+                return FontFamily(compositeTypeface)
+            }
+        } catch (_: Throwable) {
+            // Fall back to Compose variable FontFamily
         }
     }
-    return SfProDisplayFontFamily
+    return GoogleSansFlexDisplayFontFamily
 }
 
 /**
- * Builds Material 3 Typography utilizing the San Francisco Pro font family.
+ * Builds Material 3 Expressive Typography utilizing Google Sans Flex across the entire UI.
  */
 fun buildWasmTypography(fontFamily: FontFamily): Typography {
     return Typography(

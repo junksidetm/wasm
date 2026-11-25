@@ -1102,3 +1102,22 @@
 - **Onboarding Screen 2**: Added Apple-style vertical slide, fade, and scale cycling animation on the big `"Hello"` greeting across all 11 supported languages (`Hello`, `नमस्ते`, `こんにちは`, `Hola`, `Привет`, `হ্যালো`, `Olá`, `Halo`, `ہیلو`, `Hallo`, `ਸਤ ਸ੍ਰੀ ਅਕਾਲ`).
 - **Vector Rendering Fidelity**: Added `iconStrokeWidths`, `iconFillFlags`, and `PathFillType.EvenOdd` support in `OnboardingShapes.kt` so `file-plus` (`+` stroke + document fill) and `chats-2` (outlined + filled speech bubbles) match Figma strokes exactly.
 - **Compilation & Pages CI Fixes**: Fixed `OnboardingSvgPaths.whatsappIconPath` list wrapping in `OnboardingScreen.kt` and split `.github/workflows/pages.yml` into `build` and `deploy` jobs to prevent artifact lookup race conditions.
+
+---
+
+## [0.8.1] - 2026-11-26 01:05:00 IST
+### Google Sans Flex Variable Typography, Contained Loading Indicator, Flattened Instagram Icons & Screen 4 Transition Fix
+- **Whole-UI Google Sans Flex Variable Font (`res/font/google_sans_flex.ttf`, `ui/theme/Type.kt`)**:
+  - Bundled `GoogleSansFlex-VariableFont_GRAD,ROND,opsz,slnt,wdth,wght.ttf` and configured `createGoogleSansFlexFamily(...)` with full variable axis control (`wght`, `GRAD`, `ROND`, `wdth`, `opsz`, `slnt`) across the entire app typography and emoji fallback.
+  - Applied exact Figma axis presets on onboarding screens:
+    - `GoogleSansFlexOnboarding535` (`wght=535, GRAD=36, ROND=100, wdth=119, opsz=24`) for `"Get started"`, `"Choose Language"`, Screen 4 titles, `"Everything is set"`, `"en"`, `"Natively Supports"`, `"Hello"`, `"Next"`, and `"Let's Dive In"`.
+    - `GoogleSansFlexOnboarding875` (`wght=875, GRAD=36, ROND=100, wdth=105, opsz=24`) for `"Whatsapp & Instagram*"` and Screen 3 `"Whatsapp"` / `"Instagram"`.
+    - `GoogleSansFlexMetaMedium` (`wght=500, ROND=100, opsz=24`) for `"Whatsapp and Instagram are copyright under Meta Services."`.
+- **Material 3 Expressive ContainedLoadingIndicator (`ContainedExpressiveLoadingIndicator`)**:
+  - Replaced uncontained and linear progress loaders with `ContainedExpressiveLoadingIndicator` (circular container + rotating shape-morphing `RoundedPolygon` sequence) across Onboarding Screen 4, WhatsApp import (`ChatScreen.kt`), and Instagram import (`InstagramScreen.kt`).
+- **Flattened Instagram Icon & Screen 4 `"shape - move"` Badge**:
+  - Replaced Instagram icon paths in `OnboardingSvgPaths.kt` and `res/drawable/ic_nav_instagram.xml` with the user-supplied flattened `EvenOdd` vector paths and enabled `PathFillType.EvenOdd` everywhere Instagram icons appear.
+  - Added `res/drawable-nodpi/ig_shape_move.png` for Onboarding Screen 4 Instagram's rotating badge.
+- **Screen 1 & Screen 4 Behavior Fixes**:
+  - Stopped `Outer-Yellow` rotation on Onboarding Screen 1 while preserving Screen 5 logo rotation.
+  - Fixed `LaunchedEffect` cancellation bug on Screen 4 by navigating to `OnboardingStep.SCREEN_5` before clearing `awaitingImportPlatform`, ensuring automatic progression to Screen 5 after ZIP/TXT import and Snackbar confirmation.

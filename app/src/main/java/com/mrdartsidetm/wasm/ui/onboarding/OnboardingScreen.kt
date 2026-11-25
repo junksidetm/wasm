@@ -9,6 +9,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -29,22 +30,29 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.PathParser
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mrdartsidetm.wasm.R
 import com.mrdartsidetm.wasm.data.UserPreferencesRepository
 import com.mrdartsidetm.wasm.ui.ChatViewModel
 import com.mrdartsidetm.wasm.ui.ImportUiState
 import com.mrdartsidetm.wasm.ui.instagram.InstagramViewModel
 import com.mrdartsidetm.wasm.ui.localization.LocalWasmStrings
 import com.mrdartsidetm.wasm.ui.localization.languageByCode
+import com.mrdartsidetm.wasm.ui.theme.GoogleSansFlexMetaMedium
+import com.mrdartsidetm.wasm.ui.theme.GoogleSansFlexOnboarding535
+import com.mrdartsidetm.wasm.ui.theme.GoogleSansFlexOnboarding875
 import com.mrdartsidetm.wasm.util.DetectedArchivePlatform
 import com.mrdartsidetm.wasm.util.ZipArchiveDetector
 import kotlinx.coroutines.Dispatchers
@@ -127,7 +135,6 @@ fun OnboardingFlow(
             is ImportUiState.Success -> {
                 val imported = awaitingImportPlatform
                 lastImportedPlatform = imported
-                awaitingImportPlatform = null
                 if (imported == "whatsapp") {
                     whatsappViewModel.dismissImportState()
                 } else {
@@ -138,14 +145,15 @@ fun OnboardingFlow(
                 } else {
                     strings.importedInstagramSnackbar
                 }
+                // Transition immediately BEFORE clearing awaitingImportPlatform so LaunchedEffect key mutation cannot cancel navigation
+                currentStep = OnboardingStep.SCREEN_5
+                awaitingImportPlatform = null
                 scope.launch {
                     snackbarHostState.showSnackbar(
                         message = message,
                         duration = SnackbarDuration.Short
                     )
                 }
-                delay(450)
-                currentStep = OnboardingStep.SCREEN_5
             }
             is ImportUiState.Error -> {
                 val errMsg = activeState.message
@@ -354,7 +362,7 @@ fun OnboardingFlow(
                         .alpha(s1OverlayAlpha)
                 ) {
                     Screen1WasmHeroOverlay(
-                        outerYellowRotation = outerYellowRotation,
+                        outerYellowRotation = 0f,
                         starsRotation = starsRotation
                     )
                 }
@@ -427,20 +435,40 @@ fun OnboardingFlow(
                         )
                     }
                     OnboardingStep.SCREEN_4_INSTAGRAM -> {
-                        ExpressiveGroupedBadge(
-                            shapePathData = OnboardingSvgPaths.verySunnyPath,
-                            shapeSrcWidth = OnboardingSvgPaths.verySunnyWidth,
-                            shapeSrcHeight = OnboardingSvgPaths.verySunnyHeight,
-                            shapeColor = null,
-                            shapeBrush = InstagramBadgeBrush,
-                            shapeRotation = verySunnyRotation,
-                            iconPaths = OnboardingSvgPaths.instagramIconPaths,
-                            iconColors = listOf(Color.White, Color.White, Color.White),
-                            iconSrcWidth = OnboardingSvgPaths.instagramIconWidth,
-                            iconSrcHeight = OnboardingSvgPaths.instagramIconHeight,
-                            iconScaleFraction = 0.46f,
-                            modifier = Modifier.fillMaxSize()
-                        )
+                        val igIconPaths = remember {
+                            OnboardingSvgPaths.instagramIconPaths.map { d ->
+                                PathParser().parsePathString(d).toPath().apply {
+                                    fillType = PathFillType.EvenOdd
+                                }
+                            }
+                        }
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.ig_shape_move),
+                                contentDescription = null,
+                                contentScale = ContentScale.Fit,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .graphicsLayer { rotationZ = verySunnyRotation }
+                            )
+                            Canvas(modifier = Modifier.fillMaxSize(0.46f)) {
+                                val scale = min(
+                                    size.width / OnboardingSvgPaths.instagramIconWidth,
+                                    size.height / OnboardingSvgPaths.instagramIconHeight
+                                )
+                                val dx = (size.width - OnboardingSvgPaths.instagramIconWidth * scale) / 2f
+                                val dy = (size.height - OnboardingSvgPaths.instagramIconHeight * scale) / 2f
+                                withTransform({
+                                    translate(dx, dy)
+                                    scale(scaleX = scale, scaleY = scale, pivot = Offset.Zero)
+                                }) {
+                                    igIconPaths.forEach { drawPath(path = it, color = Color.White) }
+                                }
+                            }
+                        }
                     }
                     else -> {
                         ExpressiveGroupedBadge(
@@ -561,6 +589,7 @@ fun OnboardingFlow(
                         iconSrcWidth = OnboardingSvgPaths.instagramIconWidth,
                         iconSrcHeight = OnboardingSvgPaths.instagramIconHeight,
                         iconScaleFraction = 0.44f,
+                        useEvenOddFill = true,
                         modifier = Modifier
                             .fillMaxSize()
                             .then(clickMod)
@@ -721,7 +750,8 @@ fun OnboardingFlow(
                             Text(
                                 text = activeLang.code,
                                 style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = FontWeight.SemiBold,
+                                    fontFamily = GoogleSansFlexOnboarding535,
+                                    fontWeight = FontWeight(535),
                                     fontSize = 13.sp
                                 ),
                                 color = Color.Black
@@ -856,7 +886,8 @@ private fun OnboardingPrimaryButton(
             Text(
                 text = text,
                 style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.SemiBold,
+                    fontFamily = GoogleSansFlexOnboarding535,
+                    fontWeight = FontWeight(535),
                     fontSize = 21.sp
                 )
             )
@@ -964,7 +995,8 @@ private fun OnboardingScreen2Content(
                 Text(
                     text = greeting,
                     style = MaterialTheme.typography.displayLarge.copy(
-                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = GoogleSansFlexOnboarding535,
+                        fontWeight = FontWeight(535),
                         fontSize = greetingFontSize,
                         letterSpacing = (-1.0).sp
                     ),
@@ -986,7 +1018,8 @@ private fun OnboardingScreen2Content(
             Text(
                 text = nativelySupportsText,
                 style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Medium,
+                    fontFamily = GoogleSansFlexOnboarding535,
+                    fontWeight = FontWeight(535),
                     fontSize = 19.sp
                 ),
                 color = Color.White,
@@ -996,7 +1029,8 @@ private fun OnboardingScreen2Content(
             Text(
                 text = platformsText,
                 style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.Bold,
+                    fontFamily = GoogleSansFlexOnboarding875,
+                    fontWeight = FontWeight(875),
                     fontSize = 27.sp
                 ),
                 color = Color.White,
@@ -1014,7 +1048,11 @@ private fun OnboardingScreen2Content(
         ) {
             Text(
                 text = copyrightText,
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontFamily = GoogleSansFlexMetaMedium,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 11.sp
+                ),
                 color = Color.White.copy(alpha = 0.88f),
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(bottom = 14.dp)
@@ -1075,7 +1113,8 @@ private fun OnboardingScreen3Content(
             Text(
                 text = whatsappLabel,
                 style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.Bold,
+                    fontFamily = GoogleSansFlexOnboarding875,
+                    fontWeight = FontWeight(875),
                     fontSize = 26.sp
                 ),
                 color = Color.White,
@@ -1087,7 +1126,8 @@ private fun OnboardingScreen3Content(
             Text(
                 text = instagramLabel,
                 style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.Bold,
+                    fontFamily = GoogleSansFlexOnboarding875,
+                    fontWeight = FontWeight(875),
                     fontSize = 26.sp
                 ),
                 color = Color.White,
@@ -1101,7 +1141,11 @@ private fun OnboardingScreen3Content(
         // Middle Down Section: Meta copyright notice
         Text(
             text = copyrightText,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontFamily = GoogleSansFlexMetaMedium,
+                fontWeight = FontWeight.Medium,
+                fontSize = 11.sp
+            ),
             color = Color.White.copy(alpha = 0.88f),
             textAlign = TextAlign.Center,
             modifier = Modifier
@@ -1169,7 +1213,8 @@ private fun OnboardingScreen4Content(
             Text(
                 text = title,
                 style = MaterialTheme.typography.displayMedium.copy(
-                    fontWeight = FontWeight.SemiBold,
+                    fontFamily = GoogleSansFlexOnboarding535,
+                    fontWeight = FontWeight(535),
                     fontSize = 48.sp,
                     letterSpacing = (-1.0).sp
                 ),
@@ -1226,8 +1271,9 @@ private fun OnboardingScreen4Content(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center
                             ) {
-                                MorphingExpressiveLoadingIndicator(
-                                    color = accentColor,
+                                ContainedExpressiveLoadingIndicator(
+                                    indicatorColor = accentColor,
+                                    containerColor = Color(0xFF1E295B),
                                     modifier = Modifier.size(86.dp)
                                 )
                                 Spacer(Modifier.height(10.dp))
@@ -1330,7 +1376,8 @@ private fun OnboardingScreen5Content(
             Text(
                 text = everythingIsSetText,
                 style = MaterialTheme.typography.displayMedium.copy(
-                    fontWeight = FontWeight.SemiBold,
+                    fontFamily = GoogleSansFlexOnboarding535,
+                    fontWeight = FontWeight(535),
                     fontSize = 48.sp,
                     lineHeight = 54.sp
                 ),

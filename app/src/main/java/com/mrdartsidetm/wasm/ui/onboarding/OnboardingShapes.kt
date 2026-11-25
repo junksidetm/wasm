@@ -229,7 +229,11 @@ fun FanToFlowerMorphBadge(
     }
     val morph = remember(fanPoly, flowerPoly) { Morph(fanPoly, flowerPoly) }
     val igIconPaths = remember {
-        OnboardingSvgPaths.instagramIconPaths.map { PathParser().parsePathString(it).toPath() }
+        OnboardingSvgPaths.instagramIconPaths.map { d ->
+            PathParser().parsePathString(d).toPath().apply {
+                fillType = PathFillType.EvenOdd
+            }
+        }
     }
     val androidPath = remember { android.graphics.Path() }
     val matrix = remember { Matrix() }
@@ -289,14 +293,15 @@ fun FanToFlowerMorphBadge(
 }
 
 /**
- * Material 3 Expressive LoadingIndicator built with androidx.graphics:graphics-shapes.
- * Smoothly morphs continuously through the M3 Expressive polygon sequence while rotating.
+ * Material 3 Expressive ContainedLoadingIndicator built with androidx.graphics:graphics-shapes.
+ * Renders a filled circular container housing a smoothly morphing & rotating RoundedPolygon sequence.
  */
 @Composable
-fun MorphingExpressiveLoadingIndicator(
+fun ContainedExpressiveLoadingIndicator(
     modifier: Modifier = Modifier,
-    color: Color = Color.White,
-    containerColor: Color = Color.Transparent
+    indicatorColor: Color = Color.White,
+    containerColor: Color = Color(0xFF1F2B5E),
+    paddingFraction: Float = 0.20f
 ) {
     val polygons = remember {
         listOf(
@@ -344,7 +349,7 @@ fun MorphingExpressiveLoadingIndicator(
         }
     }
 
-    val infiniteTransition = rememberInfiniteTransition(label = "M3ExpressiveLoader")
+    val infiniteTransition = rememberInfiniteTransition(label = "M3ExpressiveContainedLoader")
     val phase by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = polygons.size.toFloat(),
@@ -368,25 +373,28 @@ fun MorphingExpressiveLoadingIndicator(
     val matrix = remember { Matrix() }
 
     Canvas(modifier = modifier) {
-        if (containerColor != Color.Transparent) {
-            drawCircle(color = containerColor)
-        }
+        val containerRadius = min(size.width, size.height) * 0.5f
+        drawCircle(
+            color = containerColor,
+            radius = containerRadius,
+            center = Offset(size.width / 2f, size.height / 2f)
+        )
+
         val idx = phase.toInt().coerceIn(0, morphs.lastIndex)
         val localProgress = (phase - idx).coerceIn(0f, 1f)
-        // Smooth ease inside each morph step
         val easedProgress = FastOutSlowInEasing.transform(localProgress)
 
         androidPath.reset()
         morphs[idx].toPath(easedProgress, androidPath)
 
-        val radius = min(size.width, size.height) * 0.42f
+        val shapeRadius = containerRadius * (1f - paddingFraction * 1.45f)
         matrix.reset()
         matrix.setRotate(rotation)
-        matrix.postScale(radius, radius)
+        matrix.postScale(shapeRadius, shapeRadius)
         matrix.postTranslate(size.width / 2f, size.height / 2f)
         androidPath.transform(matrix)
 
-        drawPath(path = androidPath.asComposePath(), color = color)
+        drawPath(path = androidPath.asComposePath(), color = indicatorColor)
     }
 }
 

@@ -1,0 +1,4 @@
+- Applied Google Sans Flex variable font across the entire UI with exact Figma axis presets (wght=535/GRAD=36/ROND=100/wdth=119/opsz=24 and wght=875/GRAD=36/ROND=100/wdth=105/opsz=24).
+- Upgraded all ZIP/TXT/HTML parsing states (Onboarding Screen 4, WhatsApp, and Instagram) to use the Material 3 Expressive ContainedLoadingIndicator.
+- Replaced the Instagram icon everywhere with the flattened EvenOdd vector and updated Screen 4 Instagram's rotating badge to the exact PNG/SVG asset.
+- Stopped Outer-Yellow rotation on Onboarding Screen 1 and fixed Screen 4 auto-navigation to Screen 5 after ZIP/TXT import completion.

@@ -63,6 +63,7 @@ import com.mrdartsidetm.wasm.ui.ImportUiState
 import com.mrdartsidetm.wasm.ui.decodeSampledBitmap
 import com.mrdartsidetm.wasm.ui.extractDate
 import com.mrdartsidetm.wasm.ui.formatFileSize
+import com.mrdartsidetm.wasm.ui.onboarding.ContainedExpressiveLoadingIndicator
 import com.mrdartsidetm.wasm.util.AudioPlayerManager
 import com.mrdartsidetm.wasm.util.GalleryDownloader
 import kotlinx.coroutines.Dispatchers
@@ -233,16 +234,22 @@ fun InstagramScreen(
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(
+                Row(
                     modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
+                    ContainedExpressiveLoadingIndicator(
+                        indicatorColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        modifier = Modifier.size(44.dp)
+                    )
                     Text(
                         text = stepText,
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1f)
                     )
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 }
             }
         }
