@@ -46,6 +46,53 @@ val OnboardingGhostRed = Color(0xFFFF3636)
 val OnboardingCloverOrange = Color(0xFFE5931F)
 val OnboardingOuterYellow = Color(0xFFE5EB2B)
 
+/**
+ * Exact transformed linearGradient stop endpoints (normalized to 412x917 Figma Android Compact frame)
+ * matching each onboarding SVG's <g id="Background"> transform & rotation.
+ */
+object OnboardingBackgroundPresets {
+    val Screen1And5Start = Offset(-0.2058f, 0.1296f)
+    val Screen1And5End = Offset(1.1144f, 0.7969f)
+
+    // Screens 2, 4 (WhatsApp & Instagram), and Language Changer (rotated 151.032 deg in Figma)
+    val Screen2And4AndLangStart = Offset(1.5217f, 0.7058f)
+    val Screen2And4AndLangEnd = Offset(-0.8129f, 0.3364f)
+
+    // Screen 3 (rotated 118.136 deg in Figma)
+    val Screen3Start = Offset(1.5687f, 0.3657f)
+    val Screen3End = Offset(-0.8381f, 0.6253f)
+}
+
+@Composable
+fun OnboardingSvgBackground(
+    startNormalized: Offset,
+    endNormalized: Offset,
+    skyTintAlpha: Float = 0f,
+    modifier: Modifier = Modifier
+) {
+    Canvas(modifier = modifier.fillMaxSize()) {
+        val w = size.width
+        val h = size.height
+        drawRect(
+            brush = Brush.linearGradient(
+                colors = listOf(OnboardingBgTop, OnboardingBgBottom),
+                start = Offset(w * startNormalized.x, h * startNormalized.y),
+                end = Offset(w * endNormalized.x, h * endNormalized.y),
+                tileMode = TileMode.Clamp
+            )
+        )
+        if (skyTintAlpha > 0.01f) {
+            drawRect(
+                brush = Brush.verticalGradient(
+                    0.453f to Color.Transparent,
+                    1.0f to OnboardingSkyTintBottom
+                ),
+                alpha = skyTintAlpha
+            )
+        }
+    }
+}
+
 val InstagramBadgeBrush = Brush.radialGradient(
     colors = listOf(
         Color(0xFFE0E8B7),

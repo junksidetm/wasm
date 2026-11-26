@@ -1,0 +1,1 @@
+- Matched every onboarding screen and Language Changer background gradient exactly to the Figma SVG Background layers, including per-screen rotated gradient vectors (151.032 deg on Screens 2/4/Language Changer, 118.136 deg on Screen 3, and Screen 1/5 diagonal + vertical sky tint) with smooth animated transitions between screens.

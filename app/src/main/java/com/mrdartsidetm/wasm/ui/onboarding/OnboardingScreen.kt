@@ -315,39 +315,44 @@ fun OnboardingFlow(
         }
     ) { _ ->
         BoxWithConstraints(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(OnboardingBgTop, OnboardingBgBottom),
-                        start = Offset.Zero,
-                        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
-                    )
-                )
+            modifier = Modifier.fillMaxSize()
         ) {
             val screenW = maxWidth
             val screenH = maxHeight
             val minDim = minOf(screenW, screenH)
 
-            // Bottom sky gradient overlay present on Screen 1 and Screen 5
+            // Exact per-screen Figma SVG <g id="Background"> linear gradient vector & bottom sky tint
+            val (targetBgStart, targetBgEnd) = when (currentStep) {
+                OnboardingStep.SCREEN_1, OnboardingStep.SCREEN_5 ->
+                    OnboardingBackgroundPresets.Screen1And5Start to OnboardingBackgroundPresets.Screen1And5End
+                OnboardingStep.SCREEN_3 ->
+                    OnboardingBackgroundPresets.Screen3Start to OnboardingBackgroundPresets.Screen3End
+                OnboardingStep.SCREEN_2,
+                OnboardingStep.SCREEN_4_WHATSAPP,
+                OnboardingStep.SCREEN_4_INSTAGRAM ->
+                    OnboardingBackgroundPresets.Screen2And4AndLangStart to OnboardingBackgroundPresets.Screen2And4AndLangEnd
+            }
+            val bgStart by animateOffsetAsState(
+                targetValue = targetBgStart,
+                animationSpec = tween(520, easing = FastOutSlowInEasing),
+                label = "BgGradientStart"
+            )
+            val bgEnd by animateOffsetAsState(
+                targetValue = targetBgEnd,
+                animationSpec = tween(520, easing = FastOutSlowInEasing),
+                label = "BgGradientEnd"
+            )
             val skyTintAlpha by animateFloatAsState(
                 targetValue = if (currentStep == OnboardingStep.SCREEN_1 || currentStep == OnboardingStep.SCREEN_5) 1f else 0f,
                 animationSpec = tween(450),
                 label = "SkyTintAlpha"
             )
-            if (skyTintAlpha > 0.01f) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .alpha(skyTintAlpha)
-                        .background(
-                            Brush.verticalGradient(
-                                0.45f to Color.Transparent,
-                                1.0f to OnboardingSkyTintBottom
-                            )
-                        )
-                )
-            }
+
+            OnboardingSvgBackground(
+                startNormalized = bgStart,
+                endNormalized = bgEnd,
+                skyTintAlpha = skyTintAlpha
+            )
 
             // Screen 1 Giant Foreground Overlay (behind Screen 1 bottom CTA button so CTA remains crisp & clickable)
             val s1OverlayAlpha by animateFloatAsState(

@@ -1121,3 +1121,15 @@
 - **Screen 1 & Screen 4 Behavior Fixes**:
   - Stopped `Outer-Yellow` rotation on Onboarding Screen 1 while preserving Screen 5 logo rotation.
   - Fixed `LaunchedEffect` cancellation bug on Screen 4 by navigating to `OnboardingStep.SCREEN_5` before clearing `awaitingImportPlatform`, ensuring automatic progression to Screen 5 after ZIP/TXT import and Snackbar confirmation.
+
+---
+
+## [0.8.2] - 2026-11-26 09:28:00 IST
+### Exact Figma SVG Rotated Background Gradients Across All Onboarding Screens & Language Changer
+- **Exact Per-Screen SVG Background Gradients (`OnboardingShapes.kt`, `OnboardingScreen.kt`, `LanguageChangerScreen.kt`)**:
+  - Computed exact 2D affine-transformed linear gradient stop coordinates (`#758AEF` at `0.087` -> `#062362` at `0.806`, `TileMode.Clamp`) from each Figma SVG's `<g id="Background">` `<rect transform="...">`:
+    - **Screen 1 & Screen 5**: `translate(-258, -11)` diagonal (`(-0.2058, 0.1296)` -> `(1.1144, 0.7969)`) plus `Rectangle 17` vertical sky tint (`0.453` transparent -> `1.0` `#1365CF`).
+    - **Screen 2, Screen 4 (WhatsApp & Instagram), and Language Changer**: `translate(894.013, 684.22) rotate(151.032)` (`(1.5217, 0.7058)` -> `(-0.8129, 0.3364)`).
+    - **Screen 3**: `translate(890.653, 221.416) rotate(118.136)` (`(1.5687, 0.3657)` -> `(-0.8381, 0.6253)`).
+  - Added smooth `animateOffsetAsState` transitions in `OnboardingSvgBackground` so the background gradient rotates smoothly across onboarding steps.
+- **Release `v0.8.2`**: Bumped `versionCode = 12`, `versionName = "0.8.2"` across `app/build.gradle.kts`, `AboutScreen.kt`, `SettingsScreen.kt`, `README.md`, `docs/index.html`, and `fastlane/metadata/android/en-US/changelogs/12.txt`.

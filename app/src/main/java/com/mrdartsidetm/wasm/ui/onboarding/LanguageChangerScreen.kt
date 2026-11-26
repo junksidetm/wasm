@@ -61,16 +61,12 @@ fun LanguageChangerScreen(
     )
 
     BoxWithConstraints(
-        modifier = modifier
-            .fillMaxSize()
-            .background(
-                Brush.linearGradient(
-                    colors = listOf(OnboardingBgTop, OnboardingBgBottom),
-                    start = Offset(0f, 0f),
-                    end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
-                )
-            )
+        modifier = modifier.fillMaxSize()
     ) {
+        OnboardingSvgBackground(
+            startNormalized = OnboardingBackgroundPresets.Screen2And4AndLangStart,
+            endNormalized = OnboardingBackgroundPresets.Screen2And4AndLangEnd
+        )
         val isCompactHeight = maxHeight < 680.dp
         val iconSize = if (isCompactHeight) 156.dp else 204.dp
 
