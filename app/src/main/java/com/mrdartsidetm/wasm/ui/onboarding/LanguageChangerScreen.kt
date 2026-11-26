@@ -33,6 +33,8 @@ import androidx.compose.ui.unit.sp
 import com.mrdartsidetm.wasm.ui.localization.LocalWasmStrings
 import com.mrdartsidetm.wasm.ui.localization.SupportedLanguage
 import com.mrdartsidetm.wasm.ui.localization.SupportedLanguages
+import com.mrdartsidetm.wasm.ui.surfaceContainerHigh
+import com.mrdartsidetm.wasm.ui.surfaceContainerLow
 import com.mrdartsidetm.wasm.ui.theme.GoogleSansFlexOnboarding535
 import kotlin.math.min
 

@@ -390,7 +390,7 @@ fun SettingsScreen(
             SettingsCategoryItem(
                 key = SettingsEntryKey.LANGUAGE,
                 title = strings.chooseLanguage.replace("\n", " "),
-                subtitle = "${activeLanguage.flagEmoji} ${activeLanguage.nativeName} (${activeLanguage.englishName})",
+                subtitle = "${activeLanguage.flagEmoji} ${activeLanguage.nativeName} (${activeLanguage.code})",
                 icon = Icons.Default.Language
             ),
             SettingsCategoryItem(

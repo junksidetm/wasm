@@ -38,8 +38,10 @@ import com.mrdartsidetm.wasm.data.UserPreferencesRepository
 import com.mrdartsidetm.wasm.ui.ChatScreen
 import com.mrdartsidetm.wasm.ui.ChatViewModel
 import com.mrdartsidetm.wasm.ui.HomeScreen
+import com.mrdartsidetm.wasm.ui.ImportScreen
 import com.mrdartsidetm.wasm.ui.PlatformChooserScreen
 import com.mrdartsidetm.wasm.ui.SettingsScreen
+import com.mrdartsidetm.wasm.ui.StorageScreen
 import com.mrdartsidetm.wasm.ui.instagram.InstagramScreen
 import com.mrdartsidetm.wasm.ui.instagram.InstagramViewModel
 import com.mrdartsidetm.wasm.ui.localization.LocalWasmStrings
