@@ -424,7 +424,9 @@ private fun WhatsAppConversationsListScreen(
                                 Text(
                                     text = "WhatsApp Chats",
                                     style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    softWrap = false
                                 )
                                 Text(
                                     text = "${allConversations.size} saved ${if (allConversations.size == 1) "chat" else "chats"}",

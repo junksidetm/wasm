@@ -240,106 +240,6 @@ fun ExpressiveGroupedBadge(
 }
 
 /**
- * Screen 3 Instagram badge that smoothly morphs between the Figma Fan shape and a 12-petal Expressive Flower
- * using androidx.graphics:graphics-shapes Morph.
- */
-@Composable
-fun FanToFlowerMorphBadge(
-    morphProgress: Float,
-    rotationDegrees: Float,
-    modifier: Modifier = Modifier
-) {
-    val fanPoly = remember {
-        // 12-vertex representation of a 4-blade asymmetrical rounded fan so Morph interpolates smoothly into 12-petal flower
-        RoundedPolygon.star(
-            numVerticesPerRadius = 12,
-            radius = 1f,
-            innerRadius = 0.86f,
-            rounding = CornerRounding(0.32f, smoothing = 0.6f)
-        ).let {
-            // Build an expressive 4-lobed fan/cookie silhouette with 12-petal compatibility
-            RoundedPolygon.star(
-                numVerticesPerRadius = 4,
-                radius = 1f,
-                innerRadius = 0.64f,
-                rounding = CornerRounding(0.36f, smoothing = 0.8f)
-            )
-        }
-    }
-    val flowerPoly = remember {
-        RoundedPolygon.star(
-            numVerticesPerRadius = 12,
-            radius = 1f,
-            innerRadius = 0.78f,
-            rounding = CornerRounding(0.24f, smoothing = 0.5f)
-        )
-    }
-    val morph = remember(fanPoly, flowerPoly) { Morph(fanPoly, flowerPoly) }
-    val igIconPaths = remember {
-        OnboardingSvgPaths.instagramIconPaths.map { d ->
-            PathParser().parsePathString(d).toPath().apply {
-                fillType = PathFillType.EvenOdd
-            }
-        }
-    }
-    val androidPath = remember { android.graphics.Path() }
-    val matrix = remember { Matrix() }
-
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center
-    ) {
-        Canvas(
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer { rotationZ = rotationDegrees }
-        ) {
-            androidPath.reset()
-            morph.toPath(morphProgress.coerceIn(0f, 1f), androidPath)
-            val radius = min(size.width, size.height) * 0.48f
-            matrix.reset()
-            matrix.setScale(radius, radius)
-            matrix.postTranslate(size.width / 2f, size.height / 2f)
-            androidPath.transform(matrix)
-
-            val brush = if (morphProgress > 0.55f) {
-                Brush.radialGradient(
-                    colors = listOf(
-                        Color(0xFFFFD54F),
-                        Color(0xFFFB8A2E),
-                        Color(0xFFE2425C),
-                        Color(0xFFB13589)
-                    )
-                )
-            } else null
-
-            if (brush != null) {
-                drawPath(path = androidPath.asComposePath(), brush = brush)
-            } else {
-                drawPath(path = androidPath.asComposePath(), color = OnboardingInstagramAmber)
-            }
-        }
-
-        // Upright Instagram glyph inside the morphing badge
-        Canvas(modifier = Modifier.fillMaxSize(0.42f)) {
-            val scale = min(
-                size.width / OnboardingSvgPaths.instagramIconWidth,
-                size.height / OnboardingSvgPaths.instagramIconHeight
-            )
-            val dx = (size.width - OnboardingSvgPaths.instagramIconWidth * scale) / 2f
-            val dy = (size.height - OnboardingSvgPaths.instagramIconHeight * scale) / 2f
-            withTransform({
-                translate(dx, dy)
-                scale(scaleX = scale, scaleY = scale, pivot = Offset.Zero)
-            }) {
-                val iconColor = if (morphProgress > 0.55f) Color.White else Color(0xFF0F0F0F)
-                igIconPaths.forEach { drawPath(path = it, color = iconColor) }
-            }
-        }
-    }
-}
-
-/**
  * Material 3 Expressive ContainedLoadingIndicator built with androidx.graphics:graphics-shapes.
  * Renders a filled circular container housing a smoothly morphing & rotating RoundedPolygon sequence.
  */
@@ -499,7 +399,7 @@ fun ExpressiveArrowShowerOverlay(
     modifier: Modifier = Modifier
 ) {
     if (progress <= 0f) return
-    val arrowPath = rememberSvgPath(OnboardingSvgPaths.arrowShapePath)
+    val cookiePath = rememberSvgPath(OnboardingSvgPaths.fourSidedCookiePath)
     val items = remember {
         listOf(
             Triple(0.24f, 0.58f, 130f),
@@ -521,8 +421,8 @@ fun ExpressiveArrowShowerOverlay(
                 val cx = size.width * fx
                 val cy = size.height * (fy + 0.18f * (1f - stagger))
                 val rot = (index * 37f) + stagger * 140f
-                val sx = targetSize / OnboardingSvgPaths.arrowShapeWidth
-                val sy = targetSize / OnboardingSvgPaths.arrowShapeHeight
+                val sx = targetSize / OnboardingSvgPaths.fourSidedCookieWidth
+                val sy = targetSize / OnboardingSvgPaths.fourSidedCookieHeight
                 withTransform({
                     translate(cx, cy)
                     rotate(rot)
@@ -530,7 +430,7 @@ fun ExpressiveArrowShowerOverlay(
                     scale(sx, sy, pivot = Offset.Zero)
                 }) {
                     drawPath(
-                        path = arrowPath,
+                        path = cookiePath,
                         color = OnboardingWhatsAppArrowNeon.copy(alpha = alpha * 0.92f)
                     )
                 }

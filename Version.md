@@ -1142,3 +1142,18 @@
 - **CI Release Trigger Cleanup (`.github/workflows/main.yml`, `.forgejo/workflows/ci.yml`)**:
   - Restricted the Release creation step to `startsWith(github.ref, 'refs/tags/v')` so branch pushes to `main` no longer create a duplicate `latest-apk` ("Latest") release alongside versioned `vX.Y.Z` releases.
   - Updated direct-download links across `main.yml`, `ci.yml`, `README.md`, and `docs/index.html` to point to `/releases/latest/download/...` and `/releases/latest`, which natively resolve to the newest versioned release.
+
+---
+
+## [0.8.3] - 2026-11-26 12:06:00 IST
+### Updated Figma WhatsApp & Instagram Shapes, Complete Axis Enforcement & Non-Wrapping Brand Labels
+- **Updated Onboarding Shapes (`OnboardingSvgPaths.kt`, `OnboardingShapes.kt`, `OnboardingScreen.kt`)**:
+  - Replaced WhatsApp's onboarding arrow shape with Figma's `<g id="4 SIded Cookie">` (`fourSidedCookiePath`, `132.54x132.54`, `#91FF56`, static `0f` rotation) across Screens 1–3 and the Screen 3 click transition burst.
+  - Replaced Instagram's fan & morphing badge with Figma's `<g id="Flower - Move">` (`flowerPath`, `137.34x137.34`, `#FFC107`, rotating continuously) across Screens 1–3.
+  - Synced exact center fractions and dimensions across Screens 1–3 directly from the updated Figma SVGs.
+- **Exact Google Sans Flex Axis Compliance (`OnboardingScreen.kt`, `Type.kt`)**:
+  - Applied `GoogleSansFlexOnboarding535` (`wght=535, GRAD=36, ROND=100, wdth=119, opsz=24`) to Screen 3 `"How do you want to start?"` in addition to `"Get started"`, `"Choose Language"`, Screen 4 `"Whatsapp"` / `"Instagram"`, `"Everything is set"`, `"en"`, `"Natively Supports"`, all 11 `"Hello"` greetings, `"Next"`, and `"Let's Dive In"`.
+  - Preserved `GoogleSansFlexOnboarding875` (`wght=875, GRAD=36, ROND=100, wdth=105, opsz=24`) on `"Whatsapp & Instagram*"` and Screen 3 `"Whatsapp"` / `"Instagram"`, and `GoogleSansFlexMetaMedium` (`wght=500`) on `"Whatsapp and Instagram are copyright under Meta Services."`.
+- **Zero-Wrap Guarantee Across All Screens (`OnboardingScreen.kt`, `HomeScreen.kt`, `PlatformChooserScreen.kt`, `SettingsScreen.kt`, `ChatScreen.kt`, `InstagramScreen.kt`)**:
+  - Added `SingleLineAutoFitText` (`maxLines = 1, softWrap = false`, auto-scaling on horizontal overflow) for `"Whatsapp"`, `"Instagram"`, `"Whatsapp & Instagram*"`, all multi-language `"Hello"` greetings, and the Meta copyright notice, plus `maxLines = 1, softWrap = false` across all WhatsApp and Instagram titles, chips, and storage labels.
+- **Release `v0.8.3`**: Bumped `versionCode = 13`, `versionName = "0.8.3"` across `app/build.gradle.kts`, `AboutScreen.kt`, `SettingsScreen.kt`, `README.md`, `docs/index.html`, and `fastlane/metadata/android/en-US/changelogs/13.txt`.

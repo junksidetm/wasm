@@ -373,6 +373,8 @@ fun HomeScreen(
                                         text = "WhatsApp: ${NumberFormat.getNumberInstance().format(waTotalMessages)}",
                                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        softWrap = false,
                                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                                     )
                                 }
@@ -387,6 +389,8 @@ fun HomeScreen(
                                         text = "Instagram: ${NumberFormat.getNumberInstance().format(igTotalMessages)}",
                                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        softWrap = false,
                                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                                     )
                                 }

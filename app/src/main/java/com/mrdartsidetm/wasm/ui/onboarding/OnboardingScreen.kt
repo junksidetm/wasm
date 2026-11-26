@@ -37,9 +37,12 @@ import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -252,28 +255,11 @@ fun OnboardingFlow(
         animationSpec = infiniteRepeatable(tween(12000, easing = LinearEasing)),
         label = "FanAxis"
     )
-    val arrowRotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = -360f,
-        animationSpec = infiniteRepeatable(tween(15000, easing = LinearEasing)),
-        label = "ArrowAxis"
-    )
     val starsRotation by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(tween(28000, easing = LinearEasing)),
         label = "StarsAxis"
-    )
-
-    // Screen 3 Fan -> Flower morph progress (cycles smoothly between Fan and Flower on Screen 3)
-    val screen3MorphCycle by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2200, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "FanToFlowerMorph"
     )
 
     // Platform click transition progress (Arrow shower or Flower full-screen fill)
@@ -378,33 +364,33 @@ fun OnboardingFlow(
             // Smoothly transitions Very Sunny, Ghost-ish, Arrow, and Fan/Flower across screens
             // =========================================================================
             val verySunnyTarget = when (currentStep) {
-                OnboardingStep.SCREEN_1 -> ElementPlacement(49.4f / 412f, 106.4f / 917f, 118.4f / 412f)
-                OnboardingStep.SCREEN_2 -> ElementPlacement(59.4f / 412f, 184.4f / 917f, 118.4f / 412f)
-                OnboardingStep.SCREEN_3 -> ElementPlacement(202.4f / 412f, 186.4f / 917f, 118.4f / 412f)
-                OnboardingStep.SCREEN_4_WHATSAPP -> ElementPlacement(206.4f / 412f, 174.4f / 917f, 118.4f / 412f)
-                OnboardingStep.SCREEN_4_INSTAGRAM -> ElementPlacement(206.4f / 412f, 174.4f / 917f, 118.4f / 412f)
+                OnboardingStep.SCREEN_1 -> ElementPlacement(49.42f / 412f, 106.42f / 917f, 118.41f / 412f)
+                OnboardingStep.SCREEN_2 -> ElementPlacement(59.42f / 412f, 184.42f / 917f, 118.41f / 412f)
+                OnboardingStep.SCREEN_3 -> ElementPlacement(202.42f / 412f, 186.42f / 917f, 118.41f / 412f)
+                OnboardingStep.SCREEN_4_WHATSAPP -> ElementPlacement(206.4f / 412f, 174.4f / 917f, 118.41f / 412f)
+                OnboardingStep.SCREEN_4_INSTAGRAM -> ElementPlacement(206.4f / 412f, 174.4f / 917f, 118.41f / 412f)
                 OnboardingStep.SCREEN_5 -> ElementPlacement(52.5f / 412f, 464.5f / 917f, 89.1f / 412f)
             }
 
             val ghostishTarget = when (currentStep) {
-                OnboardingStep.SCREEN_1 -> ElementPlacement(323.4f / 412f, 757.4f / 917f, 108f / 412f)
-                OnboardingStep.SCREEN_2 -> ElementPlacement(354.4f / 412f, 511.4f / 917f, 108f / 412f)
+                OnboardingStep.SCREEN_1 -> ElementPlacement(323.42f / 412f, 757.42f / 917f, 108.04f / 412f)
+                OnboardingStep.SCREEN_2 -> ElementPlacement(354.42f / 412f, 511.42f / 917f, 108.04f / 412f)
                 OnboardingStep.SCREEN_5 -> ElementPlacement(367.0f / 412f, 102.0f / 917f, 66.3f / 412f)
                 else -> ElementPlacement(430f / 412f, 380f / 917f, 54f / 412f, visible = false)
             }
 
-            val whatsappArrowTarget = when (currentStep) {
-                OnboardingStep.SCREEN_1 -> ElementPlacement(222.0f / 412f, 602.8f / 917f, 116.4f / 412f)
-                OnboardingStep.SCREEN_2 -> ElementPlacement(157.8f / 412f, 623.2f / 917f, 61.2f / 412f)
-                OnboardingStep.SCREEN_3 -> ElementPlacement(106.2f / 412f, 515.9f / 917f, 138.5f / 412f)
-                else -> ElementPlacement(106.2f / 412f, 515.9f / 917f, 60f / 412f, visible = false)
+            val whatsappCookieTarget = when (currentStep) {
+                OnboardingStep.SCREEN_1 -> ElementPlacement(226.5f / 412f, 609.5f / 917f, 132.54f / 412f)
+                OnboardingStep.SCREEN_2 -> ElementPlacement(162.0f / 412f, 627.0f / 917f, 70.22f / 412f)
+                OnboardingStep.SCREEN_3 -> ElementPlacement(104.5f / 412f, 522.5f / 917f, 132.54f / 412f)
+                else -> ElementPlacement(104.5f / 412f, 522.5f / 917f, 60f / 412f, visible = false)
             }
 
-            val instagramFanTarget = when (currentStep) {
-                OnboardingStep.SCREEN_1 -> ElementPlacement(361.1f / 412f, 452.5f / 917f, 139.9f / 412f)
-                OnboardingStep.SCREEN_2 -> ElementPlacement(245.5f / 412f, 623.9f / 917f, 62.2f / 412f)
-                OnboardingStep.SCREEN_3 -> ElementPlacement(305.5f / 412f, 515.5f / 917f, 137.3f / 412f)
-                else -> ElementPlacement(305.5f / 412f, 515.5f / 917f, 60f / 412f, visible = false)
+            val instagramFlowerTarget = when (currentStep) {
+                OnboardingStep.SCREEN_1 -> ElementPlacement(358.54f / 412f, 448.54f / 917f, 137.34f / 412f)
+                OnboardingStep.SCREEN_2 -> ElementPlacement(248.69f / 412f, 626.16f / 917f, 68.74f / 412f)
+                OnboardingStep.SCREEN_3 -> ElementPlacement(305.54f / 412f, 515.54f / 917f, 137.34f / 412f)
+                else -> ElementPlacement(305.54f / 412f, 515.54f / 917f, 60f / 412f, visible = false)
             }
 
             // Shared Very Sunny / Flower badge (becomes WhatsApp neon or Instagram Flower on Screen 4!)
@@ -521,25 +507,25 @@ fun OnboardingFlow(
                 )
             }
 
-            // Shared WhatsApp Arrow badge (clickable on Screen 3!)
+            // Shared WhatsApp 4-Sided Cookie badge (clickable on Screen 3!)
             SharedPositionedSlot(
-                target = whatsappArrowTarget,
+                target = whatsappCookieTarget,
                 screenW = screenW,
                 screenH = screenH,
                 minDim = minDim,
-                label = "WhatsappArrowShared"
+                label = "WhatsappCookieShared"
             ) {
                 ExpressiveGroupedBadge(
-                    shapePathData = OnboardingSvgPaths.arrowShapePath,
-                    shapeSrcWidth = OnboardingSvgPaths.arrowShapeWidth,
-                    shapeSrcHeight = OnboardingSvgPaths.arrowShapeHeight,
+                    shapePathData = OnboardingSvgPaths.fourSidedCookiePath,
+                    shapeSrcWidth = OnboardingSvgPaths.fourSidedCookieWidth,
+                    shapeSrcHeight = OnboardingSvgPaths.fourSidedCookieHeight,
                     shapeColor = OnboardingWhatsAppArrowNeon,
-                    shapeRotation = arrowRotation,
+                    shapeRotation = 0f,
                     iconPaths = listOf(OnboardingSvgPaths.whatsappIconPath),
                     iconColors = listOf(Color.Black),
                     iconSrcWidth = OnboardingSvgPaths.whatsappIconWidth,
                     iconSrcHeight = OnboardingSvgPaths.whatsappIconHeight,
-                    iconScaleFraction = 0.45f,
+                    iconScaleFraction = 0.48f,
                     modifier = Modifier
                         .fillMaxSize()
                         .then(
@@ -556,13 +542,13 @@ fun OnboardingFlow(
                 )
             }
 
-            // Shared Instagram Fan badge -> morphs into Flower on Screen 3 (clickable on Screen 3!)
+            // Shared Instagram Flower badge (clickable on Screen 3!)
             SharedPositionedSlot(
-                target = instagramFanTarget,
+                target = instagramFlowerTarget,
                 screenW = screenW,
                 screenH = screenH,
                 minDim = minDim,
-                label = "InstagramFanShared"
+                label = "InstagramFlowerShared"
             ) {
                 val clickMod = if (currentStep == OnboardingStep.SCREEN_3) {
                     Modifier.clickable(
@@ -574,32 +560,22 @@ fun OnboardingFlow(
                     Modifier
                 }
 
-                if (currentStep == OnboardingStep.SCREEN_3) {
-                    FanToFlowerMorphBadge(
-                        morphProgress = screen3MorphCycle,
-                        rotationDegrees = fanRotation,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .then(clickMod)
-                    )
-                } else {
-                    ExpressiveGroupedBadge(
-                        shapePathData = OnboardingSvgPaths.fanPath,
-                        shapeSrcWidth = OnboardingSvgPaths.fanWidth,
-                        shapeSrcHeight = OnboardingSvgPaths.fanHeight,
-                        shapeColor = OnboardingInstagramAmber,
-                        shapeRotation = fanRotation,
-                        iconPaths = OnboardingSvgPaths.instagramIconPaths,
-                        iconColors = listOf(Color(0xFF0F0F0F), Color(0xFF0F0F0F), Color(0xFF0F0F0F)),
-                        iconSrcWidth = OnboardingSvgPaths.instagramIconWidth,
-                        iconSrcHeight = OnboardingSvgPaths.instagramIconHeight,
-                        iconScaleFraction = 0.44f,
-                        useEvenOddFill = true,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .then(clickMod)
-                    )
-                }
+                ExpressiveGroupedBadge(
+                    shapePathData = OnboardingSvgPaths.flowerPath,
+                    shapeSrcWidth = OnboardingSvgPaths.flowerWidth,
+                    shapeSrcHeight = OnboardingSvgPaths.flowerHeight,
+                    shapeColor = OnboardingInstagramAmber,
+                    shapeRotation = fanRotation,
+                    iconPaths = OnboardingSvgPaths.instagramIconPaths,
+                    iconColors = listOf(Color(0xFF0F0F0F), Color(0xFF0F0F0F), Color(0xFF0F0F0F)),
+                    iconSrcWidth = OnboardingSvgPaths.instagramIconWidth,
+                    iconSrcHeight = OnboardingSvgPaths.instagramIconHeight,
+                    iconScaleFraction = 0.42f,
+                    useEvenOddFill = true,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .then(clickMod)
+                )
             }
 
             // =========================================================================
@@ -838,6 +814,37 @@ private fun BoxWithConstraintsScope.SharedPositionedSlot(
 }
 
 @Composable
+private fun SingleLineAutoFitText(
+    text: String,
+    style: TextStyle,
+    color: Color,
+    initialFontSize: TextUnit,
+    minFontSize: TextUnit = 12.sp,
+    textAlign: TextAlign = TextAlign.Center,
+    modifier: Modifier = Modifier
+) {
+    var fittedFontSize by remember(text, initialFontSize) { mutableStateOf(initialFontSize) }
+    Text(
+        text = text,
+        style = style.copy(fontSize = fittedFontSize),
+        color = color,
+        textAlign = textAlign,
+        maxLines = 1,
+        softWrap = false,
+        overflow = TextOverflow.Visible,
+        onTextLayout = { result ->
+            if (result.didOverflowWidth && fittedFontSize > minFontSize) {
+                val nextSize = (fittedFontSize.value * 0.92f).coerceAtLeast(minFontSize.value)
+                if (nextSize < fittedFontSize.value) {
+                    fittedFontSize = nextSize.sp
+                }
+            }
+        },
+        modifier = modifier
+    )
+}
+
+@Composable
 private fun OnboardingPrimaryButton(
     text: String,
     leadingImportIcon: Boolean = false,
@@ -974,7 +981,6 @@ private fun OnboardingScreen2Content(
             }
         }
         val activeGreeting = helloGreetings[greetingIndex]
-        val greetingFontSize = if (activeGreeting.length > 9) 46.sp else 60.sp
 
         Box(
             modifier = Modifier
@@ -997,17 +1003,16 @@ private fun OnboardingScreen2Content(
                 },
                 label = "AppleStyleHelloTransition"
             ) { greeting ->
-                Text(
+                SingleLineAutoFitText(
                     text = greeting,
                     style = MaterialTheme.typography.displayLarge.copy(
                         fontFamily = GoogleSansFlexOnboarding535,
                         fontWeight = FontWeight(535),
-                        fontSize = greetingFontSize,
                         letterSpacing = (-1.0).sp
                     ),
                     color = Color.White,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1
+                    initialFontSize = if (greeting.length > 9) 46.sp else 60.sp,
+                    minFontSize = 28.sp
                 )
             }
         }
@@ -1017,7 +1022,7 @@ private fun OnboardingScreen2Content(
             modifier = Modifier
                 .fillMaxWidth()
                 .offset(y = h * 0.72f)
-                .padding(horizontal = 20.dp),
+                .padding(horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
@@ -1031,15 +1036,15 @@ private fun OnboardingScreen2Content(
                 textAlign = TextAlign.Center
             )
             Spacer(Modifier.height(4.dp))
-            Text(
+            SingleLineAutoFitText(
                 text = platformsText,
                 style = MaterialTheme.typography.headlineSmall.copy(
                     fontFamily = GoogleSansFlexOnboarding875,
-                    fontWeight = FontWeight(875),
-                    fontSize = 27.sp
+                    fontWeight = FontWeight(875)
                 ),
                 color = Color.White,
-                textAlign = TextAlign.Center
+                initialFontSize = 27.sp,
+                minFontSize = 14.sp
             )
         }
 
@@ -1048,18 +1053,18 @@ private fun OnboardingScreen2Content(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 20.dp),
+                .padding(horizontal = 16.dp, vertical = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
+            SingleLineAutoFitText(
                 text = copyrightText,
                 style = MaterialTheme.typography.labelSmall.copy(
                     fontFamily = GoogleSansFlexMetaMedium,
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 11.sp
+                    fontWeight = FontWeight.Medium
                 ),
                 color = Color.White.copy(alpha = 0.88f),
-                textAlign = TextAlign.Center,
+                initialFontSize = 11.sp,
+                minFontSize = 8.sp,
                 modifier = Modifier.padding(bottom = 14.dp)
             )
             OnboardingPrimaryButton(
@@ -1098,7 +1103,8 @@ private fun OnboardingScreen3Content(
             Text(
                 text = headingText,
                 style = MaterialTheme.typography.headlineLarge.copy(
-                    fontWeight = FontWeight.SemiBold,
+                    fontFamily = GoogleSansFlexOnboarding535,
+                    fontWeight = FontWeight(535),
                     fontSize = 33.sp,
                     lineHeight = 40.sp
                 ),
@@ -1107,55 +1113,67 @@ private fun OnboardingScreen3Content(
             )
         }
 
-        // Middle section: Interactive labels directly underneath the shared Arrow & Fan/Flower icons
+        // Middle section: Interactive labels directly underneath the shared Cookie & Flower icons
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .offset(y = h * 0.655f)
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
+                .padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = whatsappLabel,
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontFamily = GoogleSansFlexOnboarding875,
-                    fontWeight = FontWeight(875),
-                    fontSize = 26.sp
-                ),
-                color = Color.White,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(16.dp))
-                    .clickable(onClick = onSelectWhatsApp)
-                    .padding(horizontal = 14.dp, vertical = 6.dp)
-            )
-            Text(
-                text = instagramLabel,
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontFamily = GoogleSansFlexOnboarding875,
-                    fontWeight = FontWeight(875),
-                    fontSize = 26.sp
-                ),
-                color = Color.White,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(16.dp))
-                    .clickable(onClick = onSelectInstagram)
-                    .padding(horizontal = 14.dp, vertical = 6.dp)
-            )
+            Box(
+                modifier = Modifier.weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                SingleLineAutoFitText(
+                    text = whatsappLabel,
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        fontFamily = GoogleSansFlexOnboarding875,
+                        fontWeight = FontWeight(875)
+                    ),
+                    color = Color.White,
+                    initialFontSize = 26.sp,
+                    minFontSize = 14.sp,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable(onClick = onSelectWhatsApp)
+                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                )
+            }
+            Box(
+                modifier = Modifier.weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                SingleLineAutoFitText(
+                    text = instagramLabel,
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        fontFamily = GoogleSansFlexOnboarding875,
+                        fontWeight = FontWeight(875)
+                    ),
+                    color = Color.White,
+                    initialFontSize = 26.sp,
+                    minFontSize = 14.sp,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable(onClick = onSelectInstagram)
+                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                )
+            }
         }
 
         // Middle Down Section: Meta copyright notice
-        Text(
+        SingleLineAutoFitText(
             text = copyrightText,
             style = MaterialTheme.typography.labelSmall.copy(
                 fontFamily = GoogleSansFlexMetaMedium,
-                fontWeight = FontWeight.Medium,
-                fontSize = 11.sp
+                fontWeight = FontWeight.Medium
             ),
             color = Color.White.copy(alpha = 0.88f),
-            textAlign = TextAlign.Center,
+            initialFontSize = 11.sp,
+            minFontSize = 8.sp,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(horizontal = 24.dp, vertical = 40.dp)
+                .padding(horizontal = 16.dp, vertical = 40.dp)
         )
     }
 }
@@ -1215,16 +1233,16 @@ private fun OnboardingScreen4Content(
             // Space reserved for shared Very Sunny / Flower badge in Top Middle Section
             Spacer(modifier = Modifier.height(h * 0.25f))
 
-            Text(
+            SingleLineAutoFitText(
                 text = title,
                 style = MaterialTheme.typography.displayMedium.copy(
                     fontFamily = GoogleSansFlexOnboarding535,
                     fontWeight = FontWeight(535),
-                    fontSize = 48.sp,
                     letterSpacing = (-1.0).sp
                 ),
                 color = Color.White,
-                textAlign = TextAlign.Center
+                initialFontSize = 48.sp,
+                minFontSize = 26.sp
             )
 
             Spacer(modifier = Modifier.height(16.dp))

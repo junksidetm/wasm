@@ -396,7 +396,9 @@ fun SettingsScreen(
                             Text(
                                 text = "WhatsApp Storage",
                                 style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                softWrap = false
                             )
                             Text(
                                 text = "${waConversations.size} individual chats • $waTotalMessages messages",
@@ -418,7 +420,11 @@ fun SettingsScreen(
                         ) {
                             Icon(Icons.Default.DeleteSweep, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(8.dp))
-                            Text("Clear All WhatsApp Data")
+                            Text(
+                                text = "Clear All WhatsApp Data",
+                                maxLines = 1,
+                                softWrap = false
+                            )
                         }
                     }
                 }
@@ -459,7 +465,9 @@ fun SettingsScreen(
                             Text(
                                 text = "Instagram Storage",
                                 style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                softWrap = false
                             )
                             Text(
                                 text = if (igAccount != null) {
@@ -485,7 +493,11 @@ fun SettingsScreen(
                         ) {
                             Icon(Icons.Default.DeleteSweep, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(8.dp))
-                            Text("Clear All Instagram Data")
+                            Text(
+                                text = "Clear All Instagram Data",
+                                maxLines = 1,
+                                softWrap = false
+                            )
                         }
                     }
                 }
@@ -531,7 +543,7 @@ fun SettingsScreen(
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "Version 0.8.2 • Abhijeet Yadav",
+                                text = "Version 0.8.3 • Abhijeet Yadav",
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary
                             )

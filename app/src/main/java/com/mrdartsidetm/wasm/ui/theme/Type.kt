@@ -55,8 +55,8 @@ fun createGoogleSansFlexFamily(
 /**
  * Exact Figma Google Sans Flex axis configurations for Wasm Onboarding & Language Changer:
  * - GoogleSansFlexOnboarding535: wght=535, GRAD=36, ROND=100, wdth=119, opsz=24
- *   ("Get started", "Choose Language", Screen 4 "Whatsapp"/"Instagram", "Everything is set",
- *    "en", "Natively Supports", "Hello", "Next", "Let's Dive In")
+ *   ("Get started", "How do you want to start?", "Choose Language", Screen 4 "Whatsapp"/"Instagram",
+ *    "Everything is set", "en", "Natively Supports", all "Hello" greetings, "Next", "Let's Dive In")
  * - GoogleSansFlexOnboarding875: wght=875, GRAD=36, ROND=100, wdth=105, opsz=24
  *   ("Whatsapp & Instagram*", Screen 3 "Whatsapp"/"Instagram")
  * - GoogleSansFlexMetaMedium: wght=500, ROND=100, opsz=24

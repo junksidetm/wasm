@@ -1,0 +1,3 @@
+- Updated WhatsApp & Instagram onboarding shapes to Figma's 4-Sided Cookie (#91FF56) and 12-petal Flower (#FFC107) across Screens 1–3 and interactive Screen 3 transitions.
+- Applied Google Sans Flex wght=535 / GRAD=36 / ROND=100 / wdth=119 / opsz=24 to "How do you want to start?" and all multi-language "Hello" greetings.
+- Enforced single-line non-wrapping auto-fit typography wherever WhatsApp or Instagram is displayed across the app.
