@@ -243,20 +243,12 @@ jobs:
           retention-days: 30
 
       - name: Publish Direct-Download Standalone APK to GitHub Releases (Pure APK, No Zip)
-        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/v')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
-            TAG="${{ github.ref_name }}"
-            TITLE="${{ github.ref_name }}"
-          else
-            TAG="latest-apk"
-            TITLE="latest-apk"
-            gh release delete "$TAG" --yes --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
-            git push origin ":refs/tags/$TAG" 2>/dev/null || true
-            git tag -d "$TAG" 2>/dev/null || true
-          fi
+          TAG="${{ github.ref_name }}"
+          TITLE="${{ github.ref_name }}"
           echo "Publishing unzipped direct-download APK and checksum to GitHub Releases ($TAG)..."
 
           if ! gh release create "$TAG" \
@@ -298,7 +290,7 @@ jobs:
           # 🚀 Wasm Android — Universal Production Build
 
           <p align="center">
-            <a href="https://github.com/${{ github.repository }}/releases/download/latest-apk/wasm-universal-release.apk">
+            <a href="https://github.com/${{ github.repository }}/releases/latest/download/wasm-universal-release.apk">
               <img src="https://raw.githubusercontent.com/${{ github.repository }}/main/assests/images/Direct%20Link%20Frame%20Badge.svg" alt="Direct APK Download" height="100" />
             </a>
           </p>
@@ -311,10 +303,10 @@ jobs:
           ---
 
           ### 📦 Build Artifacts & Downloads
-          - 📱 **Universal Standalone APK**: [**wasm-universal-release.apk**](https://github.com/${{ github.repository }}/releases/download/latest-apk/wasm-universal-release.apk) *(Pure `.apk`, no unzipping required)*
-          - 🤖 **F-Droid Universal APK**: [**wasm-fdroid-universal.apk**](https://github.com/${{ github.repository }}/releases/download/latest-apk/wasm-fdroid-universal.apk)
-          - 🔒 **SHA-256 Checksum**: [wasm-universal-release.apk.sha256](https://github.com/${{ github.repository }}/releases/download/latest-apk/wasm-universal-release.apk.sha256)
-          - 🏷️ **GitHub Releases Portal**: [`latest-apk` Release Page](https://github.com/${{ github.repository }}/releases/tag/latest-apk)
+          - 📱 **Universal Standalone APK**: [**wasm-universal-release.apk**](https://github.com/${{ github.repository }}/releases/latest/download/wasm-universal-release.apk) *(Pure `.apk`, no unzipping required)*
+          - 🤖 **F-Droid Universal APK**: [**wasm-fdroid-universal.apk**](https://github.com/${{ github.repository }}/releases/latest/download/wasm-fdroid-universal.apk)
+          - 🔒 **SHA-256 Checksum**: [wasm-universal-release.apk.sha256](https://github.com/${{ github.repository }}/releases/latest/download/wasm-universal-release.apk.sha256)
+          - 🏷️ **GitHub Releases Portal**: [Latest Versioned Release](https://github.com/${{ github.repository }}/releases/latest)
           - 📄 **Gradle Build Log**: `gradle-build-log` *(Available in the Artifacts section below)*
           - 🔍 **Android Lint Report**: `android-lint-report` *(Available in the Artifacts section below)*
           - 🧪 **Unit Test Results**: `unit-test-results` *(Available in the Artifacts section below)*

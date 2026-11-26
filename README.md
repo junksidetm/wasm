@@ -29,13 +29,13 @@
 > If downloading via the GitHub Actions "Artifacts" table at the bottom of the workflow page, GitHub automatically bundles artifacts into `.zip` archives. Use the direct link above for the pure `.apk`.
 
 <p align="center">
-  <a href="https://github.com/junksidetm/wasm/releases/download/latest-apk/wasm-universal-release.apk">
+  <a href="https://github.com/junksidetm/wasm/releases/latest/download/wasm-universal-release.apk">
     <img src="assests/images/Direct%20Link%20Frame%20Badge.svg" alt="Direct APK Download" width="250" />
   </a>
 </p>
 
-- 🔒 **SHA-256 Checksum**: [wasm-universal-release.apk.sha256](https://github.com/junksidetm/wasm/releases/download/latest-apk/wasm-universal-release.apk.sha256)
-- 📦 **GitHub Releases Portal**: [Browse `latest-apk` Release](https://github.com/junksidetm/wasm/releases/tag/latest-apk)
+- 🔒 **SHA-256 Checksum**: [wasm-universal-release.apk.sha256](https://github.com/junksidetm/wasm/releases/latest/download/wasm-universal-release.apk.sha256)
+- 📦 **GitHub Releases Portal**: [Browse Latest Release](https://github.com/junksidetm/wasm/releases/latest)
 
 ## 🌟 Key Features
 

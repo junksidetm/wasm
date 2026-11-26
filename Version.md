@@ -1133,3 +1133,12 @@
     - **Screen 3**: `translate(890.653, 221.416) rotate(118.136)` (`(1.5687, 0.3657)` -> `(-0.8381, 0.6253)`).
   - Added smooth `animateOffsetAsState` transitions in `OnboardingSvgBackground` so the background gradient rotates smoothly across onboarding steps.
 - **Release `v0.8.2`**: Bumped `versionCode = 12`, `versionName = "0.8.2"` across `app/build.gradle.kts`, `AboutScreen.kt`, `SettingsScreen.kt`, `README.md`, `docs/index.html`, and `fastlane/metadata/android/en-US/changelogs/12.txt`.
+
+
+---
+
+## [0.8.2-ci] - 2026-11-26 09:32:00 IST
+### Single Versioned Release Pipeline (Removed Duplicate `latest-apk` Release)
+- **CI Release Trigger Cleanup (`.github/workflows/main.yml`, `.forgejo/workflows/ci.yml`)**:
+  - Restricted the Release creation step to `startsWith(github.ref, 'refs/tags/v')` so branch pushes to `main` no longer create a duplicate `latest-apk` ("Latest") release alongside versioned `vX.Y.Z` releases.
+  - Updated direct-download links across `main.yml`, `ci.yml`, `README.md`, and `docs/index.html` to point to `/releases/latest/download/...` and `/releases/latest`, which natively resolve to the newest versioned release.
