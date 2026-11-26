@@ -32,6 +32,9 @@ interface InstagramDao {
     @Query("SELECT * FROM instagram_conversations WHERE title LIKE '%' || :query || '%' ORDER BY title ASC")
     fun searchConversations(query: String): Flow<List<InstagramConversationEntity>>
 
+    @Query("UPDATE instagram_conversations SET isArchived = :archived WHERE id = :conversationId")
+    suspend fun setConversationArchived(conversationId: String, archived: Boolean)
+
     // Message operations
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMessages(messages: List<InstagramMessageEntity>)
@@ -44,6 +47,18 @@ interface InstagramDao {
 
     @Query("SELECT * FROM instagram_messages WHERE conversationId = :conversationId AND content LIKE '%' || :query || '%' ORDER BY epochTime ASC")
     fun searchMessagesInConversation(conversationId: String, query: String): Flow<List<InstagramMessageEntity>>
+
+    @Query(
+        """
+        SELECT * FROM instagram_messages
+        WHERE content LIKE '%' || :query || '%'
+           OR sender LIKE '%' || :query || '%'
+           OR timestamp LIKE '%' || :query || '%'
+        ORDER BY epochTime DESC, id DESC
+        LIMIT 60
+        """
+    )
+    fun searchAllMessages(query: String): Flow<List<InstagramMessageEntity>>
 
     @Query("SELECT COUNT(*) FROM instagram_messages WHERE conversationId = :conversationId")
     suspend fun getMessageCount(conversationId: String): Int

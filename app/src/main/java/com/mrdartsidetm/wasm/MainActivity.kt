@@ -96,6 +96,8 @@ class MainActivity : ComponentActivity() {
 
                 // Inside Messages: null = Platform Chooser, "whatsapp" = WhatsApp, "instagram" = Instagram
                 var activeMessagesPlatform by rememberSaveable { mutableStateOf<String?>(null) }
+                // Track when user opened a chat directly from Home so Back returns seamlessly to Home
+                var returnHomeOnChatClose by rememberSaveable { mutableStateOf(false) }
 
                 CompositionLocalProvider(
                     LocalWasmStrings provides strings,
@@ -183,9 +185,14 @@ class MainActivity : ComponentActivity() {
                         when (activeMessagesPlatform) {
                             "whatsapp" -> {
                                 if (waSelectedConversationId != null) {
-                                    // In individual WhatsApp chat -> close chat and return to WhatsApp chat list
+                                    // In individual WhatsApp chat -> close chat (return to Home if opened from Home)
                                     BackHandler {
                                         whatsappViewModel.closeConversation()
+                                        if (returnHomeOnChatClose) {
+                                            returnHomeOnChatClose = false
+                                            activeMessagesPlatform = null
+                                            selectedTab = 0
+                                        }
                                     }
                                 } else {
                                     // On WhatsApp chat list -> return to Platform Chooser
@@ -206,9 +213,14 @@ class MainActivity : ComponentActivity() {
                                         instagramViewModel.closeConversationDetails()
                                     }
                                 } else if (igSelectedConversationId != null) {
-                                    // In DM thread -> close thread
+                                    // In DM thread -> close thread (return to Home if opened from Home)
                                     BackHandler {
                                         instagramViewModel.closeConversation()
+                                        if (returnHomeOnChatClose) {
+                                            returnHomeOnChatClose = false
+                                            activeMessagesPlatform = null
+                                            selectedTab = 0
+                                        }
                                     }
                                 } else if (igAccount != null && igAccount!!.isDived) {
                                     // In conversation list -> return to Instagram landing page
@@ -240,7 +252,10 @@ class MainActivity : ComponentActivity() {
                         NavigationBar {
                             NavigationBarItem(
                                 selected = selectedTab == 0,
-                                onClick = { selectedTab = 0 },
+                                onClick = {
+                                    returnHomeOnChatClose = false
+                                    selectedTab = 0
+                                },
                                 icon = {
                                     Icon(
                                         imageVector = if (selectedTab == 0) Icons.Filled.Home else Icons.Outlined.Home,
@@ -252,6 +267,7 @@ class MainActivity : ComponentActivity() {
                             NavigationBarItem(
                                 selected = selectedTab == 1,
                                 onClick = {
+                                    returnHomeOnChatClose = false
                                     if (selectedTab == 1 && activeMessagesPlatform != null) {
                                         // Tapping Messages while already in a platform returns to Platform Chooser
                                         activeMessagesPlatform = null
@@ -292,19 +308,35 @@ class MainActivity : ComponentActivity() {
                                 instagramViewModel = instagramViewModel,
                                 prefs = prefs,
                                 onNavigateToMessages = {
+                                    returnHomeOnChatClose = false
                                     selectedTab = 1
                                     activeMessagesPlatform = null
                                 },
                                 onNavigateToSettings = {
+                                    returnHomeOnChatClose = false
                                     selectedTab = 2
                                 },
                                 onOpenWhatsApp = {
+                                    returnHomeOnChatClose = false
                                     selectedTab = 1
                                     activeMessagesPlatform = "whatsapp"
                                 },
                                 onOpenInstagram = {
+                                    returnHomeOnChatClose = false
                                     selectedTab = 1
                                     activeMessagesPlatform = "instagram"
+                                },
+                                onOpenWhatsAppConversation = { convId, msgId ->
+                                    whatsappViewModel.selectConversation(convId, msgId)
+                                    returnHomeOnChatClose = true
+                                    activeMessagesPlatform = "whatsapp"
+                                    selectedTab = 1
+                                },
+                                onOpenInstagramConversation = { convId, msgId ->
+                                    instagramViewModel.selectConversation(convId, msgId)
+                                    returnHomeOnChatClose = true
+                                    activeMessagesPlatform = "instagram"
+                                    selectedTab = 1
                                 },
                                 onImportWhatsApp = {
                                     whatsappPickerLauncher.launch(
@@ -347,7 +379,18 @@ class MainActivity : ComponentActivity() {
                                                 )
                                             )
                                         },
-                                        onBackToPlatformChooser = { activeMessagesPlatform = null }
+                                        onBackToPlatformChooser = {
+                                            returnHomeOnChatClose = false
+                                            activeMessagesPlatform = null
+                                        },
+                                        onCloseConversation = {
+                                            whatsappViewModel.closeConversation()
+                                            if (returnHomeOnChatClose) {
+                                                returnHomeOnChatClose = false
+                                                activeMessagesPlatform = null
+                                                selectedTab = 0
+                                            }
+                                        }
                                     )
                                     "instagram" -> InstagramScreen(
                                         viewModel = instagramViewModel,
@@ -360,7 +403,18 @@ class MainActivity : ComponentActivity() {
                                                 )
                                             )
                                         },
-                                        onBackToPlatformChooser = { activeMessagesPlatform = null }
+                                        onBackToPlatformChooser = {
+                                            returnHomeOnChatClose = false
+                                            activeMessagesPlatform = null
+                                        },
+                                        onCloseConversation = {
+                                            instagramViewModel.closeConversation()
+                                            if (returnHomeOnChatClose) {
+                                                returnHomeOnChatClose = false
+                                                activeMessagesPlatform = null
+                                                selectedTab = 0
+                                            }
+                                        }
                                     )
                                 }
                             }

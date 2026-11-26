@@ -14,5 +14,6 @@ data class WhatsAppConversationEntity(
     val lastMessage: String = "",
     val lastTimestamp: String = "",
     val messageCount: Int = 0,
-    val mediaDirName: String = "" // Relative folder name in media directory for this conversation's attachments
+    val mediaDirName: String = "", // Relative folder name in media directory for this conversation's attachments
+    val isArchived: Boolean = false
 )

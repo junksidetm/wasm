@@ -1,0 +1,3 @@
+- Rebuilt the Home tab from your categorized Material 3 Expressive wireframe ("WASM" wordmark + ⋮ overflow menu, unified search bar, Connected Button Group for Whatsapp/Instagram, Archive banner with live count, and connected tonal chat list).
+- Added offline Room DB schema migration (v4 -> v5) adding persistent per-chat archiving via long-press context menus and dedicated Archive folder view.
+- Implemented active-platform Home Search across contact names, timestamps/dates, and all stored message bodies with direct scroll-to-message jump.

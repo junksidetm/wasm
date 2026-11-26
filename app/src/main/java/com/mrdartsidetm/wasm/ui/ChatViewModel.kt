@@ -53,6 +53,17 @@ class ChatViewModel(
 
     // Currently selected conversation ID (null if viewing conversation list)
     val selectedConversationId = MutableStateFlow<String?>(null)
+    val targetMessageId = MutableStateFlow<Int?>(null)
+
+    // Home screen search query & message matches
+    val homeSearchQuery = MutableStateFlow("")
+    val homeMatchingMessages: StateFlow<List<MessageEntity>> = homeSearchQuery
+        .map { it.trim() }
+        .distinctUntilChanged()
+        .flatMapLatest { q ->
+            if (q.isBlank()) flowOf(emptyList()) else chatDao.searchAllMessages(q)
+        }
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     // Active conversation entity
     val activeConversation: StateFlow<WhatsAppConversationEntity?> = selectedConversationId
@@ -117,14 +128,30 @@ class ChatViewModel(
         searchQuery.value = query
     }
 
-    fun selectConversation(id: String) {
+    fun setHomeSearchQuery(query: String) {
+        homeSearchQuery.value = query
+    }
+
+    fun selectConversation(id: String, messageId: Int? = null) {
+        targetMessageId.value = messageId
         selectedConversationId.value = id
         searchQuery.value = ""
     }
 
+    fun consumeTargetMessage() {
+        targetMessageId.value = null
+    }
+
     fun closeConversation() {
         selectedConversationId.value = null
+        targetMessageId.value = null
         searchQuery.value = ""
+    }
+
+    fun setConversationArchived(conversationId: String, archived: Boolean) {
+        viewModelScope.launch {
+            chatDao.setConversationArchived(conversationId, archived)
+        }
     }
 
     fun dismissImportState() {

@@ -103,7 +103,8 @@ fun getAvatarColor(name: String): Color {
 fun InstagramScreen(
     viewModel: InstagramViewModel,
     onImportClick: () -> Unit,
-    onBackToPlatformChooser: (() -> Unit)? = null
+    onBackToPlatformChooser: (() -> Unit)? = null,
+    onCloseConversation: (() -> Unit)? = null
 ) {
     val account by viewModel.account.collectAsStateWithLifecycle()
     val importState by viewModel.importUiState.collectAsStateWithLifecycle()
@@ -196,7 +197,7 @@ fun InstagramScreen(
                 }
                 3 -> InstagramDmThreadScreen(
                     viewModel = viewModel,
-                    onBack = { viewModel.closeConversation() },
+                    onBack = { (onCloseConversation ?: { viewModel.closeConversation() }).invoke() },
                     onOpenDetails = { viewModel.openConversationDetails() },
                     onImageClick = { fullScreenImageFile = it },
                     onVideoClick = { activeVideoFile = it },
@@ -870,13 +871,23 @@ fun InstagramDmThreadScreen(
     val conversation by viewModel.currentConversation.collectAsStateWithLifecycle()
     val messages by viewModel.currentMessages.collectAsStateWithLifecycle()
     val searchQuery by viewModel.conversationSearchQuery.collectAsStateWithLifecycle()
+    val targetMessageId by viewModel.targetMessageId.collectAsStateWithLifecycle()
 
     var isSearchActive by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
 
-    LaunchedEffect(messages.size) {
+    LaunchedEffect(messages.size, targetMessageId) {
         if (messages.isNotEmpty()) {
-            listState.scrollToItem(messages.size - 1)
+            val targetId = targetMessageId
+            if (targetId != null) {
+                val idx = messages.indexOfFirst { it.id == targetId }
+                if (idx >= 0) {
+                    listState.scrollToItem(idx)
+                    viewModel.consumeTargetMessage()
+                }
+            } else {
+                listState.scrollToItem(messages.size - 1)
+            }
         }
     }
 

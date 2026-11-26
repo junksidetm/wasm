@@ -108,7 +108,19 @@ data class WasmStrings(
     val cancel: String,
     val save: String,
     val back: String,
-    val madeWithLove: String
+    val madeWithLove: String,
+
+    // Wireframe Home Screen
+    val searchNamesDatesMessage: String = "Search (Names, dates, message)",
+    val archiveLabel: String = "Archive",
+    val archiveChat: String = "Archive chat",
+    val unarchiveChat: String = "Unarchive chat",
+    val openChat: String = "Open chat",
+    val archivedChatsEmpty: String = "No archived chats yet.\nLong-press any chat to archive it.",
+    val noChatsImportedYet: String = "No chats yet",
+    val noSearchMatches: String = "No matching chats or messages found.",
+    val personalizeProfile: String = "Personalize Profile",
+    val matchingMessagesLabel: String = "Messages"
 )
 
 val LocalWasmStrings = staticCompositionLocalOf { englishStrings() }

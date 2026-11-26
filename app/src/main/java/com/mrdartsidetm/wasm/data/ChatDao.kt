@@ -25,6 +25,9 @@ interface ChatDao {
     @Query("SELECT * FROM whatsapp_conversations WHERE title LIKE '%' || :query || '%' ORDER BY title ASC")
     fun searchConversations(query: String): Flow<List<WhatsAppConversationEntity>>
 
+    @Query("UPDATE whatsapp_conversations SET isArchived = :archived WHERE id = :conversationId")
+    suspend fun setConversationArchived(conversationId: String, archived: Boolean)
+
     @Query("DELETE FROM whatsapp_conversations WHERE id = :conversationId")
     suspend fun deleteConversation(conversationId: String)
 
@@ -40,6 +43,18 @@ interface ChatDao {
 
     @Query("SELECT * FROM chat_messages WHERE conversationId = :conversationId AND (content LIKE '%' || :query || '%' OR sender LIKE '%' || :query || '%') ORDER BY id ASC")
     fun searchMessagesInConversation(conversationId: String, query: String): Flow<List<MessageEntity>>
+
+    @Query(
+        """
+        SELECT * FROM chat_messages
+        WHERE content LIKE '%' || :query || '%'
+           OR sender LIKE '%' || :query || '%'
+           OR timestamp LIKE '%' || :query || '%'
+        ORDER BY id DESC
+        LIMIT 60
+        """
+    )
+    fun searchAllMessages(query: String): Flow<List<MessageEntity>>
 
     @Query("DELETE FROM chat_messages WHERE conversationId = :conversationId")
     suspend fun deleteMessagesForConversation(conversationId: String)

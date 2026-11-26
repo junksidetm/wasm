@@ -1157,3 +1157,19 @@
 - **Zero-Wrap Guarantee Across All Screens (`OnboardingScreen.kt`, `HomeScreen.kt`, `PlatformChooserScreen.kt`, `SettingsScreen.kt`, `ChatScreen.kt`, `InstagramScreen.kt`)**:
   - Added `SingleLineAutoFitText` (`maxLines = 1, softWrap = false`, auto-scaling on horizontal overflow) for `"Whatsapp"`, `"Instagram"`, `"Whatsapp & Instagram*"`, all multi-language `"Hello"` greetings, and the Meta copyright notice, plus `maxLines = 1, softWrap = false` across all WhatsApp and Instagram titles, chips, and storage labels.
 - **Release `v0.8.3`**: Bumped `versionCode = 13`, `versionName = "0.8.3"` across `app/build.gradle.kts`, `AboutScreen.kt`, `SettingsScreen.kt`, `README.md`, `docs/index.html`, and `fastlane/metadata/android/en-US/changelogs/13.txt`.
+
+---
+
+## [0.9.0] - 2026-11-26 18:13:00 IST
+### Material 3 Expressive Categorized Home Screen, Offline Chat Archiving & Direct-Jump Message Search
+- **Wireframe-Faithful Home Tab (`ui/HomeScreen.kt`)**:
+  - **Top Section**: Added `WASM` dynamic-primary Google Sans Flex wordmark and `⋮` overflow menu (*Import WhatsApp*, *Import Instagram*, *Personalize Profile*, *Settings*).
+  - **Top Middle Section**: Built full-pill `Search (Names, dates, message)` bar and Material 3 Expressive **Connected Button Group** (`Whatsapp` | `Instagram`) with spring-animated inner corner radii, flattened platform icons, zero-wrap labels, and full Monet Light/Dark parity.
+  - **Archive Section**: Added full-pill **Archive** banner featuring the Figma box-download icon (`33x33` Canvas path) and animated archived chat count badge (`AnimatedContent`), toggling into a dedicated Archived Chats view with Back support.
+  - **Middle Section (`List`)**: Implemented M3 Expressive connected tonal list cards (`surfaceContainerLow`, `2.dp` spacing, adaptive outer/inner corner radii), circular initial avatars, single-line overflow-safe previews, and haptic long-press menus for **Archive / Unarchive** and **Open chat**.
+- **Room Database Migration v4 -> v5 (`ChatDatabase.kt`, `ChatDao.kt`, `InstagramDao.kt`)**:
+  - Added `isArchived: Boolean = false` on `WhatsAppConversationEntity` and `InstagramConversationEntity` with non-destructive `MIGRATION_4_5` (`ALTER TABLE ... ADD COLUMN isArchived INTEGER NOT NULL DEFAULT 0`).
+  - Added `searchAllMessages(query)` across both DAOs matching message content, sender names, and timestamps.
+- **Direct Chat & Message-Jump Integration (`ChatViewModel.kt`, `InstagramViewModel.kt`, `ChatScreen.kt`, `InstagramScreen.kt`, `MainActivity.kt`)**:
+  - Kept the 3-tab bottom `NavigationBar` (`Home` | `Messages` | `Settings`) while allowing direct conversation & search-hit opening from Home, scrolling straight to the matched message and returning smoothly to Home on Back.
+- **Release `v0.9.0`**: Bumped `versionCode = 14`, `versionName = "0.9.0"` across `app/build.gradle.kts`, `AboutScreen.kt`, `SettingsScreen.kt`, `README.md`, `docs/index.html`, and `fastlane/metadata/android/en-US/changelogs/14.txt`.

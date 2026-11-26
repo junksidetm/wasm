@@ -37,6 +37,16 @@ class InstagramViewModel(
 
     val activeFilter = MutableStateFlow(InstagramConversationFilter.ALL)
     val searchQuery = MutableStateFlow("")
+    val homeSearchQuery = MutableStateFlow("")
+    val targetMessageId = MutableStateFlow<Long?>(null)
+
+    val homeMatchingMessages: StateFlow<List<InstagramMessageEntity>> = homeSearchQuery
+        .map { it.trim() }
+        .distinctUntilChanged()
+        .flatMapLatest { q ->
+            if (q.isBlank()) flowOf(emptyList()) else instagramDao.searchAllMessages(q)
+        }
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     val filteredConversations: StateFlow<List<InstagramConversationEntity>> = combine(
         conversations,
@@ -177,20 +187,39 @@ class InstagramViewModel(
         return result
     }
 
-    fun selectConversation(id: String) {
+    fun setHomeSearchQuery(query: String) {
+        homeSearchQuery.value = query
+    }
+
+    fun selectConversation(id: String, messageId: Long? = null) {
+        targetMessageId.value = messageId
         selectedConversationId.value = id
         conversationSearchQuery.value = ""
         isViewingConversationDetails.value = false
         activeExpandedMediaList.value = null
+        viewModelScope.launch {
+            instagramDao.setDived(true)
+        }
         ensureConversationLoaded(id)
+    }
+
+    fun consumeTargetMessage() {
+        targetMessageId.value = null
     }
 
     fun closeConversation() {
         audioPlayerManager.stop()
         selectedConversationId.value = null
+        targetMessageId.value = null
         conversationSearchQuery.value = ""
         isViewingConversationDetails.value = false
         activeExpandedMediaList.value = null
+    }
+
+    fun setConversationArchived(conversationId: String, archived: Boolean) {
+        viewModelScope.launch {
+            instagramDao.setConversationArchived(conversationId, archived)
+        }
     }
 
     fun diveIn() {

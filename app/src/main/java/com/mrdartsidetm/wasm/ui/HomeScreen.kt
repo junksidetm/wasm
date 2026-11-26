@@ -1,24 +1,25 @@
 package com.mrdartsidetm.wasm.ui
 
-import android.graphics.BitmapFactory
-import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChatBubbleOutline
-import androidx.compose.material.icons.filled.Forum
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -26,32 +27,56 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asComposeRenderEffect
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.vector.PathParser
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mrdartsidetm.wasm.R
 import com.mrdartsidetm.wasm.data.UserPreferencesRepository
 import com.mrdartsidetm.wasm.ui.instagram.InstagramViewModel
 import com.mrdartsidetm.wasm.ui.localization.LocalWasmStrings
-import java.io.File
-import java.text.NumberFormat
-import java.util.Calendar
-import java.util.Locale
+import com.mrdartsidetm.wasm.ui.theme.GoogleSansFlexOnboarding535
+import com.mrdartsidetm.wasm.ui.theme.GoogleSansFlexOnboarding875
+import kotlin.math.min
+
+private const val ARCHIVE_ICON_BOX_PATH =
+    "M 27.629 0.004 C 28.272 0.049 28.848 0.431 29.14 1.013 L 32.806 8.347 C 32.809 8.354 32.812 8.361 32.815 8.368 C 32.933 8.61 33 8.88 33 9.167 V 27.5 C 33 30.537 30.537 33 27.5 33 H 25.666 C 24.654 33 23.833 32.179 23.833 31.167 C 23.833 30.155 24.654 29.334 25.666 29.334 H 27.5 C 28.512 29.334 29.333 28.512 29.333 27.5 V 11 H 3.666 V 27.5 C 3.666 28.512 4.488 29.334 5.5 29.334 H 7.333 C 8.346 29.334 9.166 30.154 9.166 31.167 C 9.166 32.179 8.345 33 7.333 33 H 5.5 C 2.463 33 0 30.537 0 27.5 V 9.167 C 0 9.135 0.003 9.103 0.005 9.071 C 0.006 9.047 0.006 9.022 0.008 8.998 C 0.021 8.856 0.05 8.719 0.094 8.589 C 0.121 8.507 0.154 8.425 0.193 8.347 L 3.86 1.013 L 3.922 0.899 C 4.25 0.345 4.849 0 5.5 0 H 27.5 L 27.629 0.004 Z M 4.8 7.333 H 28.2 L 26.366 3.666 H 6.633 L 4.8 7.333 Z"
+
+private const val ARCHIVE_ICON_ARROW_PATH =
+    "M 16.5 18.334 C 17.512 18.334 18.334 19.155 18.334 20.167 V 26.74 L 19.787 25.287 C 20.503 24.571 21.664 24.571 22.38 25.287 C 23.096 26.003 23.096 27.164 22.38 27.88 L 17.797 32.463 C 17.453 32.807 16.986 33 16.5 33 C 16.014 33 15.548 32.806 15.204 32.463 L 10.621 27.88 C 9.905 27.164 9.905 26.003 10.621 25.287 C 11.337 24.572 12.497 24.572 13.213 25.287 L 14.667 26.741 V 20.167 C 14.667 19.155 15.488 18.334 16.5 18.334 Z"
+
+private enum class HomePlatformTab {
+    WHATSAPP,
+    INSTAGRAM
+}
+
+private data class HomeChatRowUi(
+    val key: String,
+    val conversationId: String,
+    val title: String,
+    val supportingText: String,
+    val timestampText: String,
+    val isArchived: Boolean,
+    val targetMessageIdWa: Int? = null,
+    val targetMessageIdIg: Long? = null,
+    val isMessageMatch: Boolean = false
+)
 
 /**
- * Material 3 Expressive Home Screen for Wasm.
- * Provides a pristine, clean canvas layout:
- * - Status bar space consideration.
- * - Dynamic time-based heading ("Good Morning" / "Good Afternoon" / "Good Evening").
- * - Horizontal horizon profile avatar icon opening the Personalize page with a top-to-bottom transition.
- * - Frosted glass rectangle animated card with smooth 0-to-total message count animation
- *   and subtle primary/tertiary ambient background colors.
+ * Material 3 Expressive Home Screen built from the categorized wireframe:
+ * - Top Section: "WASM" wordmark + overflow ⋮ menu (or Archive sub-view header)
+ * - Top Middle Section: Full-pill Search Bar ("Search (Names, dates, message)") + Connected Button Group (Whatsapp | Instagram)
+ * - Archive Section: Rounded Archive banner with live archived count for the active platform
+ * - Middle Section: Calibrated M3 Expressive connected chat list supporting search-to-message jump & long-press archiving
  */
 @Composable
 fun HomeScreen(
@@ -62,346 +87,475 @@ fun HomeScreen(
     onNavigateToSettings: () -> Unit = {},
     onOpenWhatsApp: () -> Unit = {},
     onOpenInstagram: () -> Unit = {},
+    onOpenWhatsAppConversation: (String, Int?) -> Unit = { _, _ -> },
+    onOpenInstagramConversation: (String, Long?) -> Unit = { _, _ -> },
     onImportWhatsApp: () -> Unit = {},
     onImportInstagram: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    // Collect messages and archive stats
-    val waTotalMessages by whatsappViewModel.totalMessageCount.collectAsStateWithLifecycle(initialValue = 0)
+    val strings = LocalWasmStrings.current
+
+    var selectedPlatform by rememberSaveable { mutableStateOf(HomePlatformTab.WHATSAPP) }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var isViewingArchive by rememberSaveable { mutableStateOf(false) }
+    var isPersonalizeOpen by rememberSaveable { mutableStateOf(false) }
+    var showOverflowMenu by remember { mutableStateOf(false) }
+
+    val waConversations by whatsappViewModel.conversations.collectAsStateWithLifecycle()
     val igConversations by instagramViewModel.conversations.collectAsStateWithLifecycle()
-    val igTotalMessages: Int = remember(igConversations) { igConversations.sumOf { it.messageCount } }
-    val totalImportedMessages: Int = waTotalMessages + igTotalMessages
+    val waMatchingMessages by whatsappViewModel.homeMatchingMessages.collectAsStateWithLifecycle()
+    val igMatchingMessages by instagramViewModel.homeMatchingMessages.collectAsStateWithLifecycle()
 
-    // Personalized user profile preferences
-    val savedPhotoPath by prefs.profileImagePath.collectAsStateWithLifecycle(initialValue = null)
-    val savedPersonName by prefs.personName.collectAsStateWithLifecycle(initialValue = "")
+    LaunchedEffect(searchQuery, selectedPlatform) {
+        whatsappViewModel.setHomeSearchQuery(if (selectedPlatform == HomePlatformTab.WHATSAPP) searchQuery else "")
+        instagramViewModel.setHomeSearchQuery(if (selectedPlatform == HomePlatformTab.INSTAGRAM) searchQuery else "")
+    }
 
-    val profileBitmap = remember(savedPhotoPath) {
-        savedPhotoPath?.let { path ->
-            try {
-                val file = File(path)
-                if (file.exists() && file.length() > 0) {
-                    BitmapFactory.decodeFile(file.absolutePath)?.asImageBitmap()
-                } else null
-            } catch (e: Exception) {
-                null
+    if (isViewingArchive) {
+        BackHandler {
+            isViewingArchive = false
+        }
+    }
+
+    val waTitleMap = remember(waConversations) { waConversations.associateBy { it.id } }
+    val igTitleMap = remember(igConversations) { igConversations.associateBy { it.id } }
+
+    val archivedCount = remember(selectedPlatform, waConversations, igConversations) {
+        when (selectedPlatform) {
+            HomePlatformTab.WHATSAPP -> waConversations.count { it.isArchived }
+            HomePlatformTab.INSTAGRAM -> igConversations.count { it.isArchived }
+        }
+    }
+
+    val displayedRows: List<HomeChatRowUi> = remember(
+        selectedPlatform,
+        searchQuery,
+        isViewingArchive,
+        waConversations,
+        igConversations,
+        waMatchingMessages,
+        igMatchingMessages,
+        waTitleMap,
+        igTitleMap
+    ) {
+        val q = searchQuery.trim().lowercase()
+        when (selectedPlatform) {
+            HomePlatformTab.WHATSAPP -> {
+                if (q.isNotBlank()) {
+                    val convHits = waConversations
+                        .filter {
+                            (!isViewingArchive || it.isArchived) && (
+                                it.title.lowercase().contains(q) ||
+                                    it.lastTimestamp.lowercase().contains(q) ||
+                                    it.lastMessage.lowercase().contains(q)
+                                )
+                        }
+                        .map { conv ->
+                            HomeChatRowUi(
+                                key = "wa_conv_${conv.id}",
+                                conversationId = conv.id,
+                                title = conv.title,
+                                supportingText = conv.lastMessage.ifBlank { conv.lastTimestamp },
+                                timestampText = conv.lastTimestamp,
+                                isArchived = conv.isArchived
+                            )
+                        }
+                    val msgHits = waMatchingMessages
+                        .filter { msg ->
+                            val conv = waTitleMap[msg.conversationId]
+                            conv != null && (!isViewingArchive || conv.isArchived)
+                        }
+                        .map { msg ->
+                            val conv = waTitleMap[msg.conversationId]!!
+                            val preview = if (msg.sender.isNotBlank() && !msg.isSystemMessage) {
+                                "${msg.sender}: ${msg.content}"
+                            } else {
+                                msg.content
+                            }
+                            HomeChatRowUi(
+                                key = "wa_msg_${msg.id}",
+                                conversationId = msg.conversationId,
+                                title = conv.title,
+                                supportingText = preview,
+                                timestampText = msg.timestamp,
+                                isArchived = conv.isArchived,
+                                targetMessageIdWa = msg.id,
+                                isMessageMatch = true
+                            )
+                        }
+                    convHits + msgHits
+                } else {
+                    waConversations
+                        .filter { it.isArchived == isViewingArchive }
+                        .map { conv ->
+                            HomeChatRowUi(
+                                key = "wa_conv_${conv.id}",
+                                conversationId = conv.id,
+                                title = conv.title,
+                                supportingText = conv.lastMessage.ifBlank { "${conv.messageCount} messages" },
+                                timestampText = conv.lastTimestamp,
+                                isArchived = conv.isArchived
+                            )
+                        }
+                }
+            }
+            HomePlatformTab.INSTAGRAM -> {
+                if (q.isNotBlank()) {
+                    val convHits = igConversations
+                        .filter {
+                            (!isViewingArchive || it.isArchived) && (
+                                it.title.lowercase().contains(q) ||
+                                    it.lastTimestamp.lowercase().contains(q) ||
+                                    it.lastMessage.lowercase().contains(q)
+                                )
+                        }
+                        .map { conv ->
+                            HomeChatRowUi(
+                                key = "ig_conv_${conv.id}",
+                                conversationId = conv.id,
+                                title = conv.title,
+                                supportingText = conv.lastMessage.ifBlank { conv.lastTimestamp },
+                                timestampText = conv.lastTimestamp,
+                                isArchived = conv.isArchived
+                            )
+                        }
+                    val msgHits = igMatchingMessages
+                        .filter { msg ->
+                            val conv = igTitleMap[msg.conversationId]
+                            conv != null && (!isViewingArchive || conv.isArchived)
+                        }
+                        .map { msg ->
+                            val conv = igTitleMap[msg.conversationId]!!
+                            val body = msg.content.ifBlank { msg.sharedTitle ?: msg.mediaType ?: "" }
+                            val preview = if (msg.sender.isNotBlank()) "${msg.sender}: $body" else body
+                            HomeChatRowUi(
+                                key = "ig_msg_${msg.id}",
+                                conversationId = msg.conversationId,
+                                title = conv.title,
+                                supportingText = preview,
+                                timestampText = msg.timestamp,
+                                isArchived = conv.isArchived,
+                                targetMessageIdIg = msg.id,
+                                isMessageMatch = true
+                            )
+                        }
+                    convHits + msgHits
+                } else {
+                    igConversations
+                        .filter { it.isArchived == isViewingArchive }
+                        .map { conv ->
+                            HomeChatRowUi(
+                                key = "ig_conv_${conv.id}",
+                                conversationId = conv.id,
+                                title = conv.title,
+                                supportingText = conv.lastMessage.ifBlank { "${conv.messageCount} messages" },
+                                timestampText = conv.lastTimestamp,
+                                isArchived = conv.isArchived
+                            )
+                        }
+                }
             }
         }
     }
-
-    // Dynamic greeting based on current system time
-    val strings = LocalWasmStrings.current
-    val currentHour = remember { Calendar.getInstance().get(Calendar.HOUR_OF_DAY) }
-    val timeGreeting = remember(currentHour, strings) {
-        when (currentHour) {
-            in 4..11 -> strings.goodMorning
-            in 12..16 -> strings.goodAfternoon
-            else -> strings.goodEvening
-        }
-    }
-
-    // Controls top-to-bottom Personalize screen overlay
-    var isPersonalizeOpen by rememberSaveable { mutableStateOf(false) }
-
-    // Counter animation from 0 to totalImportedMessages
-    var targetCount by remember { mutableIntStateOf(0) }
-    LaunchedEffect(totalImportedMessages) {
-        targetCount = totalImportedMessages
-    }
-
-    val animatedCount by animateIntAsState(
-        targetValue = targetCount,
-        animationSpec = tween(
-            durationMillis = 1400,
-            easing = FastOutSlowInEasing
-        ),
-        label = "totalMessagesCounterAnimation"
-    )
 
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Main Home Screen Canvas
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = 16.dp)
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // Top Horizon Row: "Good X" heading on left, Profile avatar on right
+            // =========================================================================
+            // TOP SECTION: "WASM" Wordmark + ⋮ Overflow Menu (or Archive Sub-header)
+            // =========================================================================
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp),
+                    .padding(horizontal = 4.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
-                    Text(
-                        text = timeGreeting,
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = (-0.5).sp
-                        ),
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    if (savedPersonName.isNotBlank()) {
-                        Text(
-                            text = savedPersonName,
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Normal
-                            ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                // Profile Avatar Icon
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
-                    shadowElevation = 3.dp,
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = { isPersonalizeOpen = true }
-                        )
-                ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize()
+                if (isViewingArchive) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        if (profileBitmap != null) {
-                            Image(
-                                bitmap = profileBitmap,
-                                contentDescription = "Profile Avatar",
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(CircleShape)
-                            )
-                        } else {
+                        FilledTonalIconButton(
+                            onClick = { isViewingArchive = false },
+                            colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                contentColor = MaterialTheme.colorScheme.onSurface
+                            ),
+                            modifier = Modifier.size(40.dp)
+                        ) {
                             Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = "Open Personalize",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(26.dp)
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = strings.back,
+                                modifier = Modifier.size(20.dp)
                             )
                         }
+                        Text(
+                            text = strings.archiveLabel,
+                            style = MaterialTheme.typography.headlineMedium.copy(
+                                fontFamily = GoogleSansFlexOnboarding535,
+                                fontWeight = FontWeight(535),
+                                fontSize = 26.sp
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1
+                        )
+                    }
+                } else {
+                    Text(
+                        text = "WASM",
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            fontFamily = GoogleSansFlexOnboarding875,
+                            fontWeight = FontWeight(875),
+                            fontSize = 30.sp,
+                            letterSpacing = (-0.5).sp
+                        ),
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1
+                    )
+                }
+
+                Box {
+                    IconButton(onClick = { showOverflowMenu = true }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = strings.settingsTitle,
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = showOverflowMenu,
+                        onDismissRequest = { showOverflowMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = "Import ${strings.whatsapp}",
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_nav_whatsapp),
+                                    contentDescription = null,
+                                    tint = Color(0xFF25D366),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            },
+                            onClick = {
+                                showOverflowMenu = false
+                                onImportWhatsApp()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = "Import ${strings.instagram}",
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_nav_instagram),
+                                    contentDescription = null,
+                                    tint = Color(0xFFE1306C),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            },
+                            onClick = {
+                                showOverflowMenu = false
+                                onImportInstagram()
+                            }
+                        )
+                        Divider()
+                        DropdownMenuItem(
+                            text = { Text(strings.personalizeProfile, maxLines = 1) },
+                            leadingIcon = {
+                                Icon(Icons.Default.Person, contentDescription = null)
+                            },
+                            onClick = {
+                                showOverflowMenu = false
+                                isPersonalizeOpen = true
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(strings.settingsTitle, maxLines = 1) },
+                            leadingIcon = {
+                                Icon(Icons.Default.Settings, contentDescription = null)
+                            },
+                            onClick = {
+                                showOverflowMenu = false
+                                onNavigateToSettings()
+                            }
+                        )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // Rectangle Animated Card with Genuine Full-Body Frosted Glass Effect & Subtle Ambient Primary/Tertiary Glow
-            val primaryColor = MaterialTheme.colorScheme.primary
-            val tertiaryColor = MaterialTheme.colorScheme.tertiary
-            val surfaceColor = MaterialTheme.colorScheme.surface
+            // =========================================================================
+            // TOP MIDDLE SECTION: Search Pill ("Search (Names, dates, message)")
+            // =========================================================================
+            HomeSearchPill(
+                query = searchQuery,
+                placeholder = strings.searchNamesDatesMessage,
+                onQueryChange = { searchQuery = it }
+            )
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(28.dp))
-            ) {
-                // Layer 1: Ambient Background Color Glows (Subtle Primary & Tertiary diffused in background)
-                Canvas(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .then(
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                Modifier.graphicsLayer {
-                                    renderEffect = android.graphics.RenderEffect
-                                        .createBlurEffect(70f, 70f, android.graphics.Shader.TileMode.CLAMP)
-                                        .asComposeRenderEffect()
-                                }
-                            } else {
-                                Modifier
-                            }
-                        )
-                ) {
-                    val w = size.width
-                    val h = size.height
-                    // Soft primary glow pool at top-left
-                    drawCircle(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                primaryColor.copy(alpha = 0.38f),
-                                primaryColor.copy(alpha = 0.15f),
-                                Color.Transparent
-                            ),
-                            center = Offset(w * 0.15f, h * 0.15f),
-                            radius = w * 0.55f
-                        )
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // =========================================================================
+            // TOP MIDDLE SECTION: Connected Button Group (Whatsapp | Instagram)
+            // =========================================================================
+            HomeConnectedPlatformToggle(
+                selectedTab = selectedPlatform,
+                whatsappLabel = strings.whatsapp,
+                instagramLabel = strings.instagram,
+                onSelectTab = { tab -> selectedPlatform = tab }
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // =========================================================================
+            // ARCHIVE SECTION: Rounded Pill Banner with Archive Icon + Count
+            // =========================================================================
+            AnimatedVisibility(visible = !isViewingArchive) {
+                Column {
+                    HomeArchiveBanner(
+                        title = strings.archiveLabel,
+                        archivedCount = archivedCount,
+                        onClick = { isViewingArchive = true }
                     )
-                    // Soft tertiary glow pool at bottom-right
-                    drawCircle(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                tertiaryColor.copy(alpha = 0.32f),
-                                tertiaryColor.copy(alpha = 0.12f),
-                                Color.Transparent
-                            ),
-                            center = Offset(w * 0.85f, h * 0.85f),
-                            radius = w * 0.60f
-                        )
-                    )
+                    Spacer(modifier = Modifier.height(14.dp))
                 }
+            }
 
-                // Layer 2: Frosted Glass Panel (Translucent diffused surface with specular sheen)
+            // =========================================================================
+            // MIDDLE SECTION: Material 3 Expressive Connected Chat List
+            // =========================================================================
+            if (displayedRows.isEmpty()) {
                 Box(
                     modifier = Modifier
-                        .matchParentSize()
-                        .background(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(
-                                    surfaceColor.copy(alpha = 0.50f),
-                                    surfaceColor.copy(alpha = 0.68f)
-                                )
-                            )
-                        )
-                        .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(
-                                    Color.White.copy(alpha = 0.14f),
-                                    Color.Transparent,
-                                    Color.White.copy(alpha = 0.05f)
-                                ),
-                                start = Offset.Zero,
-                                end = Offset.Infinite
-                            )
-                        )
-                )
-
-                // Hairline frosted border rim (not thick inner borders)
-                Surface(
-                    color = Color.Transparent,
-                    shape = RoundedCornerShape(28.dp),
-                    border = BorderStroke(
-                        1.dp,
-                        Brush.linearGradient(
-                            colors = listOf(
-                                Color.White.copy(alpha = 0.45f),
-                                primaryColor.copy(alpha = 0.20f),
-                                tertiaryColor.copy(alpha = 0.15f),
-                                Color.White.copy(alpha = 0.10f)
-                            )
-                        )
-                    ),
-                    modifier = Modifier.matchParentSize()
-                ) {}
-
-                // Layer 3: Foreground Content Layer (Animations, Numbers & Typography sharp on top of glass)
-                Column(
-                    modifier = Modifier
+                        .weight(1f)
                         .fillMaxWidth()
-                        .padding(24.dp)
+                        .padding(horizontal = 24.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    // Card Header with Activity Icon
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Surface(
                             shape = CircleShape,
-                            color = primaryColor.copy(alpha = 0.15f),
-                            modifier = Modifier.size(38.dp)
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            modifier = Modifier.size(68.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
-                                    imageVector = Icons.Default.ChatBubbleOutline,
+                                    imageVector = when {
+                                        searchQuery.isNotBlank() -> Icons.Default.SearchOff
+                                        isViewingArchive -> Icons.Default.Inventory2
+                                        else -> Icons.Default.Forum
+                                    },
                                     contentDescription = null,
-                                    tint = primaryColor,
-                                    modifier = Modifier.size(20.dp)
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(30.dp)
                                 )
                             }
                         }
-
                         Text(
-                            text = strings.importedArchives,
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.SemiBold
-                            ),
-                            color = MaterialTheme.colorScheme.onSurface
+                            text = when {
+                                searchQuery.isNotBlank() -> strings.noSearchMatches
+                                isViewingArchive -> strings.archivedChatsEmpty
+                                else -> strings.noChatsImportedYet
+                            },
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
                         )
-                    }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    // Animated 0 -> Total Messages Count Display
-                    val formattedNumber = remember(animatedCount) {
-                        NumberFormat.getNumberInstance(Locale.getDefault()).format(animatedCount)
-                    }
-
-                    Text(
-                        text = formattedNumber,
-                        style = MaterialTheme.typography.displayLarge.copy(
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = (-1.5).sp
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-
-                    Text(
-                        text = strings.totalMessagesSaved,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.Medium
-                        ),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    if (totalImportedMessages > 0) {
-                        Spacer(modifier = Modifier.height(18.dp))
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            if (waTotalMessages > 0) {
-                                Surface(
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-                                ) {
-                                    Text(
-                                        text = "WhatsApp: ${NumberFormat.getNumberInstance().format(waTotalMessages)}",
-                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1,
-                                        softWrap = false,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                                    )
-                                }
-                            }
-                            if (igTotalMessages > 0) {
-                                Surface(
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-                                ) {
-                                    Text(
-                                        text = "Instagram: ${NumberFormat.getNumberInstance().format(igTotalMessages)}",
-                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1,
-                                        softWrap = false,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                                    )
-                                }
+                        if (searchQuery.isBlank() && !isViewingArchive) {
+                            Button(
+                                onClick = {
+                                    if (selectedPlatform == HomePlatformTab.WHATSAPP) {
+                                        onImportWhatsApp()
+                                    } else {
+                                        onImportInstagram()
+                                    }
+                                },
+                                shape = CircleShape
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.UploadFile,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    text = if (selectedPlatform == HomePlatformTab.WHATSAPP) {
+                                        "Import ${strings.whatsapp}"
+                                    } else {
+                                        "Import ${strings.instagram}"
+                                    },
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
                             }
                         }
                     }
                 }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentPadding = PaddingValues(bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    itemsIndexed(
+                        items = displayedRows,
+                        key = { _, item -> item.key }
+                    ) { index, row ->
+                        val shape = connectedListItemShape(
+                            index = index,
+                            totalCount = displayedRows.size
+                        )
+                        HomeConnectedChatListItem(
+                            row = row,
+                            shape = shape,
+                            archiveLabel = strings.archiveChat,
+                            unarchiveLabel = strings.unarchiveChat,
+                            openChatLabel = strings.openChat,
+                            onClick = {
+                                if (selectedPlatform == HomePlatformTab.WHATSAPP) {
+                                    onOpenWhatsAppConversation(row.conversationId, row.targetMessageIdWa)
+                                } else {
+                                    onOpenInstagramConversation(row.conversationId, row.targetMessageIdIg)
+                                }
+                            },
+                            onToggleArchive = {
+                                val nextArchived = !row.isArchived
+                                if (selectedPlatform == HomePlatformTab.WHATSAPP) {
+                                    whatsappViewModel.setConversationArchived(row.conversationId, nextArchived)
+                                } else {
+                                    instagramViewModel.setConversationArchived(row.conversationId, nextArchived)
+                                }
+                            }
+                        )
+                    }
+                }
             }
-
-            // Remaining space is a pristine blank canvas as instructed
-            Spacer(modifier = Modifier.weight(1f))
         }
 
         // Top-to-Bottom Animated Personalize Page Overlay
@@ -422,6 +576,401 @@ fun HomeScreen(
                 onNavigateToSettings = {
                     isPersonalizeOpen = false
                     onNavigateToSettings()
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun HomeSearchPill(
+    query: String,
+    placeholder: String,
+    onQueryChange: (String) -> Unit
+) {
+    Surface(
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Search,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.size(24.dp)
+            )
+
+            Box(
+                modifier = Modifier.weight(1f),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                if (query.isEmpty()) {
+                    Text(
+                        text = placeholder,
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 15.sp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                BasicTextField(
+                    value = query,
+                    onValueChange = onQueryChange,
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(
+                        fontSize = 15.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    ),
+                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            if (query.isNotEmpty()) {
+                IconButton(
+                    onClick = { onQueryChange("") },
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Clear search",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeConnectedPlatformToggle(
+    selectedTab: HomePlatformTab,
+    whatsappLabel: String,
+    instagramLabel: String,
+    onSelectTab: (HomePlatformTab) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        ConnectedSegmentPill(
+            label = whatsappLabel,
+            iconResId = R.drawable.ic_nav_whatsapp,
+            selected = selectedTab == HomePlatformTab.WHATSAPP,
+            isLeadingSegment = true,
+            onClick = { onSelectTab(HomePlatformTab.WHATSAPP) },
+            modifier = Modifier.weight(1f)
+        )
+        ConnectedSegmentPill(
+            label = instagramLabel,
+            iconResId = R.drawable.ic_nav_instagram,
+            selected = selectedTab == HomePlatformTab.INSTAGRAM,
+            isLeadingSegment = false,
+            onClick = { onSelectTab(HomePlatformTab.INSTAGRAM) },
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun ConnectedSegmentPill(
+    label: String,
+    iconResId: Int,
+    selected: Boolean,
+    isLeadingSegment: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val containerColor by animateColorAsState(
+        targetValue = if (selected) {
+            MaterialTheme.colorScheme.secondary
+        } else {
+            MaterialTheme.colorScheme.secondaryContainer
+        },
+        animationSpec = tween(220),
+        label = "SegmentContainer"
+    )
+    val contentColor by animateColorAsState(
+        targetValue = if (selected) {
+            MaterialTheme.colorScheme.onSecondary
+        } else {
+            MaterialTheme.colorScheme.onSecondaryContainer
+        },
+        animationSpec = tween(220),
+        label = "SegmentContent"
+    )
+    val innerCorner by animateDpAsState(
+        targetValue = if (selected) 20.dp else 4.dp,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "SegmentInnerCorner"
+    )
+
+    val shape = if (isLeadingSegment) {
+        RoundedCornerShape(
+            topStart = 20.dp,
+            bottomStart = 20.dp,
+            topEnd = innerCorner,
+            bottomEnd = innerCorner
+        )
+    } else {
+        RoundedCornerShape(
+            topStart = innerCorner,
+            bottomStart = innerCorner,
+            topEnd = 20.dp,
+            bottomEnd = 20.dp
+        )
+    }
+
+    Surface(
+        onClick = onClick,
+        shape = shape,
+        color = containerColor,
+        contentColor = contentColor,
+        modifier = modifier.height(40.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                painter = painterResource(id = iconResId),
+                contentDescription = null,
+                tint = contentColor,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge.copy(
+                    fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
+                    fontSize = 14.sp
+                ),
+                maxLines = 1,
+                softWrap = false
+            )
+        }
+    }
+}
+
+@Composable
+private fun HomeArchiveBanner(
+    title: String,
+    archivedCount: Int,
+    onClick: () -> Unit
+) {
+    val boxPath = remember { PathParser().parsePathString(ARCHIVE_ICON_BOX_PATH).toPath() }
+    val arrowPath = remember { PathParser().parsePathString(ARCHIVE_ICON_ARROW_PATH).toPath() }
+    val iconColor = MaterialTheme.colorScheme.onSurface
+
+    Surface(
+        onClick = onClick,
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(58.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 22.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Canvas(modifier = Modifier.size(26.dp)) {
+                val scale = min(size.width / 33f, size.height / 33f)
+                val dx = (size.width - 33f * scale) / 2f
+                val dy = (size.height - 33f * scale) / 2f
+                withTransform({
+                    translate(dx, dy)
+                    scale(scaleX = scale, scaleY = scale, pivot = Offset.Zero)
+                }) {
+                    drawPath(path = boxPath, color = iconColor)
+                    drawPath(path = arrowPath, color = iconColor)
+                }
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontFamily = GoogleSansFlexOnboarding535,
+                    fontWeight = FontWeight(535),
+                    fontSize = 18.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                modifier = Modifier.weight(1f)
+            )
+
+            AnimatedContent(
+                targetState = archivedCount,
+                transitionSpec = {
+                    (fadeIn(tween(180)) + scaleIn(initialScale = 0.85f)) togetherWith
+                        (fadeOut(tween(140)) + scaleOut(targetScale = 0.85f))
+                },
+                label = "ArchivedCountTransition"
+            ) { count ->
+                Text(
+                    text = count.toString(),
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
+    }
+}
+
+private fun connectedListItemShape(index: Int, totalCount: Int): RoundedCornerShape {
+    val outer = 20.dp
+    val inner = 6.dp
+    return when {
+        totalCount <= 1 -> RoundedCornerShape(outer)
+        index == 0 -> RoundedCornerShape(
+            topStart = outer,
+            topEnd = outer,
+            bottomStart = inner,
+            bottomEnd = inner
+        )
+        index == totalCount - 1 -> RoundedCornerShape(
+            topStart = inner,
+            topEnd = inner,
+            bottomStart = outer,
+            bottomEnd = outer
+        )
+        else -> RoundedCornerShape(inner)
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun HomeConnectedChatListItem(
+    row: HomeChatRowUi,
+    shape: RoundedCornerShape,
+    archiveLabel: String,
+    unarchiveLabel: String,
+    openChatLabel: String,
+    onClick: () -> Unit,
+    onToggleArchive: () -> Unit
+) {
+    val haptic = LocalHapticFeedback.current
+    var showContextMenu by remember { mutableStateOf(false) }
+
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Surface(
+            shape = shape,
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(shape)
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        showContextMenu = true
+                    }
+                )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(42.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        val initial = row.title.trim().firstOrNull()?.uppercaseChar()?.toString() ?: "W"
+                        Text(
+                            text = initial,
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Medium
+                            ),
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                }
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Text(
+                        text = row.title,
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 16.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = row.supportingText,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontSize = 14.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                if (row.timestampText.isNotBlank()) {
+                    Text(
+                        text = row.timestampText,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                }
+            }
+        }
+
+        DropdownMenu(
+            expanded = showContextMenu,
+            onDismissRequest = { showContextMenu = false }
+        ) {
+            DropdownMenuItem(
+                text = { Text(openChatLabel, maxLines = 1) },
+                leadingIcon = { Icon(Icons.Default.Forum, contentDescription = null) },
+                onClick = {
+                    showContextMenu = false
+                    onClick()
+                }
+            )
+            DropdownMenuItem(
+                text = { Text(if (row.isArchived) unarchiveLabel else archiveLabel, maxLines = 1) },
+                leadingIcon = {
+                    Icon(
+                        imageVector = if (row.isArchived) Icons.Default.Unarchive else Icons.Default.Archive,
+                        contentDescription = null
+                    )
+                },
+                onClick = {
+                    showContextMenu = false
+                    onToggleArchive()
                 }
             )
         }

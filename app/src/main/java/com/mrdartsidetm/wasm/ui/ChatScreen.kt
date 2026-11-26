@@ -161,7 +161,8 @@ fun extractDate(timestamp: String): String {
 fun ChatScreen(
     viewModel: ChatViewModel,
     onImportClick: () -> Unit,
-    onBackToPlatformChooser: (() -> Unit)? = null
+    onBackToPlatformChooser: (() -> Unit)? = null,
+    onCloseConversation: (() -> Unit)? = null
 ) {
     val conversations by viewModel.filteredConversations.collectAsStateWithLifecycle()
     val allConversations by viewModel.conversations.collectAsStateWithLifecycle()
@@ -284,7 +285,7 @@ fun ChatScreen(
                 senders = senders,
                 chatMediaDir = chatMediaDir,
                 viewModel = viewModel,
-                onBack = { viewModel.closeConversation() },
+                onBack = { (onCloseConversation ?: { viewModel.closeConversation() }).invoke() },
                 onSwitchIdentity = { showIdentityDialog = true },
                 onDeleteThisChat = { activeConversation?.let { conversationToDelete = it } },
                 onImageClick = { fullScreenImageFile = it }
@@ -658,10 +659,20 @@ private fun WhatsAppChatDetailScreen(
     onImageClick: (File) -> Unit
 ) {
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val targetMessageId by viewModel.targetMessageId.collectAsStateWithLifecycle()
     var isSearchActive by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
     val isDark = isSystemInDarkTheme()
+
+    LaunchedEffect(messages.size, targetMessageId) {
+        val targetId = targetMessageId ?: return@LaunchedEffect
+        val idx = messages.indexOfFirst { it.id == targetId }
+        if (idx >= 0) {
+            listState.scrollToItem(idx)
+            viewModel.consumeTargetMessage()
+        }
+    }
 
     Scaffold(
         containerColor = if (isDark) Color(0xFF0B141A) else Color(0xFFEFEAE2),

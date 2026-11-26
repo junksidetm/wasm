@@ -12,7 +12,7 @@
   <a href="https://m3.material.io/"><img src="https://img.shields.io/badge/Design-Material_3_Expressive-0061A4?style=flat-square" alt="Material 3 Expressive" /></a>
   <a href="https://developer.android.com/jetpack/compose"><img src="https://img.shields.io/badge/UI-Jetpack_Compose-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white" alt="Jetpack Compose" /></a>
   <a href="https://developer.android.com/training/data-storage/room"><img src="https://img.shields.io/badge/Storage-Room_SQLite-3DDC84?style=flat-square&logo=sqlite&logoColor=white" alt="Room SQLite" /></a>
-  <a href="https://github.com/junksidetm/wasm/releases/tag/v0.8.3"><img src="https://img.shields.io/badge/Release-v0.8.3-blue?style=flat-square" alt="Latest Release" /></a>
+  <a href="https://github.com/junksidetm/wasm/releases/tag/v0.9.0"><img src="https://img.shields.io/badge/Release-v0.9.0-blue?style=flat-square" alt="Latest Release" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/Privacy-100%25_Offline-success?style=flat-square" alt="100% Offline" /></a>
 </p>
 
