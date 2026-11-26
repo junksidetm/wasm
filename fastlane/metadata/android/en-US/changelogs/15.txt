@@ -1,0 +1,5 @@
+- Extracted all 12 standalone 412x917 Figma wireframes into assests/wireframes/onboarding and assests/wireframes/main.
+- Replaced bottom navigation with Home | Storage | Settings and added the Material 3 Expressive Import FAB on HomeScreen opening the new full-screen auto-detect ImportScreen.
+- Built the wireframe StorageScreen with Total Messages dashboard, live disk/StatFs storage bar, and 7-category media breakdown.
+- Rebuilt SettingsScreen with Search Settings pill, 5 M3 Expressive connected categories, and Language opening the main-mode LanguageChangerScreen.
+- Froze Onboarding Screen 5 Outer-Yellow & updated Onboarding Screen 4 WhatsApp title casing.

@@ -82,8 +82,10 @@ fun HomeScreen(
     whatsappViewModel: ChatViewModel,
     instagramViewModel: InstagramViewModel,
     prefs: UserPreferencesRepository,
+    initialPlatform: String? = null,
     onNavigateToMessages: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
+    onOpenImport: () -> Unit = {},
     onOpenWhatsApp: () -> Unit = {},
     onOpenInstagram: () -> Unit = {},
     onOpenWhatsAppConversation: (String, Int?) -> Unit = { _, _ -> },
@@ -94,7 +96,18 @@ fun HomeScreen(
 ) {
     val strings = LocalWasmStrings.current
 
-    var selectedPlatform by rememberSaveable { mutableStateOf(HomePlatformTab.WHATSAPP) }
+    var selectedPlatform by rememberSaveable {
+        mutableStateOf(
+            if (initialPlatform == "instagram") HomePlatformTab.INSTAGRAM else HomePlatformTab.WHATSAPP
+        )
+    }
+    LaunchedEffect(initialPlatform) {
+        if (initialPlatform == "instagram") {
+            selectedPlatform = HomePlatformTab.INSTAGRAM
+        } else if (initialPlatform == "whatsapp") {
+            selectedPlatform = HomePlatformTab.WHATSAPP
+        }
+    }
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var isViewingArchive by rememberSaveable { mutableStateOf(false) }
     var isPersonalizeOpen by rememberSaveable { mutableStateOf(false) }
@@ -486,13 +499,7 @@ fun HomeScreen(
                         )
                         if (searchQuery.isBlank() && !isViewingArchive) {
                             Button(
-                                onClick = {
-                                    if (selectedPlatform == HomePlatformTab.WHATSAPP) {
-                                        onImportWhatsApp()
-                                    } else {
-                                        onImportInstagram()
-                                    }
-                                },
+                                onClick = onOpenImport,
                                 shape = CircleShape
                             ) {
                                 Icon(
@@ -502,11 +509,7 @@ fun HomeScreen(
                                 )
                                 Spacer(Modifier.width(8.dp))
                                 Text(
-                                    text = if (selectedPlatform == HomePlatformTab.WHATSAPP) {
-                                        "Import ${strings.whatsapp}"
-                                    } else {
-                                        "Import ${strings.instagram}"
-                                    },
+                                    text = strings.importFile,
                                     maxLines = 1,
                                     softWrap = false
                                 )
@@ -519,7 +522,7 @@ fun HomeScreen(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth(),
-                    contentPadding = PaddingValues(bottom = 16.dp),
+                    contentPadding = PaddingValues(bottom = 88.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
                     itemsIndexed(
@@ -555,6 +558,23 @@ fun HomeScreen(
                     }
                 }
             }
+        }
+
+        // Material 3 Expressive FAB -> Opens Import Screen
+        FloatingActionButton(
+            onClick = onOpenImport,
+            shape = RoundedCornerShape(18.dp),
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 16.dp, bottom = 16.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = strings.importFile,
+                modifier = Modifier.size(26.dp)
+            )
         }
 
         // Top-to-Bottom Animated Personalize Page Overlay

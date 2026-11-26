@@ -17,9 +17,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Forum
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.PieChart
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -91,13 +93,14 @@ class MainActivity : ComponentActivity() {
                     }
                 )
 
-                // Selected Tab: 0 = Home, 1 = Messages, 2 = Settings
+                // Selected Tab: 0 = Home, 1 = Storage, 2 = Settings
                 var selectedTab by rememberSaveable { mutableIntStateOf(0) }
-
-                // Inside Messages: null = Platform Chooser, "whatsapp" = WhatsApp, "instagram" = Instagram
+                // Active platform thread opened from Home (null = show main tab)
                 var activeMessagesPlatform by rememberSaveable { mutableStateOf<String?>(null) }
-                // Track when user opened a chat directly from Home so Back returns seamlessly to Home
-                var returnHomeOnChatClose by rememberSaveable { mutableStateOf(false) }
+                // Preferred platform tab to show on Home after importing
+                var homePreferredPlatform by rememberSaveable { mutableStateOf<String?>(null) }
+                // Full-screen Import Screen modal launched by Home FAB
+                var showImportScreen by rememberSaveable { mutableStateOf(false) }
 
                 CompositionLocalProvider(
                     LocalWasmStrings provides strings,
@@ -123,11 +126,11 @@ class MainActivity : ComponentActivity() {
                                     }
                                     forceShowOnboarding = false
                                     if (importedPlatform != null) {
-                                        selectedTab = 1
-                                        activeMessagesPlatform = importedPlatform
-                                    } else {
-                                        selectedTab = 0
+                                        homePreferredPlatform = importedPlatform
                                     }
+                                    activeMessagesPlatform = null
+                                    showImportScreen = false
+                                    selectedTab = 0
                                 }
                             )
                         }
@@ -153,7 +156,7 @@ class MainActivity : ComponentActivity() {
                             } else {
                                 whatsappViewModel.importChatUri(contentResolver, selectedUri, fileName)
                             }
-                            selectedTab = 1
+                            homePreferredPlatform = "whatsapp"
                             activeMessagesPlatform = "whatsapp"
                         }
                     }
@@ -166,134 +169,88 @@ class MainActivity : ComponentActivity() {
                         uri?.let { selectedUri ->
                             val fileName = getFileName(applicationContext, selectedUri)
                             instagramViewModel.importZipUri(contentResolver, selectedUri, fileName)
-                            selectedTab = 1
+                            homePreferredPlatform = "instagram"
                             activeMessagesPlatform = "instagram"
                         }
                     }
                 )
 
-                // System BackPress Handler: App ONLY exits when on the Home page (selectedTab == 0)
-                when (selectedTab) {
-                    2 -> {
-                        // On Settings -> pressing back returns to Home
+                // System BackPress Handler
+                when {
+                    activeMessagesPlatform == "whatsapp" -> {
+                        if (waSelectedConversationId != null) {
+                            BackHandler {
+                                whatsappViewModel.closeConversation()
+                                activeMessagesPlatform = null
+                                selectedTab = 0
+                            }
+                        } else {
+                            BackHandler {
+                                activeMessagesPlatform = null
+                                selectedTab = 0
+                            }
+                        }
+                    }
+                    activeMessagesPlatform == "instagram" -> {
+                        when {
+                            igExpandedMediaList != null -> BackHandler { instagramViewModel.closeExpandedMedia() }
+                            igIsViewingDetails -> BackHandler { instagramViewModel.closeConversationDetails() }
+                            igSelectedConversationId != null -> BackHandler {
+                                instagramViewModel.closeConversation()
+                                activeMessagesPlatform = null
+                                selectedTab = 0
+                            }
+                            else -> BackHandler {
+                                activeMessagesPlatform = null
+                                selectedTab = 0
+                            }
+                        }
+                    }
+                    selectedTab != 0 && !showImportScreen -> {
                         BackHandler {
                             selectedTab = 0
                         }
-                    }
-                    1 -> {
-                        // On Messages tab
-                        when (activeMessagesPlatform) {
-                            "whatsapp" -> {
-                                if (waSelectedConversationId != null) {
-                                    // In individual WhatsApp chat -> close chat (return to Home if opened from Home)
-                                    BackHandler {
-                                        whatsappViewModel.closeConversation()
-                                        if (returnHomeOnChatClose) {
-                                            returnHomeOnChatClose = false
-                                            activeMessagesPlatform = null
-                                            selectedTab = 0
-                                        }
-                                    }
-                                } else {
-                                    // On WhatsApp chat list -> return to Platform Chooser
-                                    BackHandler {
-                                        activeMessagesPlatform = null
-                                    }
-                                }
-                            }
-                            "instagram" -> {
-                                if (igExpandedMediaList != null) {
-                                    // In expanded media viewer -> close viewer
-                                    BackHandler {
-                                        instagramViewModel.closeExpandedMedia()
-                                    }
-                                } else if (igIsViewingDetails) {
-                                    // In conversation details -> close details
-                                    BackHandler {
-                                        instagramViewModel.closeConversationDetails()
-                                    }
-                                } else if (igSelectedConversationId != null) {
-                                    // In DM thread -> close thread (return to Home if opened from Home)
-                                    BackHandler {
-                                        instagramViewModel.closeConversation()
-                                        if (returnHomeOnChatClose) {
-                                            returnHomeOnChatClose = false
-                                            activeMessagesPlatform = null
-                                            selectedTab = 0
-                                        }
-                                    }
-                                } else if (igAccount != null && igAccount!!.isDived) {
-                                    // In conversation list -> return to Instagram landing page
-                                    BackHandler {
-                                        instagramViewModel.backToLanding()
-                                    }
-                                } else {
-                                    // On Instagram landing/empty state -> return to Platform Chooser
-                                    BackHandler {
-                                        activeMessagesPlatform = null
-                                    }
-                                }
-                            }
-                            null -> {
-                                // On Platform Chooser -> return to Home page
-                                BackHandler {
-                                    selectedTab = 0
-                                }
-                            }
-                        }
-                    }
-                    0 -> {
-                        // On Home page: No BackHandler enabled -> system exits the app!
                     }
                 }
 
                 Scaffold(
                     bottomBar = {
-                        NavigationBar {
-                            NavigationBarItem(
-                                selected = selectedTab == 0,
-                                onClick = {
-                                    returnHomeOnChatClose = false
-                                    selectedTab = 0
-                                },
-                                icon = {
-                                    Icon(
-                                        imageVector = if (selectedTab == 0) Icons.Filled.Home else Icons.Outlined.Home,
-                                        contentDescription = strings.navHome
-                                    )
-                                },
-                                label = { Text(strings.navHome) }
-                            )
-                            NavigationBarItem(
-                                selected = selectedTab == 1,
-                                onClick = {
-                                    returnHomeOnChatClose = false
-                                    if (selectedTab == 1 && activeMessagesPlatform != null) {
-                                        // Tapping Messages while already in a platform returns to Platform Chooser
-                                        activeMessagesPlatform = null
-                                    } else {
-                                        selectedTab = 1
-                                    }
-                                },
-                                icon = {
-                                    Icon(
-                                        imageVector = if (selectedTab == 1) Icons.Filled.Forum else Icons.Outlined.Forum,
-                                        contentDescription = strings.navMessages
-                                    )
-                                },
-                                label = { Text(strings.navMessages) }
-                            )
-                            NavigationBarItem(
-                                selected = selectedTab == 2,
-                                onClick = { selectedTab = 2 },
-                                icon = {
-                                    Icon(
-                                        imageVector = if (selectedTab == 2) Icons.Filled.Settings else Icons.Outlined.Settings,
-                                        contentDescription = strings.navSettings
-                                    )
-                                },
-                                label = { Text(strings.navSettings) }
-                            )
+                        if (!showImportScreen && activeMessagesPlatform == null) {
+                            NavigationBar {
+                                NavigationBarItem(
+                                    selected = selectedTab == 0,
+                                    onClick = { selectedTab = 0 },
+                                    icon = {
+                                        Icon(
+                                            imageVector = if (selectedTab == 0) Icons.Filled.Home else Icons.Outlined.Home,
+                                            contentDescription = strings.navHome
+                                        )
+                                    },
+                                    label = { Text(strings.navHome) }
+                                )
+                                NavigationBarItem(
+                                    selected = selectedTab == 1,
+                                    onClick = { selectedTab = 1 },
+                                    icon = {
+                                        Icon(
+                                            imageVector = if (selectedTab == 1) Icons.Filled.PieChart else Icons.Outlined.PieChart,
+                                            contentDescription = strings.navStorage
+                                        )
+                                    },
+                                    label = { Text(strings.navStorage) }
+                                )
+                                NavigationBarItem(
+                                    selected = selectedTab == 2,
+                                    onClick = { selectedTab = 2 },
+                                    icon = {
+                                        Icon(
+                                            imageVector = if (selectedTab == 2) Icons.Filled.Settings else Icons.Outlined.Settings,
+                                            contentDescription = strings.navSettings
+                                        )
+                                    },
+                                    label = { Text(strings.navSettings) }
+                                )
+                            }
                         }
                     }
                 ) { innerPadding ->
@@ -302,43 +259,20 @@ class MainActivity : ComponentActivity() {
                             .fillMaxSize()
                             .padding(innerPadding)
                     ) {
-                        when (selectedTab) {
-                            0 -> HomeScreen(
+                        when {
+                            showImportScreen -> ImportScreen(
                                 whatsappViewModel = whatsappViewModel,
                                 instagramViewModel = instagramViewModel,
-                                prefs = prefs,
-                                onNavigateToMessages = {
-                                    returnHomeOnChatClose = false
-                                    selectedTab = 1
-                                    activeMessagesPlatform = null
+                                onImportComplete = { platform ->
+                                    homePreferredPlatform = platform
+                                    showImportScreen = false
+                                    selectedTab = 0
                                 },
-                                onNavigateToSettings = {
-                                    returnHomeOnChatClose = false
-                                    selectedTab = 2
-                                },
-                                onOpenWhatsApp = {
-                                    returnHomeOnChatClose = false
-                                    selectedTab = 1
-                                    activeMessagesPlatform = "whatsapp"
-                                },
-                                onOpenInstagram = {
-                                    returnHomeOnChatClose = false
-                                    selectedTab = 1
-                                    activeMessagesPlatform = "instagram"
-                                },
-                                onOpenWhatsAppConversation = { convId, msgId ->
-                                    whatsappViewModel.selectConversation(convId, msgId)
-                                    returnHomeOnChatClose = true
-                                    activeMessagesPlatform = "whatsapp"
-                                    selectedTab = 1
-                                },
-                                onOpenInstagramConversation = { convId, msgId ->
-                                    instagramViewModel.selectConversation(convId, msgId)
-                                    returnHomeOnChatClose = true
-                                    activeMessagesPlatform = "instagram"
-                                    selectedTab = 1
-                                },
-                                onImportWhatsApp = {
+                                onBack = { showImportScreen = false }
+                            )
+                            activeMessagesPlatform == "whatsapp" -> ChatScreen(
+                                viewModel = whatsappViewModel,
+                                onImportClick = {
                                     whatsappPickerLauncher.launch(
                                         arrayOf(
                                             "text/plain",
@@ -348,7 +282,19 @@ class MainActivity : ComponentActivity() {
                                         )
                                     )
                                 },
-                                onImportInstagram = {
+                                onBackToPlatformChooser = {
+                                    activeMessagesPlatform = null
+                                    selectedTab = 0
+                                },
+                                onCloseConversation = {
+                                    whatsappViewModel.closeConversation()
+                                    activeMessagesPlatform = null
+                                    selectedTab = 0
+                                }
+                            )
+                            activeMessagesPlatform == "instagram" -> InstagramScreen(
+                                viewModel = instagramViewModel,
+                                onImportClick = {
                                     instagramPickerLauncher.launch(
                                         arrayOf(
                                             "application/zip",
@@ -356,69 +302,62 @@ class MainActivity : ComponentActivity() {
                                             "application/octet-stream"
                                         )
                                     )
+                                },
+                                onBackToPlatformChooser = {
+                                    activeMessagesPlatform = null
+                                    selectedTab = 0
+                                },
+                                onCloseConversation = {
+                                    instagramViewModel.closeConversation()
+                                    activeMessagesPlatform = null
+                                    selectedTab = 0
                                 }
                             )
-                            1 -> {
-                                when (activeMessagesPlatform) {
-                                    null -> PlatformChooserScreen(
-                                        whatsappChatCount = waConversations.size,
-                                        instagramConversationCount = igConversations.size,
-                                        onSelectWhatsApp = { activeMessagesPlatform = "whatsapp" },
-                                        onSelectInstagram = { activeMessagesPlatform = "instagram" },
-                                        onBackToHome = { selectedTab = 0 }
-                                    )
-                                    "whatsapp" -> ChatScreen(
-                                        viewModel = whatsappViewModel,
-                                        onImportClick = {
-                                            whatsappPickerLauncher.launch(
-                                                arrayOf(
-                                                    "text/plain",
-                                                    "application/zip",
-                                                    "application/x-zip-compressed",
-                                                    "application/octet-stream"
-                                                )
-                                            )
-                                        },
-                                        onBackToPlatformChooser = {
-                                            returnHomeOnChatClose = false
-                                            activeMessagesPlatform = null
-                                        },
-                                        onCloseConversation = {
-                                            whatsappViewModel.closeConversation()
-                                            if (returnHomeOnChatClose) {
-                                                returnHomeOnChatClose = false
-                                                activeMessagesPlatform = null
-                                                selectedTab = 0
-                                            }
-                                        }
-                                    )
-                                    "instagram" -> InstagramScreen(
-                                        viewModel = instagramViewModel,
-                                        onImportClick = {
-                                            instagramPickerLauncher.launch(
-                                                arrayOf(
-                                                    "application/zip",
-                                                    "application/x-zip-compressed",
-                                                    "application/octet-stream"
-                                                )
-                                            )
-                                        },
-                                        onBackToPlatformChooser = {
-                                            returnHomeOnChatClose = false
-                                            activeMessagesPlatform = null
-                                        },
-                                        onCloseConversation = {
-                                            instagramViewModel.closeConversation()
-                                            if (returnHomeOnChatClose) {
-                                                returnHomeOnChatClose = false
-                                                activeMessagesPlatform = null
-                                                selectedTab = 0
-                                            }
-                                        }
-                                    )
+                            selectedTab == 0 -> HomeScreen(
+                                whatsappViewModel = whatsappViewModel,
+                                instagramViewModel = instagramViewModel,
+                                prefs = prefs,
+                                initialPlatform = homePreferredPlatform,
+                                onNavigateToMessages = {
+                                    activeMessagesPlatform = null
+                                    selectedTab = 1
+                                },
+                                onNavigateToSettings = {
+                                    activeMessagesPlatform = null
+                                    selectedTab = 2
+                                },
+                                onOpenImport = {
+                                    showImportScreen = true
+                                },
+                                onOpenWhatsApp = {
+                                    activeMessagesPlatform = "whatsapp"
+                                },
+                                onOpenInstagram = {
+                                    activeMessagesPlatform = "instagram"
+                                },
+                                onOpenWhatsAppConversation = { convId, msgId ->
+                                    whatsappViewModel.selectConversation(convId, msgId)
+                                    activeMessagesPlatform = "whatsapp"
+                                },
+                                onOpenInstagramConversation = { convId, msgId ->
+                                    instagramViewModel.selectConversation(convId, msgId)
+                                    activeMessagesPlatform = "instagram"
+                                },
+                                onImportWhatsApp = {
+                                    showImportScreen = true
+                                },
+                                onImportInstagram = {
+                                    showImportScreen = true
                                 }
-                            }
-                            2 -> SettingsScreen(
+                            )
+                            selectedTab == 1 -> StorageScreen(
+                                whatsappViewModel = whatsappViewModel,
+                                instagramViewModel = instagramViewModel,
+                                prefs = prefs,
+                                onOpenImport = { showImportScreen = true },
+                                onNavigateToSettings = { selectedTab = 2 }
+                            )
+                            else -> SettingsScreen(
                                 whatsappViewModel = whatsappViewModel,
                                 instagramViewModel = instagramViewModel,
                                 prefs = prefs,

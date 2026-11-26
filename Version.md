@@ -1173,3 +1173,21 @@
 - **Direct Chat & Message-Jump Integration (`ChatViewModel.kt`, `InstagramViewModel.kt`, `ChatScreen.kt`, `InstagramScreen.kt`, `MainActivity.kt`)**:
   - Kept the 3-tab bottom `NavigationBar` (`Home` | `Messages` | `Settings`) while allowing direct conversation & search-hit opening from Home, scrolling straight to the matched message and returning smoothly to Home on Back.
 - **Release `v0.9.0`**: Bumped `versionCode = 14`, `versionName = "0.9.0"` across `app/build.gradle.kts`, `AboutScreen.kt`, `SettingsScreen.kt`, `README.md`, `docs/index.html`, and `fastlane/metadata/android/en-US/changelogs/14.txt`.
+
+---
+
+## [0.10.0] - 2026-11-27 00:43:00 IST
+### Complete Main App Wireframe Suite (`Home | Storage | Settings`), Import FAB Flow, Main Language Changer & Standalone SVG Extraction
+- **Extracted Wireframe SVG Suite (`assests/wireframes/onboarding/`, `assests/wireframes/main/`)**:
+  - Split the master Figma wireframe export into 12 self-contained `412x917` SVGs (`Onboarding Screen 1..5`, `Onboarding Screen 4 - Whatsapp/Instagram`, `Onboarding Language Changer`, `Home Screen`, `Storage Screen`, `Settings Screen`, `Import Screen`, `Language Changer`) preserving all exact `viewBox` transforms and `<defs>`.
+- **Home FAB -> Full-Screen Import Flow (`HomeScreen.kt`, `ImportScreen.kt`, `MainActivity.kt`)**:
+  - Updated 3-tab bottom bar to **`Home` | `Storage` | `Settings`**.
+  - Added Material 3 Expressive Floating Action Button on `HomeScreen` opening `ImportScreen` (`Choose Platform` auto-detecting WhatsApp `.txt`/`.zip` and Instagram `.zip` via `ZipArchiveDetector`, `ContainedExpressiveLoadingIndicator`, and seamless switch back to the imported platform on Home).
+- **Storage Screen (`ui/StorageScreen.kt`)**:
+  - Built Total Messages hero card featuring Figma's decorative `shape_16` / `shape_17` Canvas shapes, real SQLite + media folder + `StatFs` storage bar (`Total Storage used` / `Free`), and 7 live categorized rows (Instagram messages, WhatsApp messages, voice notes, images, video, GIFs, stickers) with pill size badges.
+- **Settings Screen & Main Language Changer (`ui/SettingsScreen.kt`, `ui/onboarding/LanguageChangerScreen.kt`)**:
+  - Rebuilt `SettingsScreen` with dynamic-primary `Settings` header, `Search Settings` pill bar, and 5 M3 Expressive connected items (*General*, *Language*, *Privacy & Terms of Service*, *Storage & Data*, *About*).
+  - Extended `LanguageChangerScreen(isOnboardingStyle = false)` matching `main/Language Changer.svg` (clean Monet surface, Globe Canvas mark, bordered 2-column pills) when opened from Settings.
+- **Onboarding Refinements (`ui/onboarding/OnboardingScreen.kt`)**:
+  - Updated Screen 4 WhatsApp heading casing to `"WhatsApp"` (`Onboarding Screen 4 - Whatsapp.svg`) and froze `Outer-Yellow` on Screen 5 (`outerYellowRotation = 0f`, `Onboarding Screen 5.svg`).
+- **Release `v0.10.0`**: Bumped `versionCode = 15`, `versionName = "0.10.0"` across `app/build.gradle.kts`, `AboutScreen.kt`, `README.md`, `docs/index.html`, and `fastlane/metadata/android/en-US/changelogs/15.txt`.

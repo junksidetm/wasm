@@ -640,7 +640,7 @@ fun OnboardingFlow(
                         onSelectInstagram = { launchInstagramTransition() }
                     )
                     OnboardingStep.SCREEN_4_WHATSAPP -> OnboardingScreen4Content(
-                        title = strings.whatsapp,
+                        title = if (strings.whatsapp.equals("Whatsapp", ignoreCase = true)) "WhatsApp" else strings.whatsapp,
                         accentColor = OnboardingWhatsAppAccent,
                         instructionsHeading = strings.instructionsHeading,
                         instructionsSteps = strings.whatsappInstructionsSteps,
@@ -696,7 +696,7 @@ fun OnboardingFlow(
                         }
                     )
                     OnboardingStep.SCREEN_5 -> OnboardingScreen5Content(
-                        outerYellowRotation = outerYellowRotation,
+                        outerYellowRotation = 0f,
                         everythingIsSetText = strings.everythingIsSet,
                         letsDiveInText = strings.letsDiveIn,
                         onDiveIn = { onFinishOnboarding(lastImportedPlatform) }

@@ -2,6 +2,7 @@ package com.mrdartsidetm.wasm.ui.onboarding
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -22,6 +23,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -31,18 +34,19 @@ import com.mrdartsidetm.wasm.ui.localization.LocalWasmStrings
 import com.mrdartsidetm.wasm.ui.localization.SupportedLanguage
 import com.mrdartsidetm.wasm.ui.localization.SupportedLanguages
 import com.mrdartsidetm.wasm.ui.theme.GoogleSansFlexOnboarding535
+import kotlin.math.min
 
 /**
- * Language Changer screen matching the Figma "Language Changer" SVG:
- * - Background gradient (#758AEF -> #062362)
- * - Top to Middle Section: Rotating 4 Leaf Clover (#E5931F) + white Globe icon, "Choose Language" heading
- * - Middle to Down Section: 2-column scrollable grid of rounded white language pills with flags
+ * Language Changer screen matching both Figma variants:
+ * - Onboarding (`isOnboardingStyle = true`): Rotated blue SVG backdrop + animated 4-Leaf Clover + white Globe & heading.
+ * - Main App (`isOnboardingStyle = false`): Clean Monet Light/Dark surface + outlined Globe + bordered pill buttons (`main/Language Changer.svg`).
  */
 @Composable
 fun LanguageChangerScreen(
     selectedLanguageCode: String,
     onSelectLanguage: (SupportedLanguage) -> Unit,
     onBack: () -> Unit,
+    isOnboardingStyle: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val strings = LocalWasmStrings.current
@@ -61,14 +65,24 @@ fun LanguageChangerScreen(
     )
 
     BoxWithConstraints(
-        modifier = modifier.fillMaxSize()
+        modifier = modifier
+            .fillMaxSize()
+            .then(
+                if (isOnboardingStyle) Modifier else Modifier.background(MaterialTheme.colorScheme.background)
+            )
     ) {
-        OnboardingSvgBackground(
-            startNormalized = OnboardingBackgroundPresets.Screen2And4AndLangStart,
-            endNormalized = OnboardingBackgroundPresets.Screen2And4AndLangEnd
-        )
+        if (isOnboardingStyle) {
+            OnboardingSvgBackground(
+                startNormalized = OnboardingBackgroundPresets.Screen2And4AndLangStart,
+                endNormalized = OnboardingBackgroundPresets.Screen2And4AndLangEnd
+            )
+        }
         val isCompactHeight = maxHeight < 680.dp
-        val iconSize = if (isCompactHeight) 156.dp else 204.dp
+        val iconSize = if (isOnboardingStyle) {
+            if (isCompactHeight) 156.dp else 204.dp
+        } else {
+            if (isCompactHeight) 96.dp else 118.dp
+        }
 
         Column(
             modifier = Modifier
@@ -88,8 +102,16 @@ fun LanguageChangerScreen(
                 Surface(
                     onClick = onBack,
                     shape = CircleShape,
-                    color = Color.White.copy(alpha = 0.16f),
-                    contentColor = Color.White,
+                    color = if (isOnboardingStyle) {
+                        Color.White.copy(alpha = 0.16f)
+                    } else {
+                        MaterialTheme.colorScheme.surfaceContainerHigh
+                    },
+                    contentColor = if (isOnboardingStyle) {
+                        Color.White
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
                     modifier = Modifier.size(42.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
@@ -102,22 +124,42 @@ fun LanguageChangerScreen(
                 }
             }
 
-            // Top to Middle Section: 4 Leaf Clover - Move + Globe Icon
-            ExpressiveGroupedBadge(
-                shapePathData = OnboardingSvgPaths.cloverPath,
-                shapeSrcWidth = OnboardingSvgPaths.cloverWidth,
-                shapeSrcHeight = OnboardingSvgPaths.cloverHeight,
-                shapeColor = OnboardingCloverOrange,
-                shapeRotation = cloverRotation,
-                iconPaths = listOf(OnboardingSvgPaths.globeIconPath),
-                iconColors = listOf(Color.White),
-                iconSrcWidth = OnboardingSvgPaths.globeIconWidth,
-                iconSrcHeight = OnboardingSvgPaths.globeIconHeight,
-                iconScaleFraction = 0.58f,
-                modifier = Modifier.size(iconSize)
-            )
+            if (isOnboardingStyle) {
+                // Onboarding: 4 Leaf Clover - Move + White Globe Icon
+                ExpressiveGroupedBadge(
+                    shapePathData = OnboardingSvgPaths.cloverPath,
+                    shapeSrcWidth = OnboardingSvgPaths.cloverWidth,
+                    shapeSrcHeight = OnboardingSvgPaths.cloverHeight,
+                    shapeColor = OnboardingCloverOrange,
+                    shapeRotation = cloverRotation,
+                    iconPaths = listOf(OnboardingSvgPaths.globeIconPath),
+                    iconColors = listOf(Color.White),
+                    iconSrcWidth = OnboardingSvgPaths.globeIconWidth,
+                    iconSrcHeight = OnboardingSvgPaths.globeIconHeight,
+                    iconScaleFraction = 0.58f,
+                    modifier = Modifier.size(iconSize)
+                )
+            } else {
+                // Main App (`main/Language Changer.svg`): Clean Globe Icon
+                val globePath = remember { PathParser().parsePathString(OnboardingSvgPaths.globeIconPath).toPath() }
+                val globeTint = MaterialTheme.colorScheme.primary
+                Canvas(modifier = Modifier.size(iconSize)) {
+                    val scale = min(
+                        size.width / OnboardingSvgPaths.globeIconWidth,
+                        size.height / OnboardingSvgPaths.globeIconHeight
+                    )
+                    val dx = (size.width - OnboardingSvgPaths.globeIconWidth * scale) / 2f
+                    val dy = (size.height - OnboardingSvgPaths.globeIconHeight * scale) / 2f
+                    withTransform({
+                        translate(dx, dy)
+                        scale(scaleX = scale, scaleY = scale, pivot = Offset.Zero)
+                    }) {
+                        drawPath(path = globePath, color = globeTint)
+                    }
+                }
+            }
 
-            Spacer(modifier = Modifier.height(if (isCompactHeight) 12.dp else 24.dp))
+            Spacer(modifier = Modifier.height(if (isCompactHeight) 12.dp else 22.dp))
 
             // Heading: Choose Language
             Text(
@@ -128,10 +170,10 @@ fun LanguageChangerScreen(
                     lineHeight = 42.sp,
                     textAlign = TextAlign.Center
                 ),
-                color = Color.White
+                color = if (isOnboardingStyle) Color.White else MaterialTheme.colorScheme.onBackground
             )
 
-            Spacer(modifier = Modifier.height(if (isCompactHeight) 18.dp else 28.dp))
+            Spacer(modifier = Modifier.height(if (isCompactHeight) 16.dp else 24.dp))
 
             // Middle to Down Section: Scrollable 2-column grid of language pill buttons
             LazyVerticalGrid(
@@ -145,12 +187,12 @@ fun LanguageChangerScreen(
             ) {
                 itemsIndexed(SupportedLanguages, key = { _, item -> item.code }) { index, lang ->
                     val isSelected = lang.code == selectedLanguageCode
-                    // Subtle 3.dp vertical offset on right-column items matching the Figma stagger
                     val topOffset = if (index % 2 == 1) 3.dp else 0.dp
                     Box(modifier = Modifier.padding(top = topOffset)) {
                         LanguagePillCard(
                             language = lang,
                             isSelected = isSelected,
+                            isOnboardingStyle = isOnboardingStyle,
                             onClick = { onSelectLanguage(lang) }
                         )
                     }
@@ -164,22 +206,35 @@ fun LanguageChangerScreen(
 private fun LanguagePillCard(
     language: SupportedLanguage,
     isSelected: Boolean,
+    isOnboardingStyle: Boolean,
     onClick: () -> Unit
 ) {
+    val bgColor = when {
+        isOnboardingStyle && isSelected -> Color(0xFFE8F1FF)
+        isOnboardingStyle -> Color.White
+        isSelected -> MaterialTheme.colorScheme.primaryContainer
+        else -> MaterialTheme.colorScheme.surfaceContainerLow
+    }
+    val textColor = when {
+        isOnboardingStyle -> Color.Black
+        isSelected -> MaterialTheme.colorScheme.onPrimaryContainer
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+    val borderMod = when {
+        isOnboardingStyle && isSelected -> Modifier.border(2.5.dp, OnboardingOuterYellow, RoundedCornerShape(32.dp))
+        isOnboardingStyle -> Modifier
+        isSelected -> Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(32.dp))
+        else -> Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(32.dp))
+    }
+
     Surface(
         shape = RoundedCornerShape(32.dp),
-        color = if (isSelected) Color(0xFFE8F1FF) else Color.White,
+        color = bgColor,
         modifier = Modifier
             .fillMaxWidth()
             .height(64.dp)
             .clip(RoundedCornerShape(32.dp))
-            .then(
-                if (isSelected) {
-                    Modifier.border(2.5.dp, OnboardingOuterYellow, RoundedCornerShape(32.dp))
-                } else {
-                    Modifier
-                }
-            )
+            .then(borderMod)
             .clickable(onClick = onClick)
     ) {
         Row(
@@ -199,7 +254,7 @@ private fun LanguagePillCard(
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
                     fontSize = 16.sp
                 ),
-                color = Color.Black,
+                color = textColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f)
@@ -208,7 +263,7 @@ private fun LanguagePillCard(
                 Icon(
                     imageVector = Icons.Default.Check,
                     contentDescription = null,
-                    tint = OnboardingButtonBlue,
+                    tint = if (isOnboardingStyle) OnboardingButtonBlue else MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(18.dp)
                 )
             }

@@ -64,6 +64,7 @@ data class WasmStrings(
     val navHome: String,
     val navMessages: String,
     val navSettings: String,
+    val navStorage: String = "Storage",
 
     // Home Screen
     val goodMorning: String,
@@ -120,7 +121,28 @@ data class WasmStrings(
     val noChatsImportedYet: String = "No chats yet",
     val noSearchMatches: String = "No matching chats or messages found.",
     val personalizeProfile: String = "Personalize Profile",
-    val matchingMessagesLabel: String = "Messages"
+    val matchingMessagesLabel: String = "Messages",
+
+    // Wireframe Storage, Import & Settings Screens
+    val totalMessagesTitle: String = "Total Messages",
+    val totalStorageUsed: String = "Total Storage used:",
+    val freeStorageLabel: String = "Free",
+    val voiceNotesLabel: String = "voice notes",
+    val imagesLabel: String = "images",
+    val videoLabel: String = "video",
+    val gifsLabel: String = "GIFs",
+    val stickerLabel: String = "stickers",
+    val choosePlatformTitle: String = "Choose Platform",
+    val smartDetectionSubtitle: String = "Smart archive auto-detection",
+    val autoCategorizeNotice: String = "Our app is smart enough to categorize the imported file into WhatsApp and Instagram automatically.",
+    val importZipHint: String = "Select an exported .zip or .txt archive to import",
+    val searchSettingsPlaceholder: String = "Search Settings",
+    val settingsGeneralTitle: String = "General",
+    val settingsGeneralSubtitle: String = "Profile, sender identity & replay onboarding",
+    val settingsPrivacyTitle: String = "Privacy & Terms of Service",
+    val settingsPrivacySubtitle: String = "100% offline storage & Apache 2.0 license",
+    val settingsStorageDataTitle: String = "Storage & Data",
+    val settingsAboutSubtitle: String = "Version, device specs & developer info"
 )
 
 val LocalWasmStrings = staticCompositionLocalOf { englishStrings() }

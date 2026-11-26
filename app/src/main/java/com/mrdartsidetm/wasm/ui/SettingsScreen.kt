@@ -1,14 +1,20 @@
 package com.mrdartsidetm.wasm.ui
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,8 +22,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -27,14 +36,30 @@ import com.mrdartsidetm.wasm.ui.instagram.InstagramViewModel
 import com.mrdartsidetm.wasm.ui.localization.LocalWasmStrings
 import com.mrdartsidetm.wasm.ui.localization.languageByCode
 import com.mrdartsidetm.wasm.ui.onboarding.LanguageChangerScreen
+import com.mrdartsidetm.wasm.ui.theme.GoogleSansFlexOnboarding875
 import kotlinx.coroutines.launch
 
+private enum class SettingsEntryKey {
+    GENERAL,
+    LANGUAGE,
+    PRIVACY,
+    STORAGE_DATA,
+    ABOUT
+}
+
+private data class SettingsCategoryItem(
+    val key: SettingsEntryKey,
+    val title: String,
+    val subtitle: String,
+    val icon: ImageVector
+)
+
 /**
- * Material 3 Expressive Settings Screen.
- * Allows managing user identity, app language, onboarding replay, checking storage usage for WhatsApp and Instagram,
- * and performing data clearance or cache pruning.
+ * Material 3 Expressive Settings Screen matching `assests/wireframes/main/Settings Screen.svg`:
+ * - Bold dynamic-primary "Settings" header + Search Settings pill bar
+ * - Connected M3 Expressive list rows: General, Language (opens main Language Changer),
+ *   Privacy & Terms of Service, Storage & Data, About.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     whatsappViewModel: ChatViewModel,
@@ -50,21 +75,22 @@ fun SettingsScreen(
     val currentUser by whatsappViewModel.currentUser.collectAsStateWithLifecycle()
     val waConversations by whatsappViewModel.conversations.collectAsStateWithLifecycle()
     val waTotalMessages by whatsappViewModel.totalMessageCount.collectAsStateWithLifecycle()
-
     val igAccount by instagramViewModel.account.collectAsStateWithLifecycle()
     val igConversations by instagramViewModel.conversations.collectAsStateWithLifecycle()
 
-    var showClearWhatsAppDialog by remember { mutableStateOf(false) }
-    var showClearInstagramDialog by remember { mutableStateOf(false) }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var showLanguageChanger by rememberSaveable { mutableStateOf(false) }
+    var showAboutScreen by rememberSaveable { mutableStateOf(false) }
+    var isPersonalizeOpen by rememberSaveable { mutableStateOf(false) }
+
+    var showGeneralDialog by remember { mutableStateOf(false) }
+    var showPrivacyDialog by remember { mutableStateOf(false) }
+    var showStorageDataDialog by remember { mutableStateOf(false) }
     var showIdentityDialog by remember { mutableStateOf(false) }
     var newIdentityText by remember { mutableStateOf("") }
-    var showCacheClearedToast by remember { mutableStateOf(false) }
-    var showAboutScreen by rememberSaveable { mutableStateOf(false) }
-    var showLanguageChanger by rememberSaveable { mutableStateOf(false) }
+    var showClearWhatsAppDialog by remember { mutableStateOf(false) }
+    var showClearInstagramDialog by remember { mutableStateOf(false) }
 
-    val scrollState = rememberScrollState()
-
-    // Confirmation dialog for clearing WhatsApp data
     if (showClearWhatsAppDialog) {
         AlertDialog(
             onDismissRequest = { showClearWhatsAppDialog = false },
@@ -83,13 +109,12 @@ fun SettingsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showClearWhatsAppDialog = false }) {
-                    Text("Cancel")
+                    Text(strings.cancel)
                 }
             }
         )
     }
 
-    // Confirmation dialog for clearing Instagram data
     if (showClearInstagramDialog) {
         AlertDialog(
             onDismissRequest = { showClearInstagramDialog = false },
@@ -108,13 +133,12 @@ fun SettingsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showClearInstagramDialog = false }) {
-                    Text("Cancel")
+                    Text(strings.cancel)
                 }
             }
         )
     }
 
-    // Edit identity dialog
     if (showIdentityDialog) {
         AlertDialog(
             onDismissRequest = { showIdentityDialog = false },
@@ -123,7 +147,7 @@ fun SettingsScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "Enter your display name as it appears in chats to identify incoming vs outgoing messages (speech bubble alignment):",
+                        text = strings.identityHelpText,
                         style = MaterialTheme.typography.bodySmall
                     )
                     OutlinedTextField(
@@ -144,20 +168,198 @@ fun SettingsScreen(
                         showIdentityDialog = false
                     }
                 ) {
-                    Text("Save")
+                    Text(strings.save)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showIdentityDialog = false }) {
-                    Text("Cancel")
+                    Text(strings.cancel)
                 }
             }
         )
     }
- 
+
+    if (showGeneralDialog) {
+        AlertDialog(
+            onDismissRequest = { showGeneralDialog = false },
+            icon = { Icon(Icons.Default.Tune, contentDescription = null) },
+            title = { Text(strings.settingsGeneralTitle) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    FilledTonalButton(
+                        onClick = {
+                            showGeneralDialog = false
+                            isPersonalizeOpen = true
+                        },
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(strings.personalizeProfile, maxLines = 1)
+                    }
+                    FilledTonalButton(
+                        onClick = {
+                            showGeneralDialog = false
+                            newIdentityText = currentUser
+                            showIdentityDialog = true
+                        },
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Badge, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = if (currentUser.isNotEmpty()) "${strings.changeIdentity}: $currentUser" else strings.setIdentity,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            showGeneralDialog = false
+                            onReplayOnboarding()
+                        },
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Replay, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(strings.replayOnboarding, maxLines = 1)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showGeneralDialog = false }) {
+                    Text(strings.cancel)
+                }
+            }
+        )
+    }
+
+    if (showPrivacyDialog) {
+        AlertDialog(
+            onDismissRequest = { showPrivacyDialog = false },
+            icon = { Icon(Icons.Default.Security, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+            title = { Text(strings.settingsPrivacyTitle) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "• Zero Network Permissions: No INTERNET permission is declared in AndroidManifest.xml.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        text = "• 100% Local Storage: All WhatsApp and Instagram chats, attachments, and media remain offline in your device Room database & internal files.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        text = "• License: Apache License 2.0 • Open Source.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showPrivacyDialog = false }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
+    if (showStorageDataDialog) {
+        AlertDialog(
+            onDismissRequest = { showStorageDataDialog = false },
+            icon = { Icon(Icons.Default.Storage, contentDescription = null) },
+            title = { Text(strings.settingsStorageDataTitle) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_nav_whatsapp),
+                            contentDescription = null,
+                            tint = Color(0xFF25D366),
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(strings.whatsappStorage, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false)
+                            Text("${waConversations.size} chats • $waTotalMessages messages", style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                    if (waConversations.isNotEmpty()) {
+                        FilledTonalButton(
+                            onClick = {
+                                showStorageDataDialog = false
+                                showClearWhatsAppDialog = true
+                            },
+                            colors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Clear All WhatsApp Data", maxLines = 1, softWrap = false)
+                        }
+                    }
+
+                    Divider()
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_nav_instagram),
+                            contentDescription = null,
+                            tint = Color(0xFFE1306C),
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(strings.instagramStorage, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false)
+                            Text(
+                                text = if (igAccount != null) {
+                                    "${igAccount!!.displayName.ifEmpty { igAccount!!.accountName }} • ${igConversations.size} chats"
+                                } else {
+                                    strings.noInstagramDataStored
+                                },
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                    if (igAccount != null) {
+                        FilledTonalButton(
+                            onClick = {
+                                showStorageDataDialog = false
+                                showClearInstagramDialog = true
+                            },
+                            colors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Clear All Instagram Data", maxLines = 1, softWrap = false)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showStorageDataDialog = false }) {
+                    Text(strings.cancel)
+                }
+            }
+        )
+    }
+
+    // Opens main/Language Changer.svg screen variant
     if (showLanguageChanger) {
         LanguageChangerScreen(
             selectedLanguageCode = selectedLanguageCode,
+            isOnboardingStyle = false,
             onSelectLanguage = { lang ->
                 scope.launch {
                     prefs.saveAppLanguage(lang.code)
@@ -176,395 +378,247 @@ fun SettingsScreen(
         return
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = strings.settingsTitle,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    if (onBackToHome != null) {
-                        IconButton(onClick = onBackToHome) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = strings.back)
-                        }
-                    }
-                }
+    val activeLanguage = languageByCode(selectedLanguageCode)
+    val categories = remember(strings, activeLanguage, waConversations.size, igConversations.size) {
+        listOf(
+            SettingsCategoryItem(
+                key = SettingsEntryKey.GENERAL,
+                title = strings.settingsGeneralTitle,
+                subtitle = strings.settingsGeneralSubtitle,
+                icon = Icons.Default.Tune
+            ),
+            SettingsCategoryItem(
+                key = SettingsEntryKey.LANGUAGE,
+                title = strings.chooseLanguage.replace("\n", " "),
+                subtitle = "${activeLanguage.flagEmoji} ${activeLanguage.nativeName} (${activeLanguage.englishName})",
+                icon = Icons.Default.Language
+            ),
+            SettingsCategoryItem(
+                key = SettingsEntryKey.PRIVACY,
+                title = strings.settingsPrivacyTitle,
+                subtitle = strings.settingsPrivacySubtitle,
+                icon = Icons.Default.Shield
+            ),
+            SettingsCategoryItem(
+                key = SettingsEntryKey.STORAGE_DATA,
+                title = strings.settingsStorageDataTitle,
+                subtitle = "${waConversations.size + igConversations.size} chats stored offline",
+                icon = Icons.Default.Storage
+            ),
+            SettingsCategoryItem(
+                key = SettingsEntryKey.ABOUT,
+                title = strings.aboutTitle,
+                subtitle = "Version 0.10.0 • Abhijeet Yadav",
+                icon = Icons.Default.Info
             )
+        )
+    }
+
+    val filteredCategories = remember(categories, searchQuery) {
+        if (searchQuery.isBlank()) categories
+        else {
+            val q = searchQuery.trim().lowercase()
+            categories.filter {
+                it.title.lowercase().contains(q) || it.subtitle.lowercase().contains(q)
+            }
         }
-    ) { innerPadding ->
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
         Column(
-            modifier = modifier
+            modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(scrollState)
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+                .padding(horizontal = 16.dp)
         ) {
-            // Language & Onboarding Section
-            Text(
-                text = strings.languageSectionTitle,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            Spacer(modifier = Modifier.height(10.dp))
 
-            val activeLanguage = languageByCode(selectedLanguageCode)
-            Card(
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                modifier = Modifier.fillMaxWidth()
+            // Bold blue "Settings" header matching Settings Screen.svg
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.size(48.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(text = activeLanguage.flagEmoji, fontSize = 22.sp)
-                            }
-                        }
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = strings.appLanguageLabel,
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "${activeLanguage.nativeName} (${activeLanguage.code.uppercase()})",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = { showLanguageChanger = true },
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.Translate, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text(strings.changeLanguage)
-                        }
-                        FilledTonalButton(
-                            onClick = onReplayOnboarding,
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text(strings.replayOnboarding)
-                        }
-                    }
-                }
+                Text(
+                    text = strings.settingsTitle,
+                    style = MaterialTheme.typography.headlineLarge.copy(
+                        fontFamily = GoogleSansFlexOnboarding875,
+                        fontWeight = FontWeight(875),
+                        fontSize = 32.sp,
+                        letterSpacing = (-0.5).sp
+                    ),
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1
+                )
             }
 
-            // Identity Section
-            Text(
-                text = strings.accountAndIdentity,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            Spacer(modifier = Modifier.height(10.dp))
 
-            Card(
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                modifier = Modifier.fillMaxWidth()
+            // Full-pill "Search Settings" bar matching Settings Screen.svg
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 56.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 18.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.size(48.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.Person,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.size(26.dp)
-                                )
-                            }
-                        }
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Sender Identity (Me)",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = if (currentUser.isNotBlank()) currentUser else "Not configured",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = if (currentUser.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontWeight = if (currentUser.isNotBlank()) FontWeight.SemiBold else FontWeight.Normal
-                            )
-                        }
-                    }
-
-                    Text(
-                        text = "Your identity determines which messages are styled as outgoing (green/purple bubbles on right).",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(24.dp)
                     )
-
-                    OutlinedButton(
-                        onClick = {
-                            newIdentityText = currentUser
-                            showIdentityDialog = true
-                        },
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth()
+                    Box(
+                        modifier = Modifier.weight(1f),
+                        contentAlignment = Alignment.CenterStart
                     ) {
-                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text(if (currentUser.isNotBlank()) "Change Identity" else "Set Identity")
-                    }
-                }
-            }
-
-            // Storage & Data Section
-            Text(
-                text = "Local Storage & Data",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            // WhatsApp Storage Card
-            Card(
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
-                        Surface(
-                            shape = RoundedCornerShape(14.dp),
-                            color = Color(0xFF25D366).copy(alpha = 0.14f),
-                            modifier = Modifier.size(44.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_nav_whatsapp),
-                                    contentDescription = null,
-                                    tint = Color(0xFF25D366),
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                        }
-                        Column(modifier = Modifier.weight(1f)) {
+                        if (searchQuery.isEmpty()) {
                             Text(
-                                text = "WhatsApp Storage",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1,
-                                softWrap = false
-                            )
-                            Text(
-                                text = "${waConversations.size} individual chats • $waTotalMessages messages",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = strings.searchSettingsPlaceholder,
+                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 15.sp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1
                             )
                         }
-                    }
-
-                    if (waConversations.isNotEmpty()) {
-                        FilledTonalButton(
-                            onClick = { showClearWhatsAppDialog = true },
-                            colors = ButtonDefaults.filledTonalButtonColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer,
-                                contentColor = MaterialTheme.colorScheme.onErrorContainer
+                        BasicTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            singleLine = true,
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(
+                                fontSize = 15.sp,
+                                color = MaterialTheme.colorScheme.onSurface
                             ),
-                            shape = RoundedCornerShape(12.dp),
+                            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                             modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(Icons.Default.DeleteSweep, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                text = "Clear All WhatsApp Data",
-                                maxLines = 1,
-                                softWrap = false
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Instagram Storage Card
-            Card(
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
-                        Surface(
-                            shape = RoundedCornerShape(14.dp),
-                            color = Color(0xFFE1306C).copy(alpha = 0.14f),
-                            modifier = Modifier.size(44.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_nav_instagram),
-                                    contentDescription = null,
-                                    tint = Color(0xFFE1306C),
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                        }
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Instagram Storage",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1,
-                                softWrap = false
-                            )
-                            Text(
-                                text = if (igAccount != null) {
-                                    "${igAccount!!.displayName.ifEmpty { igAccount!!.accountName }} • ${igConversations.size} conversations"
-                                } else {
-                                    "No Instagram data stored"
-                                },
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    if (igAccount != null) {
-                        FilledTonalButton(
-                            onClick = { showClearInstagramDialog = true },
-                            colors = ButtonDefaults.filledTonalButtonColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer,
-                                contentColor = MaterialTheme.colorScheme.onErrorContainer
-                            ),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(Icons.Default.DeleteSweep, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                text = "Clear All Instagram Data",
-                                maxLines = 1,
-                                softWrap = false
-                            )
-                        }
-                    }
-                }
-            }
-
-            // About Wasm Section
-            Text(
-                text = "About",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Card(
-                onClick = { showAboutScreen = true },
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.app_icon),
-                            contentDescription = "Wasm Logo",
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(RoundedCornerShape(14.dp))
-                        )
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Wasm",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "Version 0.9.0 • Abhijeet Yadav",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                        Icon(
-                            imageVector = Icons.Default.ArrowForwardIos,
-                            contentDescription = "Open About Screen",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                            modifier = Modifier.size(16.dp)
                         )
                     }
-
-                    Text(
-                        text = "High-performance offline chat archive viewer. Tap to view developer profile, open-source specifications, and privacy guarantees.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(
+                            onClick = { searchQuery = "" },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Clear",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+
+            // M3 Expressive connected Settings list matching Settings Screen.svg
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentPadding = PaddingValues(bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                itemsIndexed(
+                    items = filteredCategories,
+                    key = { _, item -> item.key.name }
+                ) { index, item ->
+                    val outer = 20.dp
+                    val inner = 6.dp
+                    val shape = when {
+                        filteredCategories.size <= 1 -> RoundedCornerShape(outer)
+                        index == 0 -> RoundedCornerShape(topStart = outer, topEnd = outer, bottomStart = inner, bottomEnd = inner)
+                        index == filteredCategories.lastIndex -> RoundedCornerShape(topStart = inner, topEnd = inner, bottomStart = outer, bottomEnd = outer)
+                        else -> RoundedCornerShape(inner)
+                    }
+
+                    Surface(
+                        onClick = {
+                            when (item.key) {
+                                SettingsEntryKey.GENERAL -> showGeneralDialog = true
+                                SettingsEntryKey.LANGUAGE -> showLanguageChanger = true
+                                SettingsEntryKey.PRIVACY -> showPrivacyDialog = true
+                                SettingsEntryKey.STORAGE_DATA -> showStorageDataDialog = true
+                                SettingsEntryKey.ABOUT -> showAboutScreen = true
+                            }
+                        },
+                        shape = shape,
+                        color = MaterialTheme.colorScheme.surfaceContainerLow,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 18.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            Icon(
+                                imageVector = item.icon,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(22.dp)
+                            )
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
+                                Text(
+                                    text = item.title,
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        fontWeight = FontWeight.Medium,
+                                        fontSize = 16.sp
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = item.subtitle,
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        AnimatedVisibility(
+            visible = isPersonalizeOpen,
+            enter = slideInVertically(
+                initialOffsetY = { -it },
+                animationSpec = tween(400, easing = FastOutSlowInEasing)
+            ) + fadeIn(tween(400)),
+            exit = slideOutVertically(
+                targetOffsetY = { -it },
+                animationSpec = tween(350, easing = FastOutSlowInEasing)
+            ) + fadeOut(tween(350))
+        ) {
+            PersonalizeScreen(
+                prefs = prefs,
+                onDismiss = { isPersonalizeOpen = false },
+                onNavigateToSettings = { isPersonalizeOpen = false }
+            )
         }
     }
 }
