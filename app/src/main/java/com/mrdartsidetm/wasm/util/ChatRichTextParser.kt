@@ -28,7 +28,7 @@ object ChatRichTextParser {
     )
 
     private val urlPattern = Pattern.compile(
-        """(?i)(?:https?://[^\s<>()]+|www\.[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:/[^\s<>()]*)?|(?<![@/.\w-])[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:com|org|net|io|dev|ai|app|in|co|uk|edu|gov|me|tv|be|info|biz|gg|sh|ly|tech|xyz|online|site|club|store|live|cloud)(?::\d{2,5})?(?:/[^\s<>()]*)?(?![\w.-]))"""
+        """(?i)(?:https?://[^\s<>()]+|www\.[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:/[^\s<>()]*)?|(?<![@/.\w-])[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:com|org|net|io|dev|ai|app|in|co|uk|edu|gov|me|tv|be|info|biz|gg|sh|ly|tech|xyz|online|site|club|store|live|cloud)(?::\d{2,5})?(?:/[^\s<>()]*)?(?![\w-])(?!\.[a-z0-9]))"""
     )
 
     private val phonePattern = Pattern.compile(

@@ -1476,3 +1476,11 @@
   - Added missing `androidx.compose.foundation.clickable` and `androidx.compose.ui.draw.clip` imports in `StorageDataScreen.kt`.
   - Fixed `WasmAvatarCropperDialog.kt` loading indicator parameter (`modifier = Modifier.size(48.dp)`) and extension call syntax (`view.performWasmTickHaptic(true)`).
   - Removed illegal non-local `return` inside `composed {}` in `WasmElasticModifiers.kt` and updated `WasmMechanicalText.kt` transition check to `EnterExitState.Visible` with `@OptIn(ExperimentalAnimationApi::class)`.
+
+
+## [0.12.0] - 2026-11-29 01:57 IST
+- **URL Regex Sentence-Period Fix (`ChatRichTextParser.kt`)**:
+  - Updated bare-domain negative lookahead from `(?![\w.-])` to `(?![\w-])(?!\.[a-z0-9])` so sentence-ending periods (e.g., `github.com.`) match cleanly and have their trailing punctuation stripped by `urlPattern` post-processing, resolving the 1 unit test failure in `ChatRichTextLinksAndNumbersTest` (`37/38 -> 38/38`).
+- **Release Bump (`app/build.gradle.kts`, `v0.12.0`)**:
+  - Bumped `versionCode` from `20` to `21` and `versionName` from `0.11.4` to `0.12.0` (`BuildConfig.VERSION_NAME`).
+  - Preparing signed commit, multi-remote synchronization across GitHub (`origin`), GitLab (`gitlab`), and Codeberg (`codeberg`), and signed release tag `v0.12.0` verification.
