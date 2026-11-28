@@ -30,7 +30,8 @@ data class InstagramConversationEntity(
     val lastTimestamp: String = "",
     val messageCount: Int = 0,
     val folderPath: String = "", // Relative path e.g. "inbox/abhijeetyadav_1424166558982770"
-    val isArchived: Boolean = false
+    val isArchived: Boolean = false,
+    val avatarPath: String? = null
 )
 
 /**

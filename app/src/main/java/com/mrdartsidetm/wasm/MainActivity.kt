@@ -41,7 +41,9 @@ import com.mrdartsidetm.wasm.ui.HomeScreen
 import com.mrdartsidetm.wasm.ui.ImportScreen
 import com.mrdartsidetm.wasm.ui.PlatformChooserScreen
 import com.mrdartsidetm.wasm.ui.SettingsScreen
+import com.mrdartsidetm.wasm.ui.StorageDataScreen
 import com.mrdartsidetm.wasm.ui.StorageScreen
+import com.mrdartsidetm.wasm.ui.WallpaperScreen
 import com.mrdartsidetm.wasm.ui.instagram.InstagramScreen
 import com.mrdartsidetm.wasm.ui.instagram.InstagramViewModel
 import com.mrdartsidetm.wasm.ui.localization.LocalWasmStrings
@@ -53,6 +55,8 @@ import com.mrdartsidetm.wasm.ui.theme.AppFontOption
 import com.mrdartsidetm.wasm.ui.theme.ChatWallpaperConfig
 import com.mrdartsidetm.wasm.ui.theme.ChatWallpaperPreset
 import com.mrdartsidetm.wasm.ui.theme.ColorVariantOption
+import com.mrdartsidetm.wasm.ui.theme.DynamicVariantOption
+import com.mrdartsidetm.wasm.ui.theme.GoogleSansFlexAxisConfig
 import com.mrdartsidetm.wasm.ui.theme.LocalChatWallpaper
 import com.mrdartsidetm.wasm.ui.theme.ThemeModeOption
 import com.mrdartsidetm.wasm.ui.theme.WasmTheme
@@ -70,15 +74,35 @@ class MainActivity : ComponentActivity() {
             val themeMode by prefs.themeMode.collectAsStateWithLifecycle(initialValue = ThemeModeOption.SYSTEM.id)
             val dynamicColorEnabled by prefs.dynamicColorEnabled.collectAsStateWithLifecycle(initialValue = true)
             val colorVariant by prefs.colorVariant.collectAsStateWithLifecycle(initialValue = ColorVariantOption.DEFAULT.id)
+            val dynamicVariant by prefs.dynamicVariant.collectAsStateWithLifecycle(initialValue = DynamicVariantOption.TONAL_SPOT.id)
             val chatWallpaper by prefs.chatWallpaper.collectAsStateWithLifecycle(initialValue = ChatWallpaperPreset.DEFAULT.id)
             val chatWallpaperImagePath by prefs.chatWallpaperImagePath.collectAsStateWithLifecycle(initialValue = null)
             val fontSelection by prefs.fontSelection.collectAsStateWithLifecycle(initialValue = AppFontOption.GOOGLE_SANS_FLEX.id)
+            val gsfGrade by prefs.gsfGrade.collectAsStateWithLifecycle(initialValue = 0f)
+            val gsfWeight by prefs.gsfWeight.collectAsStateWithLifecycle(initialValue = 400f)
+            val gsfWidth by prefs.gsfWidth.collectAsStateWithLifecycle(initialValue = 100f)
+            val gsfRoundness by prefs.gsfRoundness.collectAsStateWithLifecycle(initialValue = 100f)
+            val gsfOpticalSize by prefs.gsfOpticalSize.collectAsStateWithLifecycle(initialValue = 24f)
+            val gsfSlant by prefs.gsfSlant.collectAsStateWithLifecycle(initialValue = 0f)
+
+            val axisConfig = remember(gsfGrade, gsfWeight, gsfWidth, gsfRoundness, gsfOpticalSize, gsfSlant) {
+                GoogleSansFlexAxisConfig(
+                    grade = gsfGrade,
+                    weight = gsfWeight,
+                    width = gsfWidth,
+                    roundness = gsfRoundness,
+                    opticalSize = gsfOpticalSize,
+                    slant = gsfSlant
+                )
+            }
 
             WasmTheme(
                 themeMode = themeMode,
                 dynamicColor = dynamicColorEnabled,
                 colorVariant = colorVariant,
-                fontSelection = fontSelection
+                dynamicVariant = dynamicVariant,
+                fontSelection = fontSelection,
+                axisConfig = axisConfig
             ) {
                 val coroutineScope = rememberCoroutineScope()
                 val whatsappMediaDir = remember { File(applicationContext.filesDir, "media") }
@@ -123,6 +147,9 @@ class MainActivity : ComponentActivity() {
                 var showImportScreen by rememberSaveable { mutableStateOf(false) }
                 // Tracks whether Settings is currently showing a sub-screen (General, Language Changer, About)
                 var isSettingsSubScreen by rememberSaveable { mutableStateOf(false) }
+                // Direct modal overlays for Wallpaper HUD (opened from chat 3-dots) and Storage & Data (opened from Storage tab)
+                var showWallpaperModal by rememberSaveable { mutableStateOf(false) }
+                var showStorageDataModal by rememberSaveable { mutableStateOf(false) }
 
                 CompositionLocalProvider(
                     LocalWasmStrings provides strings,
@@ -200,6 +227,8 @@ class MainActivity : ComponentActivity() {
 
                 // System BackPress Handler
                 when {
+                    showWallpaperModal -> BackHandler { showWallpaperModal = false }
+                    showStorageDataModal -> BackHandler { showStorageDataModal = false }
                     activeMessagesPlatform == "whatsapp" -> {
                         if (waSelectedConversationId != null) {
                             BackHandler {
@@ -238,7 +267,7 @@ class MainActivity : ComponentActivity() {
 
                 Scaffold(
                     bottomBar = {
-                        if (!showImportScreen && activeMessagesPlatform == null && !(selectedTab == 2 && isSettingsSubScreen)) {
+                        if (!showImportScreen && !showWallpaperModal && !showStorageDataModal && activeMessagesPlatform == null && !(selectedTab == 2 && isSettingsSubScreen)) {
                             NavigationBar {
                                 NavigationBarItem(
                                     selected = selectedTab == 0,
@@ -283,6 +312,15 @@ class MainActivity : ComponentActivity() {
                             .padding(innerPadding)
                     ) {
                         when {
+                            showWallpaperModal -> WallpaperScreen(
+                                prefs = prefs,
+                                onBack = { showWallpaperModal = false }
+                            )
+                            showStorageDataModal -> StorageDataScreen(
+                                whatsappViewModel = whatsappViewModel,
+                                instagramViewModel = instagramViewModel,
+                                onBack = { showStorageDataModal = false }
+                            )
                             showImportScreen -> ImportScreen(
                                 whatsappViewModel = whatsappViewModel,
                                 instagramViewModel = instagramViewModel,
@@ -313,7 +351,8 @@ class MainActivity : ComponentActivity() {
                                     whatsappViewModel.closeConversation()
                                     activeMessagesPlatform = null
                                     selectedTab = 0
-                                }
+                                },
+                                onOpenWallpaper = { showWallpaperModal = true }
                             )
                             activeMessagesPlatform == "instagram" -> InstagramScreen(
                                 viewModel = instagramViewModel,
@@ -334,7 +373,8 @@ class MainActivity : ComponentActivity() {
                                     instagramViewModel.closeConversation()
                                     activeMessagesPlatform = null
                                     selectedTab = 0
-                                }
+                                },
+                                onOpenWallpaper = { showWallpaperModal = true }
                             )
                             selectedTab == 0 -> HomeScreen(
                                 whatsappViewModel = whatsappViewModel,
@@ -378,7 +418,8 @@ class MainActivity : ComponentActivity() {
                                 instagramViewModel = instagramViewModel,
                                 prefs = prefs,
                                 onOpenImport = { showImportScreen = true },
-                                onNavigateToSettings = { selectedTab = 2 }
+                                onNavigateToSettings = { selectedTab = 2 },
+                                onOpenStorageData = { showStorageDataModal = true }
                             )
                             else -> SettingsScreen(
                                 whatsappViewModel = whatsappViewModel,

@@ -1,87 +1,27 @@
 package com.mrdartsidetm.wasm.ui
 
-import android.net.Uri
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Badge
-import androidx.compose.material.icons.filled.BrightnessAuto
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.LightMode
-import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material.icons.filled.Replay
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.TextFields
-import androidx.compose.material.icons.filled.Wallpaper
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -92,13 +32,10 @@ import com.mrdartsidetm.wasm.ui.localization.LocalWasmStrings
 import com.mrdartsidetm.wasm.ui.theme.AppFontOption
 import com.mrdartsidetm.wasm.ui.theme.ChatWallpaperPreset
 import com.mrdartsidetm.wasm.ui.theme.ColorVariantOption
+import com.mrdartsidetm.wasm.ui.theme.DynamicVariantOption
 import com.mrdartsidetm.wasm.ui.theme.GoogleSansFlexOnboarding875
-import com.mrdartsidetm.wasm.ui.theme.LocalIsDarkTheme
 import com.mrdartsidetm.wasm.ui.theme.ThemeModeOption
-import com.mrdartsidetm.wasm.ui.theme.getSelectedAppFontFamily
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.io.File
 
 private enum class GeneralEntryKey {
     THEME,
@@ -107,384 +44,43 @@ private enum class GeneralEntryKey {
     FONT_SELECTION
 }
 
-private enum class GeneralExtraKey {
-    PERSONALIZE,
-    IDENTITY,
-    REPLAY_ONBOARDING
-}
-
-private data class GeneralExtraItem(
-    val key: GeneralExtraKey,
-    val title: String,
-    val subtitle: String,
-    val icon: ImageVector
-)
-
 /**
  * Material 3 Expressive General Settings Screen matching `assests/wireframes/main/General.svg`:
  * - Bold "General" heading + "Search Settings" pill bar
  * - Connected M3 Expressive card stack:
  *   1. Theme (3-segment connected button group: System Default | Light | Dark)
- *   2. Dynamic Color & Variants (Switch + Color Variant picker)
- *   3. Wallpaper (preset color swatches + custom photo picker)
- *   4. Font Selection (Google Sans Flex, SF Pro Display, System Default, Monospace)
- * - Secondary connected block below for Profile, Sender Identity & Replay Onboarding.
+ *   2. Dynamic Color & Variants (opens ColorVariantsScreen; vertical divider before Switch)
+ *   3. Wallpaper (opens 9:16 WallpaperScreen HUD)
+ *   4. Font Selection (opens FontSelectionScreen with Google Sans Flex axes)
  */
 @Composable
 fun GeneralScreen(
-    whatsappViewModel: ChatViewModel,
     prefs: UserPreferencesRepository,
-    onReplayOnboarding: () -> Unit,
+    onOpenColorVariants: () -> Unit,
+    onOpenWallpaper: () -> Unit,
+    onOpenFontSelection: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
     val strings = LocalWasmStrings.current
     val scope = rememberCoroutineScope()
-    val isDark = LocalIsDarkTheme.current
 
     BackHandler(onBack = onBack)
 
     val themeMode by prefs.themeMode.collectAsStateWithLifecycle(initialValue = ThemeModeOption.SYSTEM.id)
     val dynamicColorEnabled by prefs.dynamicColorEnabled.collectAsStateWithLifecycle(initialValue = true)
     val colorVariant by prefs.colorVariant.collectAsStateWithLifecycle(initialValue = ColorVariantOption.DEFAULT.id)
+    val dynamicVariant by prefs.dynamicVariant.collectAsStateWithLifecycle(initialValue = DynamicVariantOption.TONAL_SPOT.id)
     val chatWallpaper by prefs.chatWallpaper.collectAsStateWithLifecycle(initialValue = ChatWallpaperPreset.DEFAULT.id)
     val fontSelection by prefs.fontSelection.collectAsStateWithLifecycle(initialValue = AppFontOption.GOOGLE_SANS_FLEX.id)
-    val currentUser by whatsappViewModel.currentUser.collectAsStateWithLifecycle()
 
     var searchQuery by rememberSaveable { mutableStateOf("") }
-    var showColorVariantDialog by remember { mutableStateOf(false) }
-    var showWallpaperDialog by remember { mutableStateOf(false) }
-    var showFontDialog by remember { mutableStateOf(false) }
-    var showIdentityDialog by remember { mutableStateOf(false) }
-    var newIdentityText by remember { mutableStateOf("") }
-    var isPersonalizeOpen by rememberSaveable { mutableStateOf(false) }
 
-    val wallpaperPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uri: Uri? ->
-            uri?.let { selectedUri ->
-                scope.launch(Dispatchers.IO) {
-                    try {
-                        context.contentResolver.openInputStream(selectedUri)?.use { input ->
-                            val targetFile = File(context.filesDir, "chat_wallpaper.jpg")
-                            targetFile.outputStream().use { output -> input.copyTo(output) }
-                            prefs.saveChatWallpaperImagePath(targetFile.absolutePath)
-                            prefs.saveChatWallpaper(ChatWallpaperPreset.CUSTOM.id)
-                        }
-                    } catch (_: Exception) {
-                        // Ignore unreadable stream
-                    }
-                }
-            }
-        }
-    )
-
-    if (showColorVariantDialog) {
-        val activeVariant = ColorVariantOption.fromId(colorVariant)
-        AlertDialog(
-            onDismissRequest = { showColorVariantDialog = false },
-            icon = { Icon(Icons.Default.Palette, contentDescription = null) },
-            title = { Text(strings.colorVariantPickerTitle) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ColorVariantOption.values().forEach { variant ->
-                        val selected = variant == activeVariant
-                        Surface(
-                            onClick = {
-                                scope.launch { prefs.saveColorVariant(variant.id) }
-                                showColorVariantDialog = false
-                            },
-                            shape = RoundedCornerShape(14.dp),
-                            color = if (selected) {
-                                MaterialTheme.colorScheme.primaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.surfaceContainerLow
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 14.dp, vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(16.dp)
-                                            .clip(CircleShape)
-                                            .background(variant.previewPrimary)
-                                    )
-                                    Box(
-                                        modifier = Modifier
-                                            .size(16.dp)
-                                            .clip(CircleShape)
-                                            .background(variant.previewSecondary)
-                                    )
-                                    Box(
-                                        modifier = Modifier
-                                            .size(16.dp)
-                                            .clip(CircleShape)
-                                            .background(variant.previewTertiary)
-                                    )
-                                }
-                                Text(
-                                    text = variant.displayName,
-                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
-                                    ),
-                                    modifier = Modifier.weight(1f),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                if (selected) {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showColorVariantDialog = false }) {
-                    Text(strings.cancel)
-                }
-            }
-        )
+    val activeVariantName = if (dynamicColorEnabled) {
+        DynamicVariantOption.fromId(dynamicVariant).displayName
+    } else {
+        ColorVariantOption.fromId(colorVariant).displayName
     }
-
-    if (showWallpaperDialog) {
-        val activePreset = ChatWallpaperPreset.fromId(chatWallpaper)
-        AlertDialog(
-            onDismissRequest = { showWallpaperDialog = false },
-            icon = { Icon(Icons.Default.Wallpaper, contentDescription = null) },
-            title = { Text(strings.wallpaperPickerTitle) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    ChatWallpaperPreset.values()
-                        .filter { it != ChatWallpaperPreset.CUSTOM }
-                        .forEach { preset ->
-                            val selected = preset == activePreset
-                            val swatchColor = if (isDark) preset.darkColor else preset.lightColor
-                            Surface(
-                                onClick = {
-                                    scope.launch { prefs.saveChatWallpaper(preset.id) }
-                                    showWallpaperDialog = false
-                                },
-                                shape = RoundedCornerShape(14.dp),
-                                color = if (selected) {
-                                    MaterialTheme.colorScheme.primaryContainer
-                                } else {
-                                    MaterialTheme.colorScheme.surfaceContainerLow
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(26.dp)
-                                            .clip(CircleShape)
-                                            .background(swatchColor)
-                                            .border(
-                                                1.dp,
-                                                MaterialTheme.colorScheme.outlineVariant,
-                                                CircleShape
-                                            )
-                                    )
-                                    Text(
-                                        text = preset.displayName,
-                                        style = MaterialTheme.typography.bodyLarge.copy(
-                                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
-                                        ),
-                                        modifier = Modifier.weight(1f),
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    if (selected) {
-                                        Icon(
-                                            imageVector = Icons.Default.Check,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                    FilledTonalButton(
-                        onClick = {
-                            showWallpaperDialog = false
-                            wallpaperPickerLauncher.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                            )
-                        },
-                        shape = RoundedCornerShape(14.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.PhotoLibrary,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(strings.choosePhotoFromGallery, maxLines = 1)
-                    }
-
-                    if (activePreset != ChatWallpaperPreset.DEFAULT) {
-                        TextButton(
-                            onClick = {
-                                scope.launch {
-                                    prefs.saveChatWallpaper(ChatWallpaperPreset.DEFAULT.id)
-                                    prefs.saveChatWallpaperImagePath(null)
-                                }
-                                showWallpaperDialog = false
-                            },
-                            colors = ButtonDefaults.textButtonColors(
-                                contentColor = MaterialTheme.colorScheme.error
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(strings.resetToDefault)
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showWallpaperDialog = false }) {
-                    Text(strings.cancel)
-                }
-            }
-        )
-    }
-
-    if (showFontDialog) {
-        val activeFont = AppFontOption.fromId(fontSelection)
-        AlertDialog(
-            onDismissRequest = { showFontDialog = false },
-            icon = { Icon(Icons.Default.TextFields, contentDescription = null) },
-            title = { Text(strings.fontPickerTitle) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    AppFontOption.values().forEach { fontOption ->
-                        val selected = fontOption == activeFont
-                        val previewFamily = remember(fontOption) {
-                            getSelectedAppFontFamily(context, fontOption.id)
-                        }
-                        Surface(
-                            onClick = {
-                                scope.launch { prefs.saveFontSelection(fontOption.id) }
-                                showFontDialog = false
-                            },
-                            shape = RoundedCornerShape(14.dp),
-                            color = if (selected) {
-                                MaterialTheme.colorScheme.primaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.surfaceContainerLow
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 14.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                RadioButton(
-                                    selected = selected,
-                                    onClick = {
-                                        scope.launch { prefs.saveFontSelection(fontOption.id) }
-                                        showFontDialog = false
-                                    }
-                                )
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = fontOption.displayName,
-                                        style = MaterialTheme.typography.bodyLarge.copy(
-                                            fontFamily = previewFamily,
-                                            fontWeight = FontWeight.SemiBold
-                                        ),
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Text(
-                                        text = "The quick brown fox jumps",
-                                        style = MaterialTheme.typography.bodySmall.copy(
-                                            fontFamily = previewFamily
-                                        ),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showFontDialog = false }) {
-                    Text(strings.cancel)
-                }
-            }
-        )
-    }
-
-    if (showIdentityDialog) {
-        AlertDialog(
-            onDismissRequest = { showIdentityDialog = false },
-            icon = { Icon(Icons.Default.Person, contentDescription = null) },
-            title = { Text("Set Default User Identity") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = strings.identityHelpText,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    OutlinedTextField(
-                        value = newIdentityText,
-                        onValueChange = { newIdentityText = it },
-                        placeholder = { Text("e.g. Kajal Sinha") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        if (newIdentityText.isNotBlank()) {
-                            whatsappViewModel.setIdentity(newIdentityText.trim())
-                        }
-                        showIdentityDialog = false
-                    }
-                ) {
-                    Text(strings.save)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showIdentityDialog = false }) {
-                    Text(strings.cancel)
-                }
-            }
-        )
-    }
-
-    val activeVariantName = ColorVariantOption.fromId(colorVariant).displayName
     val activeWallpaperName = ChatWallpaperPreset.fromId(chatWallpaper).displayName
     val activeFontName = AppFontOption.fromId(fontSelection).displayName
 
@@ -493,8 +89,7 @@ fun GeneralScreen(
         searchQuery,
         activeVariantName,
         activeWallpaperName,
-        activeFontName,
-        dynamicColorEnabled
+        activeFontName
     ) {
         val all = listOf(
             GeneralEntryKey.THEME to "${strings.themeTitle} ${strings.themeSubtitle} ${strings.themeSystemDefault} ${strings.themeLight} ${strings.themeDark}",
@@ -505,34 +100,6 @@ fun GeneralScreen(
         val q = searchQuery.trim().lowercase()
         if (q.isEmpty()) all.map { it.first }
         else all.filter { it.second.lowercase().contains(q) }.map { it.first }
-    }
-
-    val extraItems = remember(strings, currentUser, searchQuery) {
-        val all = listOf(
-            GeneralExtraItem(
-                key = GeneralExtraKey.PERSONALIZE,
-                title = strings.personalizeProfile,
-                subtitle = strings.whatShouldWeCallYou,
-                icon = Icons.Default.Person
-            ),
-            GeneralExtraItem(
-                key = GeneralExtraKey.IDENTITY,
-                title = strings.senderIdentityMe,
-                subtitle = currentUser.ifEmpty { strings.notConfigured },
-                icon = Icons.Default.Badge
-            ),
-            GeneralExtraItem(
-                key = GeneralExtraKey.REPLAY_ONBOARDING,
-                title = strings.replayOnboarding,
-                subtitle = strings.languageSectionTitle,
-                icon = Icons.Default.Replay
-            )
-        )
-        val q = searchQuery.trim().lowercase()
-        if (q.isEmpty()) all
-        else all.filter {
-            it.title.lowercase().contains(q) || it.subtitle.lowercase().contains(q)
-        }
     }
 
     Box(
@@ -547,7 +114,6 @@ fun GeneralScreen(
         ) {
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Top Header matching General.svg ("General" bold in onBackground) + clean back affordance
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -586,7 +152,7 @@ fun GeneralScreen(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Full-pill "Search Settings" bar matching General.svg (rx=33)
+            // Search Pill Bar
             Surface(
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -656,7 +222,6 @@ fun GeneralScreen(
                 contentPadding = PaddingValues(bottom = 28.dp),
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                // Primary connected list from General.svg (outer=16dp, inner=4dp, 2dp spacing)
                 itemsIndexed(
                     items = primaryEntries,
                     key = { _, key -> key.name }
@@ -679,7 +244,7 @@ fun GeneralScreen(
                         }
                         GeneralEntryKey.DYNAMIC_COLOR -> {
                             Surface(
-                                onClick = { showColorVariantDialog = true },
+                                onClick = onOpenColorVariants,
                                 shape = shape,
                                 color = MaterialTheme.colorScheme.surfaceContainerLow,
                                 modifier = Modifier.fillMaxWidth()
@@ -689,7 +254,7 @@ fun GeneralScreen(
                                         .fillMaxWidth()
                                         .padding(horizontal = 16.dp, vertical = 14.dp),
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Palette,
@@ -712,17 +277,20 @@ fun GeneralScreen(
                                             overflow = TextOverflow.Ellipsis
                                         )
                                         Text(
-                                            text = if (dynamicColorEnabled) {
-                                                "${strings.dynamicColorVariantsSubtitle} • $activeVariantName"
-                                            } else {
-                                                activeVariantName
-                                            },
+                                            text = activeVariantName,
                                             style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
                                         )
                                     }
+
+                                    // Separator between heading and Dynamic Color switch
+                                    VerticalDivider(
+                                        modifier = Modifier.height(28.dp),
+                                        color = MaterialTheme.colorScheme.outlineVariant
+                                    )
+
                                     Switch(
                                         checked = dynamicColorEnabled,
                                         onCheckedChange = { checked ->
@@ -736,73 +304,25 @@ fun GeneralScreen(
                             GeneralSimpleRowCard(
                                 icon = Icons.Default.Wallpaper,
                                 title = strings.wallpaperTitle,
-                                subtitle = "${strings.wallpaperSubtitle} • $activeWallpaperName",
+                                subtitle = activeWallpaperName,
                                 shape = shape,
-                                onClick = { showWallpaperDialog = true }
+                                showChevron = true,
+                                onClick = onOpenWallpaper
                             )
                         }
                         GeneralEntryKey.FONT_SELECTION -> {
                             GeneralSimpleRowCard(
                                 icon = Icons.Default.TextFields,
                                 title = strings.fontSelectionTitle,
-                                subtitle = "${strings.fontSelectionSubtitle} • $activeFontName",
+                                subtitle = activeFontName,
                                 shape = shape,
-                                onClick = { showFontDialog = true }
+                                showChevron = true,
+                                onClick = onOpenFontSelection
                             )
                         }
                     }
                 }
-
-                if (extraItems.isNotEmpty()) {
-                    item(key = "general_extra_spacer") {
-                        Spacer(modifier = Modifier.height(16.dp))
-                    }
-                    itemsIndexed(
-                        items = extraItems,
-                        key = { _, item -> item.key.name }
-                    ) { index, item ->
-                        val shape = generalConnectedShape(index, extraItems.size)
-                        GeneralSimpleRowCard(
-                            icon = item.icon,
-                            title = item.title,
-                            subtitle = item.subtitle,
-                            shape = shape,
-                            showChevron = true,
-                            onClick = {
-                                when (item.key) {
-                                    GeneralExtraKey.PERSONALIZE -> isPersonalizeOpen = true
-                                    GeneralExtraKey.IDENTITY -> {
-                                        newIdentityText = currentUser
-                                        showIdentityDialog = true
-                                    }
-                                    GeneralExtraKey.REPLAY_ONBOARDING -> {
-                                        onBack()
-                                        onReplayOnboarding()
-                                    }
-                                }
-                            }
-                        )
-                    }
-                }
             }
-        }
-
-        AnimatedVisibility(
-            visible = isPersonalizeOpen,
-            enter = slideInVertically(
-                initialOffsetY = { -it },
-                animationSpec = tween(400, easing = FastOutSlowInEasing)
-            ) + fadeIn(tween(400)),
-            exit = slideOutVertically(
-                targetOffsetY = { -it },
-                animationSpec = tween(350, easing = FastOutSlowInEasing)
-            ) + fadeOut(tween(350))
-        ) {
-            PersonalizeScreen(
-                prefs = prefs,
-                onDismiss = { isPersonalizeOpen = false },
-                onNavigateToSettings = { isPersonalizeOpen = false }
-            )
         }
     }
 }
@@ -828,7 +348,7 @@ private fun GeneralThemeCard(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.AutoAwesome,
@@ -861,7 +381,7 @@ private fun GeneralThemeCard(
                     )
                 }
 
-                // Connected 3-segment button group matching General.svg (`Connected button group_2`)
+                // Connected 3-segment button group with extra allocation for System Default so it never truncates
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(2.dp)
@@ -872,7 +392,7 @@ private fun GeneralThemeCard(
                         selected = selectedMode == ThemeModeOption.SYSTEM,
                         position = 0,
                         onClick = { onSelectMode(ThemeModeOption.SYSTEM) },
-                        modifier = Modifier.weight(1.25f)
+                        modifier = Modifier.weight(1.54f)
                     )
                     ThemeConnectedSegment(
                         label = lightLabel,
@@ -880,7 +400,7 @@ private fun GeneralThemeCard(
                         selected = selectedMode == ThemeModeOption.LIGHT,
                         position = 1,
                         onClick = { onSelectMode(ThemeModeOption.LIGHT) },
-                        modifier = Modifier.weight(0.9f)
+                        modifier = Modifier.weight(0.73f)
                     )
                     ThemeConnectedSegment(
                         label = darkLabel,
@@ -888,7 +408,7 @@ private fun GeneralThemeCard(
                         selected = selectedMode == ThemeModeOption.DARK,
                         position = 2,
                         onClick = { onSelectMode(ThemeModeOption.DARK) },
-                        modifier = Modifier.weight(0.9f)
+                        modifier = Modifier.weight(0.73f)
                     )
                 }
             }
@@ -901,7 +421,7 @@ private fun ThemeConnectedSegment(
     label: String,
     icon: ImageVector,
     selected: Boolean,
-    position: Int, // 0 = start, 1 = middle, 2 = end
+    position: Int,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -954,12 +474,12 @@ private fun ThemeConnectedSegment(
         shape = shape,
         color = containerColor,
         contentColor = contentColor,
-        modifier = modifier.height(34.dp)
+        modifier = modifier.height(38.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 8.dp),
+                .padding(horizontal = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
@@ -967,18 +487,17 @@ private fun ThemeConnectedSegment(
                 imageVector = icon,
                 contentDescription = null,
                 tint = contentColor,
-                modifier = Modifier.size(15.dp)
+                modifier = Modifier.size(14.dp)
             )
-            Spacer(modifier = Modifier.width(5.dp))
+            Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelMedium.copy(
                     fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
-                    fontSize = 12.sp
+                    fontSize = 11.5.sp
                 ),
                 maxLines = 1,
-                softWrap = false,
-                overflow = TextOverflow.Ellipsis
+                softWrap = false
             )
         }
     }

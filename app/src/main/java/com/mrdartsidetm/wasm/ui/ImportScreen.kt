@@ -3,6 +3,7 @@ package com.mrdartsidetm.wasm.ui
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -100,7 +101,7 @@ fun ImportScreen(
                 val msg = if (current == "whatsapp") strings.importedWhatsappSnackbar else strings.importedInstagramSnackbar
                 if (current == "whatsapp") whatsappViewModel.dismissImportState() else instagramViewModel.dismissImportState()
                 awaitingPlatform = null
-                snackbarHostState.showSnackbar(msg, duration = SnackbarDuration.Short)
+                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                 onImportComplete(current)
             }
             is ImportUiState.Error -> {
@@ -293,11 +294,11 @@ fun ImportScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Surface(
-                                    shape = RoundedCornerShape(14.dp),
+                                    shape = RoundedCornerShape(10.dp),
                                     color = OnboardingWhatsAppArrowNeon,
                                     modifier = Modifier
-                                        .size(84.dp)
-                                        .clip(RoundedCornerShape(14.dp))
+                                        .size(86.dp)
+                                        .clip(RoundedCornerShape(10.dp))
                                         .clickable(onClick = launchAutoPicker)
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
@@ -305,15 +306,15 @@ fun ImportScreen(
                                             painter = painterResource(id = R.drawable.ic_nav_whatsapp),
                                             contentDescription = strings.whatsapp,
                                             tint = Color.White,
-                                            modifier = Modifier.size(46.dp)
+                                            modifier = Modifier.size(48.dp)
                                         )
                                     }
                                 }
 
                                 Box(
                                     modifier = Modifier
-                                        .size(84.dp)
-                                        .clip(RoundedCornerShape(14.dp))
+                                        .size(86.dp)
+                                        .clip(RoundedCornerShape(10.dp))
                                         .background(
                                             Brush.linearGradient(
                                                 colors = listOf(
@@ -330,7 +331,7 @@ fun ImportScreen(
                                         painter = painterResource(id = R.drawable.ic_nav_instagram),
                                         contentDescription = strings.instagram,
                                         tint = Color.White,
-                                        modifier = Modifier.size(46.dp)
+                                        modifier = Modifier.size(48.dp)
                                     )
                                 }
                             }

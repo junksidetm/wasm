@@ -66,72 +66,37 @@ fun SettingsScreen(
 ) {
     val strings = LocalWasmStrings.current
     val scope = rememberCoroutineScope()
-    val waConversations by whatsappViewModel.conversations.collectAsStateWithLifecycle()
-    val waTotalMessages by whatsappViewModel.totalMessageCount.collectAsStateWithLifecycle()
-    val igAccount by instagramViewModel.account.collectAsStateWithLifecycle()
-    val igConversations by instagramViewModel.conversations.collectAsStateWithLifecycle()
 
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var showGeneralScreen by rememberSaveable { mutableStateOf(false) }
+    var showColorVariantsScreen by rememberSaveable { mutableStateOf(false) }
+    var showWallpaperScreen by rememberSaveable { mutableStateOf(false) }
+    var showFontSelectionScreen by rememberSaveable { mutableStateOf(false) }
     var showLanguageChanger by rememberSaveable { mutableStateOf(false) }
+    var showStorageDataScreen by rememberSaveable { mutableStateOf(false) }
     var showAboutScreen by rememberSaveable { mutableStateOf(false) }
 
-    LaunchedEffect(showGeneralScreen, showLanguageChanger, showAboutScreen) {
-        onSubScreenChanged(showGeneralScreen || showLanguageChanger || showAboutScreen)
+    LaunchedEffect(
+        showGeneralScreen,
+        showColorVariantsScreen,
+        showWallpaperScreen,
+        showFontSelectionScreen,
+        showLanguageChanger,
+        showStorageDataScreen,
+        showAboutScreen
+    ) {
+        onSubScreenChanged(
+            showGeneralScreen ||
+                showColorVariantsScreen ||
+                showWallpaperScreen ||
+                showFontSelectionScreen ||
+                showLanguageChanger ||
+                showStorageDataScreen ||
+                showAboutScreen
+        )
     }
 
     var showPrivacyDialog by remember { mutableStateOf(false) }
-    var showStorageDataDialog by remember { mutableStateOf(false) }
-    var showClearWhatsAppDialog by remember { mutableStateOf(false) }
-    var showClearInstagramDialog by remember { mutableStateOf(false) }
-
-    if (showClearWhatsAppDialog) {
-        AlertDialog(
-            onDismissRequest = { showClearWhatsAppDialog = false },
-            icon = { Icon(Icons.Default.DeleteSweep, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
-            title = { Text("Clear WhatsApp Data?") },
-            text = { Text("This will permanently delete all saved WhatsApp conversations, messages, and attachments from local storage.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        whatsappViewModel.clearAllWhatsApp()
-                        showClearWhatsAppDialog = false
-                    }
-                ) {
-                    Text("Clear All WhatsApp", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showClearWhatsAppDialog = false }) {
-                    Text(strings.cancel)
-                }
-            }
-        )
-    }
-
-    if (showClearInstagramDialog) {
-        AlertDialog(
-            onDismissRequest = { showClearInstagramDialog = false },
-            icon = { Icon(Icons.Default.DeleteSweep, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
-            title = { Text("Clear Instagram Data?") },
-            text = { Text("This will permanently remove all imported Instagram messages, conversations, and media files.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        instagramViewModel.clearInstagramData()
-                        showClearInstagramDialog = false
-                    }
-                ) {
-                    Text("Clear All Instagram", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showClearInstagramDialog = false }) {
-                    Text(strings.cancel)
-                }
-            }
-        )
-    }
 
     if (showPrivacyDialog) {
         AlertDialog(
@@ -162,101 +127,38 @@ fun SettingsScreen(
         )
     }
 
-    if (showStorageDataDialog) {
-        AlertDialog(
-            onDismissRequest = { showStorageDataDialog = false },
-            icon = { Icon(Icons.Default.Storage, contentDescription = null) },
-            title = { Text(strings.settingsStorageDataTitle) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_nav_whatsapp),
-                            contentDescription = null,
-                            tint = Color(0xFF25D366),
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(strings.whatsappStorage, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false)
-                            Text("${waConversations.size} chats • $waTotalMessages messages", style = MaterialTheme.typography.bodySmall)
-                        }
-                    }
-                    if (waConversations.isNotEmpty()) {
-                        FilledTonalButton(
-                            onClick = {
-                                showStorageDataDialog = false
-                                showClearWhatsAppDialog = true
-                            },
-                            colors = ButtonDefaults.filledTonalButtonColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer,
-                                contentColor = MaterialTheme.colorScheme.onErrorContainer
-                            ),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Clear All WhatsApp Data", maxLines = 1, softWrap = false)
-                        }
-                    }
-
-                    Divider()
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_nav_instagram),
-                            contentDescription = null,
-                            tint = Color(0xFFE1306C),
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(strings.instagramStorage, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false)
-                            Text(
-                                text = if (igAccount != null) {
-                                    "${igAccount!!.displayName.ifEmpty { igAccount!!.accountName }} • ${igConversations.size} chats"
-                                } else {
-                                    strings.noInstagramDataStored
-                                },
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                    }
-                    if (igAccount != null) {
-                        FilledTonalButton(
-                            onClick = {
-                                showStorageDataDialog = false
-                                showClearInstagramDialog = true
-                            },
-                            colors = ButtonDefaults.filledTonalButtonColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer,
-                                contentColor = MaterialTheme.colorScheme.onErrorContainer
-                            ),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Clear All Instagram Data", maxLines = 1, softWrap = false)
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showStorageDataDialog = false }) {
-                    Text(strings.cancel)
-                }
-            }
+    // Dedicated Color Variants / Wallpaper / Font sub-screens opened from General
+    if (showColorVariantsScreen) {
+        ColorVariantsScreen(
+            prefs = prefs,
+            onBack = { showColorVariantsScreen = false }
         )
+        return
+    }
+
+    if (showWallpaperScreen) {
+        WallpaperScreen(
+            prefs = prefs,
+            onBack = { showWallpaperScreen = false }
+        )
+        return
+    }
+
+    if (showFontSelectionScreen) {
+        FontSelectionScreen(
+            prefs = prefs,
+            onBack = { showFontSelectionScreen = false }
+        )
+        return
     }
 
     // Opens main/General.svg screen
     if (showGeneralScreen) {
         GeneralScreen(
-            whatsappViewModel = whatsappViewModel,
             prefs = prefs,
-            onReplayOnboarding = onReplayOnboarding,
+            onOpenColorVariants = { showColorVariantsScreen = true },
+            onOpenWallpaper = { showWallpaperScreen = true },
+            onOpenFontSelection = { showFontSelectionScreen = true },
             onBack = { showGeneralScreen = false }
         )
         return
@@ -278,6 +180,15 @@ fun SettingsScreen(
         return
     }
 
+    if (showStorageDataScreen) {
+        StorageDataScreen(
+            whatsappViewModel = whatsappViewModel,
+            instagramViewModel = instagramViewModel,
+            onBack = { showStorageDataScreen = false }
+        )
+        return
+    }
+
     if (showAboutScreen) {
         AboutScreen(
             onBack = { showAboutScreen = false }
@@ -285,37 +196,36 @@ fun SettingsScreen(
         return
     }
 
-    val activeLanguage = languageByCode(selectedLanguageCode)
-    val categories = remember(strings, activeLanguage, waConversations.size, igConversations.size) {
+    val categories = remember(strings) {
         listOf(
             SettingsCategoryItem(
                 key = SettingsEntryKey.GENERAL,
                 title = strings.settingsGeneralTitle,
-                subtitle = strings.settingsGeneralSubtitle,
+                subtitle = "",
                 icon = Icons.Default.Tune
             ),
             SettingsCategoryItem(
                 key = SettingsEntryKey.LANGUAGE,
                 title = strings.chooseLanguage.replace("\n", " "),
-                subtitle = "${activeLanguage.flagEmoji} ${activeLanguage.nativeName} (${activeLanguage.code})",
+                subtitle = "",
                 icon = Icons.Default.Language
             ),
             SettingsCategoryItem(
                 key = SettingsEntryKey.PRIVACY,
                 title = strings.settingsPrivacyTitle,
-                subtitle = strings.settingsPrivacySubtitle,
+                subtitle = "",
                 icon = Icons.Default.Shield
             ),
             SettingsCategoryItem(
                 key = SettingsEntryKey.STORAGE_DATA,
                 title = strings.settingsStorageDataTitle,
-                subtitle = "${waConversations.size + igConversations.size} chats stored offline",
+                subtitle = "",
                 icon = Icons.Default.Storage
             ),
             SettingsCategoryItem(
                 key = SettingsEntryKey.ABOUT,
                 title = strings.aboutTitle,
-                subtitle = "Version 0.11.0 • Abhijeet Yadav",
+                subtitle = "",
                 icon = Icons.Default.Info
             )
         )
@@ -458,7 +368,7 @@ fun SettingsScreen(
                                 SettingsEntryKey.GENERAL -> showGeneralScreen = true
                                 SettingsEntryKey.LANGUAGE -> showLanguageChanger = true
                                 SettingsEntryKey.PRIVACY -> showPrivacyDialog = true
-                                SettingsEntryKey.STORAGE_DATA -> showStorageDataDialog = true
+                                SettingsEntryKey.STORAGE_DATA -> showStorageDataScreen = true
                                 SettingsEntryKey.ABOUT -> showAboutScreen = true
                             }
                         },
@@ -469,7 +379,7 @@ fun SettingsScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 18.dp, vertical = 14.dp),
+                                .padding(horizontal = 18.dp, vertical = 16.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
@@ -479,28 +389,17 @@ fun SettingsScreen(
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(22.dp)
                             )
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(2.dp)
-                            ) {
-                                Text(
-                                    text = item.title,
-                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                        fontWeight = FontWeight.Medium,
-                                        fontSize = 16.sp
-                                    ),
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Text(
-                                    text = item.subtitle,
-                                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
+                            Text(
+                                text = item.title,
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    fontWeight = FontWeight.Medium,
+                                    fontSize = 16.sp
+                                ),
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
                             Icon(
                                 imageVector = Icons.Default.ChevronRight,
                                 contentDescription = null,

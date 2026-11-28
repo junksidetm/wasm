@@ -8,6 +8,9 @@ import com.mrdartsidetm.wasm.data.ChatDao
 import com.mrdartsidetm.wasm.data.MessageEntity
 import com.mrdartsidetm.wasm.data.UserPreferencesRepository
 import com.mrdartsidetm.wasm.data.WhatsAppConversationEntity
+import com.mrdartsidetm.wasm.util.MediaCategoryBreakdown
+import com.mrdartsidetm.wasm.util.StorageMediaCategory
+import com.mrdartsidetm.wasm.util.StorageMediaHelper
 import com.mrdartsidetm.wasm.util.WhatsAppParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -16,6 +19,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.FileOutputStream
 import java.util.zip.ZipInputStream
 
 sealed interface ImportUiState {
@@ -451,6 +455,51 @@ class ChatViewModel(
     fun setIdentity(name: String) {
         viewModelScope.launch {
             prefs.saveUserIdentity(name)
+        }
+    }
+
+    fun updateConversationAvatar(conversationId: String, uri: Uri, contentResolver: ContentResolver) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val avatarsDir = File(mediaDir, "_avatars").apply { mkdirs() }
+                val dest = File(avatarsDir, "wa_${conversationId}_${System.currentTimeMillis()}.jpg")
+                contentResolver.openInputStream(uri)?.use { input ->
+                    FileOutputStream(dest).use { output -> input.copyTo(output) }
+                } ?: return@launch
+                if (dest.length() > 0L) {
+                    chatDao.updateConversationAvatar(conversationId, dest.absolutePath)
+                }
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    fun resolveConversationMediaDir(conv: WhatsAppConversationEntity): File? {
+        if (conv.mediaDirName.isBlank()) return null
+        return File(mediaDir, conv.mediaDirName).takeIf { it.exists() }
+    }
+
+    fun computeConversationBreakdown(conv: WhatsAppConversationEntity): MediaCategoryBreakdown {
+        val dir = resolveConversationMediaDir(conv)
+        val folderBreakdown = if (dir != null) StorageMediaHelper.scanDirectory(dir) else MediaCategoryBreakdown()
+        // Include estimated Room DB text storage so text-only chats still reflect usage accurately
+        val estimatedTextDbBytes = conv.messageCount.toLong() * 160L
+        return folderBreakdown.copy(textBytes = folderBreakdown.textBytes + estimatedTextDbBytes)
+    }
+
+    fun deleteConversationCategory(conversationId: String, category: StorageMediaCategory) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val conv = chatDao.getConversation(conversationId).firstOrNull() ?: return@launch
+            val dir = resolveConversationMediaDir(conv) ?: return@launch
+            StorageMediaHelper.deleteCategoryInDirectory(dir, category)
+        }
+    }
+
+    fun deleteAllCategoryMedia(category: StorageMediaCategory) {
+        viewModelScope.launch(Dispatchers.IO) {
+            if (mediaDir.exists()) {
+                StorageMediaHelper.deleteCategoryInDirectory(mediaDir, category)
+            }
         }
     }
 }

@@ -380,17 +380,17 @@ fun OnboardingFlow(
             }
 
             val whatsappCookieTarget = when (currentStep) {
-                OnboardingStep.SCREEN_1 -> ElementPlacement(226.5f / 412f, 609.5f / 917f, 132.54f / 412f)
-                OnboardingStep.SCREEN_2 -> ElementPlacement(162.0f / 412f, 627.0f / 917f, 70.22f / 412f)
-                OnboardingStep.SCREEN_3 -> ElementPlacement(104.5f / 412f, 522.5f / 917f, 132.54f / 412f)
-                else -> ElementPlacement(104.5f / 412f, 522.5f / 917f, 60f / 412f, visible = false)
+                OnboardingStep.SCREEN_1 -> ElementPlacement(226.5f / 412f, 609.5f / 917f, 134f / 412f)
+                OnboardingStep.SCREEN_2 -> ElementPlacement(162.0f / 412f, 626.5f / 917f, 70f / 412f)
+                OnboardingStep.SCREEN_3 -> ElementPlacement(104.5f / 412f, 519f / 917f, 135f / 412f)
+                else -> ElementPlacement(104.5f / 412f, 519f / 917f, 60f / 412f, visible = false)
             }
 
             val instagramFlowerTarget = when (currentStep) {
-                OnboardingStep.SCREEN_1 -> ElementPlacement(358.54f / 412f, 448.54f / 917f, 137.34f / 412f)
-                OnboardingStep.SCREEN_2 -> ElementPlacement(248.69f / 412f, 626.16f / 917f, 68.74f / 412f)
-                OnboardingStep.SCREEN_3 -> ElementPlacement(305.54f / 412f, 515.54f / 917f, 137.34f / 412f)
-                else -> ElementPlacement(305.54f / 412f, 515.54f / 917f, 60f / 412f, visible = false)
+                OnboardingStep.SCREEN_1 -> ElementPlacement(358.54f / 412f, 448.54f / 917f, 134f / 412f)
+                OnboardingStep.SCREEN_2 -> ElementPlacement(248.69f / 412f, 626.5f / 917f, 70f / 412f)
+                OnboardingStep.SCREEN_3 -> ElementPlacement(305.54f / 412f, 519f / 917f, 135f / 412f)
+                else -> ElementPlacement(305.54f / 412f, 519f / 917f, 60f / 412f, visible = false)
             }
 
             // Shared Very Sunny / Flower badge (becomes WhatsApp neon or Instagram Flower on Screen 4!)
@@ -421,7 +421,7 @@ fun OnboardingFlow(
                             iconColors = listOf(Color.White),
                             iconSrcWidth = OnboardingSvgPaths.whatsappIconWidth,
                             iconSrcHeight = OnboardingSvgPaths.whatsappIconHeight,
-                            iconScaleFraction = 0.48f,
+                            iconScaleFraction = 0.46f,
                             modifier = Modifier.fillMaxSize()
                         )
                     }
@@ -525,7 +525,7 @@ fun OnboardingFlow(
                     iconColors = listOf(Color.Black),
                     iconSrcWidth = OnboardingSvgPaths.whatsappIconWidth,
                     iconSrcHeight = OnboardingSvgPaths.whatsappIconHeight,
-                    iconScaleFraction = 0.48f,
+                    iconScaleFraction = 0.45f,
                     modifier = Modifier
                         .fillMaxSize()
                         .then(
@@ -570,7 +570,7 @@ fun OnboardingFlow(
                     iconColors = listOf(Color(0xFF0F0F0F), Color(0xFF0F0F0F), Color(0xFF0F0F0F)),
                     iconSrcWidth = OnboardingSvgPaths.instagramIconWidth,
                     iconSrcHeight = OnboardingSvgPaths.instagramIconHeight,
-                    iconScaleFraction = 0.42f,
+                    iconScaleFraction = 0.45f,
                     useEvenOddFill = true,
                     modifier = Modifier
                         .fillMaxSize()
@@ -1122,7 +1122,9 @@ private fun OnboardingScreen3Content(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(44.dp),
                 contentAlignment = Alignment.Center
             ) {
                 SingleLineAutoFitText(
@@ -1132,7 +1134,7 @@ private fun OnboardingScreen3Content(
                         fontWeight = FontWeight(875)
                     ),
                     color = Color.White,
-                    initialFontSize = 26.sp,
+                    initialFontSize = 24.sp,
                     minFontSize = 14.sp,
                     modifier = Modifier
                         .clip(RoundedCornerShape(16.dp))
@@ -1141,7 +1143,9 @@ private fun OnboardingScreen3Content(
                 )
             }
             Box(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(44.dp),
                 contentAlignment = Alignment.Center
             ) {
                 SingleLineAutoFitText(
@@ -1151,7 +1155,7 @@ private fun OnboardingScreen3Content(
                         fontWeight = FontWeight(875)
                     ),
                     color = Color.White,
-                    initialFontSize = 26.sp,
+                    initialFontSize = 24.sp,
                     minFontSize = 14.sp,
                     modifier = Modifier
                         .clip(RoundedCornerShape(16.dp))

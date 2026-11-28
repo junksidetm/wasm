@@ -42,9 +42,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mrdartsidetm.wasm.R
 import com.mrdartsidetm.wasm.data.UserPreferencesRepository
 import com.mrdartsidetm.wasm.ui.instagram.InstagramViewModel
+import com.mrdartsidetm.wasm.ui.instagram.getAvatarColor
 import com.mrdartsidetm.wasm.ui.localization.LocalWasmStrings
 import com.mrdartsidetm.wasm.ui.theme.GoogleSansFlexOnboarding535
 import com.mrdartsidetm.wasm.ui.theme.GoogleSansFlexOnboarding875
+import kotlinx.coroutines.launch
 import kotlin.math.min
 
 private const val ARCHIVE_ICON_BOX_PATH =
@@ -65,6 +67,7 @@ private data class HomeChatRowUi(
     val supportingText: String,
     val timestampText: String,
     val isArchived: Boolean,
+    val avatarPath: String? = null,
     val targetMessageIdWa: Int? = null,
     val targetMessageIdIg: Long? = null,
     val isMessageMatch: Boolean = false
@@ -95,6 +98,8 @@ fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
     val strings = LocalWasmStrings.current
+    val scope = rememberCoroutineScope()
+    val isArchiveHidden by prefs.isArchiveHidden.collectAsStateWithLifecycle(initialValue = false)
 
     var selectedPlatform by rememberSaveable {
         mutableStateOf(
@@ -169,7 +174,8 @@ fun HomeScreen(
                                 title = conv.title,
                                 supportingText = conv.lastMessage.ifBlank { conv.lastTimestamp },
                                 timestampText = conv.lastTimestamp,
-                                isArchived = conv.isArchived
+                                isArchived = conv.isArchived,
+                                avatarPath = conv.avatarPath
                             )
                         }
                     val msgHits = waMatchingMessages
@@ -191,6 +197,7 @@ fun HomeScreen(
                                 supportingText = preview,
                                 timestampText = msg.timestamp,
                                 isArchived = conv.isArchived,
+                                avatarPath = conv.avatarPath,
                                 targetMessageIdWa = msg.id,
                                 isMessageMatch = true
                             )
@@ -206,7 +213,8 @@ fun HomeScreen(
                                 title = conv.title,
                                 supportingText = conv.lastMessage.ifBlank { "${conv.messageCount} messages" },
                                 timestampText = conv.lastTimestamp,
-                                isArchived = conv.isArchived
+                                isArchived = conv.isArchived,
+                                avatarPath = conv.avatarPath
                             )
                         }
                 }
@@ -228,7 +236,8 @@ fun HomeScreen(
                                 title = conv.title,
                                 supportingText = conv.lastMessage.ifBlank { conv.lastTimestamp },
                                 timestampText = conv.lastTimestamp,
-                                isArchived = conv.isArchived
+                                isArchived = conv.isArchived,
+                                avatarPath = conv.avatarPath
                             )
                         }
                     val msgHits = igMatchingMessages
@@ -247,6 +256,7 @@ fun HomeScreen(
                                 supportingText = preview,
                                 timestampText = msg.timestamp,
                                 isArchived = conv.isArchived,
+                                avatarPath = conv.avatarPath,
                                 targetMessageIdIg = msg.id,
                                 isMessageMatch = true
                             )
@@ -262,7 +272,8 @@ fun HomeScreen(
                                 title = conv.title,
                                 supportingText = conv.lastMessage.ifBlank { "${conv.messageCount} messages" },
                                 timestampText = conv.lastTimestamp,
-                                isArchived = conv.isArchived
+                                isArchived = conv.isArchived,
+                                avatarPath = conv.avatarPath
                             )
                         }
                 }
@@ -390,6 +401,18 @@ fun HomeScreen(
                                 onImportInstagram()
                             }
                         )
+                        if (isArchiveHidden) {
+                            DropdownMenuItem(
+                                text = { Text("Show Archive", maxLines = 1) },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Unarchive, contentDescription = null)
+                                },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    scope.launch { prefs.saveArchiveHidden(false) }
+                                }
+                            )
+                        }
                         Divider()
                         DropdownMenuItem(
                             text = { Text(strings.personalizeProfile, maxLines = 1) },
@@ -430,25 +453,33 @@ fun HomeScreen(
 
             // =========================================================================
             // TOP MIDDLE SECTION: Connected Button Group (Whatsapp | Instagram)
-            // =========================================================================
-            HomeConnectedPlatformToggle(
-                selectedTab = selectedPlatform,
-                whatsappLabel = strings.whatsapp,
-                instagramLabel = strings.instagram,
-                onSelectTab = { tab -> selectedPlatform = tab }
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // =========================================================================
-            // ARCHIVE SECTION: Rounded Pill Banner with Archive Icon + Count
+            // Hidden when viewing Archive
             // =========================================================================
             AnimatedVisibility(visible = !isViewingArchive) {
+                Column {
+                    HomeConnectedPlatformToggle(
+                        selectedTab = selectedPlatform,
+                        whatsappLabel = strings.whatsapp,
+                        instagramLabel = strings.instagram,
+                        onSelectTab = { tab -> selectedPlatform = tab }
+                    )
+                    Spacer(modifier = Modifier.height(14.dp))
+                }
+            }
+
+            // =========================================================================
+            // ARCHIVE SECTION: Rounded Banner with Archive Icon (0.5x) + Count
+            // Long-press to hide; unhide via Home 3-dots -> Show Archive
+            // =========================================================================
+            AnimatedVisibility(visible = !isViewingArchive && !isArchiveHidden) {
                 Column {
                     HomeArchiveBanner(
                         title = strings.archiveLabel,
                         archivedCount = archivedCount,
-                        onClick = { isViewingArchive = true }
+                        onClick = { isViewingArchive = true },
+                        onHideArchive = {
+                            scope.launch { prefs.saveArchiveHidden(true) }
+                        }
                     )
                     Spacer(modifier = Modifier.height(14.dp))
                 }
@@ -535,6 +566,7 @@ fun HomeScreen(
                         )
                         HomeConnectedChatListItem(
                             row = row,
+                            isWhatsApp = selectedPlatform == HomePlatformTab.WHATSAPP,
                             shape = shape,
                             archiveLabel = strings.archiveChat,
                             unarchiveLabel = strings.unarchiveChat,
@@ -671,15 +703,37 @@ private fun HomeSearchPill(
     }
 }
 
+/**
+ * Public string-keyed Connected Button Group for Whatsapp | Instagram selection.
+ */
+@Composable
+fun HomeConnectedPlatformToggle(
+    activePlatform: String,
+    onSelectPlatform: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val strings = LocalWasmStrings.current
+    HomeConnectedPlatformToggle(
+        selectedTab = if (activePlatform == "instagram") HomePlatformTab.INSTAGRAM else HomePlatformTab.WHATSAPP,
+        whatsappLabel = strings.whatsapp,
+        instagramLabel = strings.instagram,
+        onSelectTab = { tab ->
+            onSelectPlatform(if (tab == HomePlatformTab.INSTAGRAM) "instagram" else "whatsapp")
+        },
+        modifier = modifier
+    )
+}
+
 @Composable
 private fun HomeConnectedPlatformToggle(
     selectedTab: HomePlatformTab,
     whatsappLabel: String,
     instagramLabel: String,
-    onSelectTab: (HomePlatformTab) -> Unit
+    onSelectTab: (HomePlatformTab) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         ConnectedSegmentPill(
@@ -755,7 +809,7 @@ private fun ConnectedSegmentPill(
         shape = shape,
         color = containerColor,
         contentColor = contentColor,
-        modifier = modifier.height(40.dp)
+        modifier = modifier.height(42.dp)
     ) {
         Row(
             modifier = Modifier
@@ -768,7 +822,7 @@ private fun ConnectedSegmentPill(
                 painter = painterResource(id = iconResId),
                 contentDescription = null,
                 tint = contentColor,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(19.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
@@ -784,51 +838,63 @@ private fun ConnectedSegmentPill(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun HomeArchiveBanner(
     title: String,
     archivedCount: Int,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onHideArchive: () -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
     val boxPath = remember { PathParser().parsePathString(ARCHIVE_ICON_BOX_PATH).toPath() }
     val arrowPath = remember { PathParser().parsePathString(ARCHIVE_ICON_ARROW_PATH).toPath() }
-    val iconColor = MaterialTheme.colorScheme.onSurface
+    val iconColor = MaterialTheme.colorScheme.onSurfaceVariant
 
     Surface(
-        onClick = onClick,
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
         modifier = Modifier
             .fillMaxWidth()
-            .height(58.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onHideArchive()
+                }
+            )
     ) {
         Row(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 22.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Canvas(modifier = Modifier.size(26.dp)) {
-                val scale = min(size.width / 33f, size.height / 33f)
-                val dx = (size.width - 33f * scale) / 2f
-                val dy = (size.height - 33f * scale) / 2f
-                withTransform({
-                    translate(dx, dy)
-                    scale(scaleX = scale, scaleY = scale, pivot = Offset.Zero)
-                }) {
-                    drawPath(path = boxPath, color = iconColor)
-                    drawPath(path = arrowPath, color = iconColor)
+            Box(
+                modifier = Modifier.size(42.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Canvas(modifier = Modifier.size(14.dp)) {
+                    val scale = min(size.width / 33f, size.height / 33f)
+                    val dx = (size.width - 33f * scale) / 2f
+                    val dy = (size.height - 33f * scale) / 2f
+                    withTransform({
+                        translate(dx, dy)
+                        scale(scaleX = scale, scaleY = scale, pivot = Offset.Zero)
+                    }) {
+                        drawPath(path = boxPath, color = iconColor)
+                        drawPath(path = arrowPath, color = iconColor)
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
-
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontFamily = GoogleSansFlexOnboarding535,
-                    fontWeight = FontWeight(535),
-                    fontSize = 18.sp
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 16.sp
                 ),
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
@@ -881,6 +947,7 @@ private fun connectedListItemShape(index: Int, totalCount: Int): RoundedCornerSh
 @Composable
 private fun HomeConnectedChatListItem(
     row: HomeChatRowUi,
+    isWhatsApp: Boolean,
     shape: RoundedCornerShape,
     archiveLabel: String,
     unarchiveLabel: String,
@@ -913,22 +980,12 @@ private fun HomeConnectedChatListItem(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primary,
+                ConversationAvatar(
+                    title = row.title,
+                    avatarPath = row.avatarPath,
+                    fallbackColor = if (isWhatsApp) getWhatsAppAvatarColor(row.title) else getAvatarColor(row.title),
                     modifier = Modifier.size(42.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        val initial = row.title.trim().firstOrNull()?.uppercaseChar()?.toString() ?: "W"
-                        Text(
-                            text = initial,
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Medium
-                            ),
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                    }
-                }
+                )
 
                 Column(
                     modifier = Modifier.weight(1f),

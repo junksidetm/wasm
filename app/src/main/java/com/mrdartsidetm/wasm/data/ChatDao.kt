@@ -28,6 +28,9 @@ interface ChatDao {
     @Query("UPDATE whatsapp_conversations SET isArchived = :archived WHERE id = :conversationId")
     suspend fun setConversationArchived(conversationId: String, archived: Boolean)
 
+    @Query("UPDATE whatsapp_conversations SET avatarPath = :avatarPath WHERE id = :conversationId")
+    suspend fun updateConversationAvatar(conversationId: String, avatarPath: String?)
+
     @Query("DELETE FROM whatsapp_conversations WHERE id = :conversationId")
     suspend fun deleteConversation(conversationId: String)
 

@@ -5,6 +5,7 @@ import android.graphics.Typeface
 import android.graphics.fonts.FontVariationAxis
 import android.os.Build
 import androidx.compose.material3.Typography
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -14,6 +15,31 @@ import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.mrdartsidetm.wasm.R
+
+@Immutable
+data class GoogleSansFlexAxisConfig(
+    val grade: Float = 0f,
+    val weight: Float = 400f,
+    val width: Float = 100f,
+    val roundness: Float = 100f,
+    val opticalSize: Float = 24f,
+    val slant: Float = 0f
+)
+
+/**
+ * Supported app typography options selectable from Font Selection screen.
+ */
+enum class AppFontOption(val id: String, val displayName: String) {
+    GOOGLE_SANS_FLEX("google_sans_flex", "Google Sans Flex"),
+    SF_PRO("sf_pro", "SF Pro Display"),
+    SYSTEM("system", "System Default"),
+    MONOSPACE("monospace", "Google Sans Code (Monospace)");
+
+    companion object {
+        fun fromId(id: String): AppFontOption =
+            values().firstOrNull { it.id == id } ?: GOOGLE_SANS_FLEX
+    }
+}
 
 /**
  * Creates a Google Sans Flex variable FontFamily with explicit axis controls.
@@ -53,14 +79,48 @@ fun createGoogleSansFlexFamily(
 }
 
 /**
- * Exact Figma Google Sans Flex axis configurations for Wasm Onboarding & Language Changer:
- * - GoogleSansFlexOnboarding535: wght=535, GRAD=36, ROND=100, wdth=119, opsz=24
- *   ("Get started", "How do you want to start?", "Choose Language", Screen 4 "Whatsapp"/"Instagram",
- *    "Everything is set", "en", "Natively Supports", all "Hello" greetings, "Next", "Let's Dive In")
- * - GoogleSansFlexOnboarding875: wght=875, GRAD=36, ROND=100, wdth=105, opsz=24
- *   ("Whatsapp & Instagram*", Screen 3 "Whatsapp"/"Instagram")
- * - GoogleSansFlexMetaMedium: wght=500, ROND=100, opsz=24
- *   ("Whatsapp and Instagram are copyright under Meta Services.")
+ * Google Sans Code (Google Sans Mono) variable FontFamily for monospace blocks (`code` and ```mono```)
+ * as well as the Monospace app font option.
+ */
+@OptIn(ExperimentalTextApi::class)
+val GoogleSansCodeFontFamily: FontFamily = FontFamily(
+    Font(
+        resId = R.font.google_sans_code,
+        weight = FontWeight.Normal,
+        variationSettings = FontVariation.Settings(
+            FontVariation.weight(400),
+            FontVariation.Setting("MONO", 1f)
+        )
+    ),
+    Font(
+        resId = R.font.google_sans_code,
+        weight = FontWeight.Medium,
+        variationSettings = FontVariation.Settings(
+            FontVariation.weight(500),
+            FontVariation.Setting("MONO", 1f)
+        )
+    ),
+    Font(
+        resId = R.font.google_sans_code,
+        weight = FontWeight.Bold,
+        variationSettings = FontVariation.Settings(
+            FontVariation.weight(700),
+            FontVariation.Setting("MONO", 1f)
+        )
+    ),
+    Font(
+        resId = R.font.google_sans_code_italic,
+        weight = FontWeight.Normal,
+        style = FontStyle.Italic,
+        variationSettings = FontVariation.Settings(
+            FontVariation.weight(400),
+            FontVariation.Setting("MONO", 1f)
+        )
+    )
+)
+
+/**
+ * Exact Figma Google Sans Flex axis configurations for Wasm Onboarding & Wordmarks.
  */
 val GoogleSansFlexOnboarding535: FontFamily = createGoogleSansFlexFamily(
     weight = 535,
@@ -184,41 +244,6 @@ val GoogleSansFlexDisplayFontFamily = FontFamily(
     )
 )
 
-// Individual FontFamily aliases mapped to Google Sans Flex so the entire UI uses Google Sans Flex uniformly
-val SfProBold = createGoogleSansFlexFamily(weight = 700)
-val SfProItalic = createGoogleSansFlexFamily(weight = 400, slant = -10f, style = FontStyle.Italic)
-val SfProBoldItalic = createGoogleSansFlexFamily(weight = 700, slant = -10f, style = FontStyle.Italic)
-val SfProRegular = createGoogleSansFlexFamily(weight = 400)
-val SfProMedium = createGoogleSansFlexFamily(weight = 500)
-val SfProMediumItalic = createGoogleSansFlexFamily(weight = 500, slant = -10f, style = FontStyle.Italic)
-val SfProSemibold = createGoogleSansFlexFamily(weight = 600)
-val SfProSemiboldItalic = createGoogleSansFlexFamily(weight = 600, slant = -10f, style = FontStyle.Italic)
-val SfProLight = createGoogleSansFlexFamily(weight = 300)
-val SfProLightItalic = createGoogleSansFlexFamily(weight = 300, slant = -10f, style = FontStyle.Italic)
-val SfProThin = createGoogleSansFlexFamily(weight = 100)
-val SfProThinItalic = createGoogleSansFlexFamily(weight = 100, slant = -10f, style = FontStyle.Italic)
-val SfProUltralight = createGoogleSansFlexFamily(weight = 200)
-val SfProUltralightItalic = createGoogleSansFlexFamily(weight = 200, slant = -10f, style = FontStyle.Italic)
-val SfProHeavy = createGoogleSansFlexFamily(weight = 800)
-val SfProHeavyItalic = createGoogleSansFlexFamily(weight = 800, slant = -10f, style = FontStyle.Italic)
-val SfProBlack = createGoogleSansFlexFamily(weight = 900)
-val SfProBlackItalic = createGoogleSansFlexFamily(weight = 900, slant = -10f, style = FontStyle.Italic)
-
-/**
- * Supported app typography options selectable from General Settings.
- */
-enum class AppFontOption(val id: String, val displayName: String) {
-    GOOGLE_SANS_FLEX("google_sans_flex", "Google Sans Flex"),
-    SF_PRO("sf_pro", "SF Pro Display"),
-    SYSTEM("system", "System Default"),
-    MONOSPACE("monospace", "Monospace");
-
-    companion object {
-        fun fromId(id: String): AppFontOption =
-            values().firstOrNull { it.id == id } ?: GOOGLE_SANS_FLEX
-    }
-}
-
 val SfProDisplayFontFamily = FontFamily(
     Font(resId = R.font.sf_pro_display_thin, weight = FontWeight.Thin),
     Font(resId = R.font.sf_pro_display_ultralight, weight = FontWeight.ExtraLight),
@@ -233,9 +258,14 @@ val SfProDisplayFontFamily = FontFamily(
     Font(resId = R.font.sf_pro_display_black, weight = FontWeight.Black)
 )
 
-/**
- * Builds SF Pro Display FontFamily with bundled iOS emoji fallback on Android 10+ (API 29+).
- */
+// Individual FontFamily aliases mapped to Google Sans Flex / SF Pro
+val SfProBold = createGoogleSansFlexFamily(weight = 700)
+val SfProItalic = createGoogleSansFlexFamily(weight = 400, slant = -10f, style = FontStyle.Italic)
+val SfProBoldItalic = createGoogleSansFlexFamily(weight = 700, slant = -10f, style = FontStyle.Italic)
+val SfProRegular = createGoogleSansFlexFamily(weight = 400)
+val SfProMedium = createGoogleSansFlexFamily(weight = 500)
+val SfProSemibold = createGoogleSansFlexFamily(weight = 600)
+
 fun getSfProFontFamily(context: Context): FontFamily {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         try {
@@ -255,11 +285,8 @@ fun getSfProFontFamily(context: Context): FontFamily {
             var familyBuilder: android.graphics.fonts.FontFamily.Builder? = null
             for (resId in weightResPairs) {
                 val f = android.graphics.fonts.Font.Builder(context.resources, resId).build()
-                if (familyBuilder == null) {
-                    familyBuilder = android.graphics.fonts.FontFamily.Builder(f)
-                } else {
-                    familyBuilder.addFont(f)
-                }
+                if (familyBuilder == null) familyBuilder = android.graphics.fonts.FontFamily.Builder(f)
+                else familyBuilder.addFont(f)
             }
             val primaryFamily = familyBuilder?.build()
             if (primaryFamily != null) {
@@ -271,117 +298,174 @@ fun getSfProFontFamily(context: Context): FontFamily {
                 return FontFamily(compositeTypeface)
             }
         } catch (_: Throwable) {
-            // Fall back to static SfProDisplayFontFamily
         }
     }
     return SfProDisplayFontFamily
 }
 
-/**
- * Resolves the user's selected FontFamily with bundled iOS emoji fallback.
- */
-fun getSelectedAppFontFamily(context: Context, fontSelection: String): FontFamily {
-    return when (AppFontOption.fromId(fontSelection)) {
-        AppFontOption.GOOGLE_SANS_FLEX -> getAppFontFamily(context)
-        AppFontOption.SF_PRO -> getSfProFontFamily(context)
-        AppFontOption.SYSTEM -> FontFamily.Default
-        AppFontOption.MONOSPACE -> FontFamily.Monospace
-    }
-}
-
-/**
- * Builds the primary Google Sans Flex FontFamily with bundled iOS emoji fallback on Android 10+ (API 29+).
- */
-fun getAppFontFamily(context: Context): FontFamily {
+fun getGoogleSansCodeFontFamily(context: Context): FontFamily {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         try {
-            val weights = listOf(100, 300, 400, 500, 600, 700, 800, 900)
+            val weights = listOf(300, 400, 500, 600, 700, 800)
             var familyBuilder: android.graphics.fonts.FontFamily.Builder? = null
             for (w in weights) {
-                val f = android.graphics.fonts.Font.Builder(context.resources, R.font.google_sans_flex)
+                val f = android.graphics.fonts.Font.Builder(context.resources, R.font.google_sans_code)
                     .setFontVariationSettings(
                         arrayOf(
                             FontVariationAxis("wght", w.toFloat()),
-                            FontVariationAxis("ROND", 100f),
-                            FontVariationAxis("opsz", 24f)
+                            FontVariationAxis("MONO", 1f)
                         )
                     )
                     .build()
-                if (familyBuilder == null) {
-                    familyBuilder = android.graphics.fonts.FontFamily.Builder(f)
-                } else {
-                    familyBuilder.addFont(f)
-                }
+                if (familyBuilder == null) familyBuilder = android.graphics.fonts.FontFamily.Builder(f)
+                else familyBuilder.addFont(f)
             }
             val primaryFamily = familyBuilder?.build()
             if (primaryFamily != null) {
                 val emojiFont = android.graphics.fonts.Font.Builder(context.assets, "fonts/ios_emoji.ttf").build()
                 val emojiFamily = android.graphics.fonts.FontFamily.Builder(emojiFont).build()
-
                 val compositeTypeface = Typeface.CustomFallbackBuilder(primaryFamily)
                     .addCustomFallback(emojiFamily)
                     .build()
-
                 return FontFamily(compositeTypeface)
             }
         } catch (_: Throwable) {
-            // Fall back to Compose variable FontFamily
         }
     }
-    return GoogleSansFlexDisplayFontFamily
+    return GoogleSansCodeFontFamily
 }
 
-/**
- * Builds Material 3 Expressive Typography utilizing Google Sans Flex across the entire UI.
- */
-fun buildWasmTypography(fontFamily: FontFamily): Typography {
+fun getAppFontFamily(
+    context: Context,
+    axisConfig: GoogleSansFlexAxisConfig = GoogleSansFlexAxisConfig()
+): FontFamily {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        try {
+            val baseWeight = axisConfig.weight.coerceIn(100f, 900f)
+            // Build multi-weight family biased around the user's chosen weight, width, grade, roundness, opsz, and slant
+            val weightOffsets = listOf(-200f, -100f, 0f, 150f, 300f)
+            var familyBuilder: android.graphics.fonts.FontFamily.Builder? = null
+            val wd = axisConfig.width.coerceIn(50f, 150f)
+            val gr = axisConfig.grade.coerceIn(-200f, 150f)
+            val rn = axisConfig.roundness.coerceIn(0f, 100f)
+            val op = axisConfig.opticalSize.coerceIn(8f, 144f)
+            val sl = axisConfig.slant.coerceIn(-10f, 0f)
+
+            for (offset in weightOffsets) {
+                val w = (baseWeight + offset).coerceIn(100f, 1000f)
+                val f = android.graphics.fonts.Font.Builder(context.resources, R.font.google_sans_flex)
+                    .setFontVariationSettings(
+                        arrayOf(
+                            FontVariationAxis("wght", w),
+                            FontVariationAxis("wdth", wd),
+                            FontVariationAxis("GRAD", gr),
+                            FontVariationAxis("ROND", rn),
+                            FontVariationAxis("opsz", op),
+                            FontVariationAxis("slnt", sl)
+                        )
+                    )
+                    .build()
+                if (familyBuilder == null) familyBuilder = android.graphics.fonts.FontFamily.Builder(f)
+                else familyBuilder.addFont(f)
+            }
+            val primaryFamily = familyBuilder?.build()
+            if (primaryFamily != null) {
+                val emojiFont = android.graphics.fonts.Font.Builder(context.assets, "fonts/ios_emoji.ttf").build()
+                val emojiFamily = android.graphics.fonts.FontFamily.Builder(emojiFont).build()
+                val compositeTypeface = Typeface.CustomFallbackBuilder(primaryFamily)
+                    .addCustomFallback(emojiFamily)
+                    .build()
+                return FontFamily(compositeTypeface)
+            }
+        } catch (_: Throwable) {
+        }
+    }
+    return createGoogleSansFlexFamily(
+        weight = axisConfig.weight.toInt(),
+        width = axisConfig.width,
+        grade = axisConfig.grade,
+        roundness = axisConfig.roundness,
+        opticalSize = axisConfig.opticalSize,
+        slant = axisConfig.slant
+    )
+}
+
+fun getSelectedAppFontFamily(
+    context: Context,
+    fontSelection: String,
+    axisConfig: GoogleSansFlexAxisConfig = GoogleSansFlexAxisConfig()
+): FontFamily {
+    return when (AppFontOption.fromId(fontSelection)) {
+        AppFontOption.GOOGLE_SANS_FLEX -> getAppFontFamily(context, axisConfig)
+        AppFontOption.SF_PRO -> getSfProFontFamily(context)
+        AppFontOption.SYSTEM -> FontFamily.Default
+        AppFontOption.MONOSPACE -> getGoogleSansCodeFontFamily(context)
+    }
+}
+
+fun buildWasmTypography(
+    fontFamily: FontFamily,
+    axisConfig: GoogleSansFlexAxisConfig = GoogleSansFlexAxisConfig(),
+    isGoogleSansFlex: Boolean = true
+): Typography {
+    val bodyWeight = if (isGoogleSansFlex) FontWeight(axisConfig.weight.toInt().coerceIn(100, 900)) else FontWeight.Normal
+    val bodyStyle = if (isGoogleSansFlex && axisConfig.slant <= -3f) FontStyle.Italic else FontStyle.Normal
+
     return Typography(
         displayLarge = TextStyle(
             fontFamily = fontFamily,
-            fontWeight = FontWeight.Normal,
+            fontWeight = bodyWeight,
+            fontStyle = bodyStyle,
             fontSize = 57.sp,
             lineHeight = 64.sp,
             letterSpacing = (-0.25).sp
         ),
         displayMedium = TextStyle(
             fontFamily = fontFamily,
-            fontWeight = FontWeight.Normal,
+            fontWeight = bodyWeight,
+            fontStyle = bodyStyle,
             fontSize = 45.sp,
             lineHeight = 52.sp
         ),
         displaySmall = TextStyle(
             fontFamily = fontFamily,
-            fontWeight = FontWeight.Normal,
+            fontWeight = bodyWeight,
+            fontStyle = bodyStyle,
             fontSize = 36.sp,
             lineHeight = 44.sp
         ),
         headlineLarge = TextStyle(
             fontFamily = fontFamily,
             fontWeight = FontWeight.SemiBold,
+            fontStyle = bodyStyle,
             fontSize = 32.sp,
             lineHeight = 40.sp
         ),
         headlineMedium = TextStyle(
             fontFamily = fontFamily,
             fontWeight = FontWeight.SemiBold,
+            fontStyle = bodyStyle,
             fontSize = 28.sp,
             lineHeight = 36.sp
         ),
         headlineSmall = TextStyle(
             fontFamily = fontFamily,
             fontWeight = FontWeight.SemiBold,
+            fontStyle = bodyStyle,
             fontSize = 24.sp,
             lineHeight = 32.sp
         ),
         titleLarge = TextStyle(
             fontFamily = fontFamily,
             fontWeight = FontWeight.Bold,
+            fontStyle = bodyStyle,
             fontSize = 22.sp,
             lineHeight = 28.sp
         ),
         titleMedium = TextStyle(
             fontFamily = fontFamily,
             fontWeight = FontWeight.SemiBold,
+            fontStyle = bodyStyle,
             fontSize = 16.sp,
             lineHeight = 24.sp,
             letterSpacing = 0.15.sp
@@ -389,27 +473,31 @@ fun buildWasmTypography(fontFamily: FontFamily): Typography {
         titleSmall = TextStyle(
             fontFamily = fontFamily,
             fontWeight = FontWeight.Medium,
+            fontStyle = bodyStyle,
             fontSize = 14.sp,
             lineHeight = 20.sp,
             letterSpacing = 0.1.sp
         ),
         bodyLarge = TextStyle(
             fontFamily = fontFamily,
-            fontWeight = FontWeight.Normal,
+            fontWeight = bodyWeight,
+            fontStyle = bodyStyle,
             fontSize = 16.sp,
             lineHeight = 24.sp,
             letterSpacing = 0.5.sp
         ),
         bodyMedium = TextStyle(
             fontFamily = fontFamily,
-            fontWeight = FontWeight.Normal,
+            fontWeight = bodyWeight,
+            fontStyle = bodyStyle,
             fontSize = 14.sp,
             lineHeight = 20.sp,
             letterSpacing = 0.25.sp
         ),
         bodySmall = TextStyle(
             fontFamily = fontFamily,
-            fontWeight = FontWeight.Normal,
+            fontWeight = bodyWeight,
+            fontStyle = bodyStyle,
             fontSize = 12.sp,
             lineHeight = 16.sp,
             letterSpacing = 0.4.sp
@@ -417,6 +505,7 @@ fun buildWasmTypography(fontFamily: FontFamily): Typography {
         labelLarge = TextStyle(
             fontFamily = fontFamily,
             fontWeight = FontWeight.Medium,
+            fontStyle = bodyStyle,
             fontSize = 14.sp,
             lineHeight = 20.sp,
             letterSpacing = 0.1.sp
@@ -424,6 +513,7 @@ fun buildWasmTypography(fontFamily: FontFamily): Typography {
         labelMedium = TextStyle(
             fontFamily = fontFamily,
             fontWeight = FontWeight.Medium,
+            fontStyle = bodyStyle,
             fontSize = 12.sp,
             lineHeight = 16.sp,
             letterSpacing = 0.5.sp
@@ -431,6 +521,7 @@ fun buildWasmTypography(fontFamily: FontFamily): Typography {
         labelSmall = TextStyle(
             fontFamily = fontFamily,
             fontWeight = FontWeight.Medium,
+            fontStyle = bodyStyle,
             fontSize = 11.sp,
             lineHeight = 16.sp,
             letterSpacing = 0.5.sp

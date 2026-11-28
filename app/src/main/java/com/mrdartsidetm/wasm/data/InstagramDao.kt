@@ -35,6 +35,18 @@ interface InstagramDao {
     @Query("UPDATE instagram_conversations SET isArchived = :archived WHERE id = :conversationId")
     suspend fun setConversationArchived(conversationId: String, archived: Boolean)
 
+    @Query("UPDATE instagram_conversations SET avatarPath = :avatarPath WHERE id = :conversationId")
+    suspend fun updateConversationAvatar(conversationId: String, avatarPath: String?)
+
+    @Query("DELETE FROM instagram_conversations WHERE id = :conversationId")
+    suspend fun deleteConversation(conversationId: String)
+
+    @Query("DELETE FROM instagram_messages WHERE conversationId = :conversationId")
+    suspend fun deleteMessagesForConversation(conversationId: String)
+
+    @Query("UPDATE instagram_messages SET isOutgoing = (LOWER(sender) = LOWER(:identity)) WHERE conversationId = :conversationId")
+    suspend fun updateMessagesOutgoingForIdentity(conversationId: String, identity: String)
+
     // Message operations
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMessages(messages: List<InstagramMessageEntity>)

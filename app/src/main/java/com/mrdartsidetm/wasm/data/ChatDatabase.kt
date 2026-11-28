@@ -16,7 +16,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         InstagramConversationEntity::class,
         InstagramMessageEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class ChatDatabase : RoomDatabase() {
@@ -34,6 +34,13 @@ abstract class ChatDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE whatsapp_conversations ADD COLUMN avatarPath TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE instagram_conversations ADD COLUMN avatarPath TEXT DEFAULT NULL")
+            }
+        }
+
         fun getDatabase(context: Context): ChatDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -42,7 +49,7 @@ abstract class ChatDatabase : RoomDatabase() {
                     "chat_database"
                 )
                     .setJournalMode(JournalMode.WRITE_AHEAD_LOGGING)
-                    .addMigrations(MIGRATION_4_5)
+                    .addMigrations(MIGRATION_4_5, MIGRATION_5_6)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance

@@ -3,6 +3,7 @@ package com.mrdartsidetm.wasm.data
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -20,9 +21,19 @@ class UserPreferencesRepository(private val context: Context) {
     private val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
     private val DYNAMIC_COLOR_ENABLED_KEY = booleanPreferencesKey("dynamic_color_enabled")
     private val COLOR_VARIANT_KEY = stringPreferencesKey("color_variant")
+    private val DYNAMIC_VARIANT_KEY = stringPreferencesKey("dynamic_variant")
     private val CHAT_WALLPAPER_KEY = stringPreferencesKey("chat_wallpaper")
     private val CHAT_WALLPAPER_IMAGE_PATH_KEY = stringPreferencesKey("chat_wallpaper_image_path")
     private val FONT_SELECTION_KEY = stringPreferencesKey("font_selection")
+    private val ARCHIVE_HIDDEN_KEY = booleanPreferencesKey("archive_hidden")
+
+    // Google Sans Flex variable font axes
+    private val GSF_GRADE_KEY = floatPreferencesKey("gsf_grade")
+    private val GSF_WEIGHT_KEY = floatPreferencesKey("gsf_weight")
+    private val GSF_WIDTH_KEY = floatPreferencesKey("gsf_width")
+    private val GSF_ROUNDNESS_KEY = floatPreferencesKey("gsf_roundness")
+    private val GSF_OPTICAL_SIZE_KEY = floatPreferencesKey("gsf_optical_size")
+    private val GSF_SLANT_KEY = floatPreferencesKey("gsf_slant")
 
     // Flow that emits the current saved name (or empty string if not set)
     val userIdentity: Flow<String> = context.dataStore.data.map { prefs ->
@@ -59,9 +70,14 @@ class UserPreferencesRepository(private val context: Context) {
         prefs[DYNAMIC_COLOR_ENABLED_KEY] ?: true
     }
 
-    // Selected color palette variant: "default", "ocean", "emerald", "violet", "coral", "rose"
+    // Selected static color palette variant when Dynamic Color is OFF
     val colorVariant: Flow<String> = context.dataStore.data.map { prefs ->
         prefs[COLOR_VARIANT_KEY] ?: "default"
+    }
+
+    // Selected Material 3 DynamicSchemeVariant when Dynamic Color is ON
+    val dynamicVariant: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[DYNAMIC_VARIANT_KEY] ?: "tonal_spot"
     }
 
     // Selected chat wallpaper preset or "custom"
@@ -79,61 +95,90 @@ class UserPreferencesRepository(private val context: Context) {
         prefs[FONT_SELECTION_KEY] ?: "google_sans_flex"
     }
 
-    // Function to save selected language code
-    suspend fun saveAppLanguage(languageCode: String) {
-        context.dataStore.edit { prefs ->
-            prefs[APP_LANGUAGE_KEY] = languageCode
-        }
+    // Whether the Archive card on Home is hidden by long-press
+    val isArchiveHidden: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[ARCHIVE_HIDDEN_KEY] ?: false
     }
 
-    // Function to persist onboarding completion status
+    val gsfGrade: Flow<Float> = context.dataStore.data.map { it[GSF_GRADE_KEY] ?: 0f }
+    val gsfWeight: Flow<Float> = context.dataStore.data.map { it[GSF_WEIGHT_KEY] ?: 400f }
+    val gsfWidth: Flow<Float> = context.dataStore.data.map { it[GSF_WIDTH_KEY] ?: 100f }
+    val gsfRoundness: Flow<Float> = context.dataStore.data.map { it[GSF_ROUNDNESS_KEY] ?: 100f }
+    val gsfOpticalSize: Flow<Float> = context.dataStore.data.map { it[GSF_OPTICAL_SIZE_KEY] ?: 24f }
+    val gsfSlant: Flow<Float> = context.dataStore.data.map { it[GSF_SLANT_KEY] ?: 0f }
+
+    suspend fun saveAppLanguage(languageCode: String) {
+        context.dataStore.edit { prefs -> prefs[APP_LANGUAGE_KEY] = languageCode }
+    }
+
     suspend fun setOnboardingCompleted(completed: Boolean) {
-        context.dataStore.edit { prefs ->
-            prefs[ONBOARDING_COMPLETED_KEY] = completed
-        }
+        context.dataStore.edit { prefs -> prefs[ONBOARDING_COMPLETED_KEY] = completed }
     }
 
     suspend fun saveThemeMode(mode: String) {
-        context.dataStore.edit { prefs ->
-            prefs[THEME_MODE_KEY] = mode
-        }
+        context.dataStore.edit { prefs -> prefs[THEME_MODE_KEY] = mode }
     }
 
     suspend fun saveDynamicColorEnabled(enabled: Boolean) {
-        context.dataStore.edit { prefs ->
-            prefs[DYNAMIC_COLOR_ENABLED_KEY] = enabled
-        }
+        context.dataStore.edit { prefs -> prefs[DYNAMIC_COLOR_ENABLED_KEY] = enabled }
     }
 
     suspend fun saveColorVariant(variant: String) {
-        context.dataStore.edit { prefs ->
-            prefs[COLOR_VARIANT_KEY] = variant
-        }
+        context.dataStore.edit { prefs -> prefs[COLOR_VARIANT_KEY] = variant }
+    }
+
+    suspend fun saveDynamicVariant(variant: String) {
+        context.dataStore.edit { prefs -> prefs[DYNAMIC_VARIANT_KEY] = variant }
     }
 
     suspend fun saveChatWallpaper(wallpaper: String) {
-        context.dataStore.edit { prefs ->
-            prefs[CHAT_WALLPAPER_KEY] = wallpaper
-        }
+        context.dataStore.edit { prefs -> prefs[CHAT_WALLPAPER_KEY] = wallpaper }
     }
 
     suspend fun saveChatWallpaperImagePath(path: String?) {
         context.dataStore.edit { prefs ->
-            if (path == null) {
-                prefs.remove(CHAT_WALLPAPER_IMAGE_PATH_KEY)
-            } else {
-                prefs[CHAT_WALLPAPER_IMAGE_PATH_KEY] = path
-            }
+            if (path == null) prefs.remove(CHAT_WALLPAPER_IMAGE_PATH_KEY)
+            else prefs[CHAT_WALLPAPER_IMAGE_PATH_KEY] = path
         }
     }
 
     suspend fun saveFontSelection(font: String) {
+        context.dataStore.edit { prefs -> prefs[FONT_SELECTION_KEY] = font }
+    }
+
+    suspend fun saveArchiveHidden(hidden: Boolean) {
+        context.dataStore.edit { prefs -> prefs[ARCHIVE_HIDDEN_KEY] = hidden }
+    }
+
+    suspend fun saveGoogleSansFlexAxes(
+        grade: Float? = null,
+        weight: Float? = null,
+        width: Float? = null,
+        roundness: Float? = null,
+        opticalSize: Float? = null,
+        slant: Float? = null
+    ) {
         context.dataStore.edit { prefs ->
-            prefs[FONT_SELECTION_KEY] = font
+            if (grade != null) prefs[GSF_GRADE_KEY] = grade
+            if (weight != null) prefs[GSF_WEIGHT_KEY] = weight
+            if (width != null) prefs[GSF_WIDTH_KEY] = width
+            if (roundness != null) prefs[GSF_ROUNDNESS_KEY] = roundness
+            if (opticalSize != null) prefs[GSF_OPTICAL_SIZE_KEY] = opticalSize
+            if (slant != null) prefs[GSF_SLANT_KEY] = slant
         }
     }
 
-    // Function to save the selected "Who are you?" name
+    suspend fun resetGoogleSansFlexAxes() {
+        context.dataStore.edit { prefs ->
+            prefs[GSF_GRADE_KEY] = 0f
+            prefs[GSF_WEIGHT_KEY] = 400f
+            prefs[GSF_WIDTH_KEY] = 100f
+            prefs[GSF_ROUNDNESS_KEY] = 100f
+            prefs[GSF_OPTICAL_SIZE_KEY] = 24f
+            prefs[GSF_SLANT_KEY] = 0f
+        }
+    }
+
     suspend fun saveUserIdentity(name: String) {
         context.dataStore.edit { prefs ->
             prefs[USER_NAME_KEY] = name
@@ -143,7 +188,6 @@ class UserPreferencesRepository(private val context: Context) {
         }
     }
 
-    // Function to save personalized person name
     suspend fun savePersonName(name: String) {
         context.dataStore.edit { prefs ->
             prefs[PERSON_NAME_KEY] = name
@@ -153,15 +197,10 @@ class UserPreferencesRepository(private val context: Context) {
         }
     }
 
-    // Function to save or clear profile photo local file path
     suspend fun saveProfileImagePath(path: String?) {
         context.dataStore.edit { prefs ->
-            if (path == null) {
-                prefs.remove(PROFILE_IMAGE_PATH_KEY)
-            } else {
-                prefs[PROFILE_IMAGE_PATH_KEY] = path
-            }
+            if (path == null) prefs.remove(PROFILE_IMAGE_PATH_KEY)
+            else prefs[PROFILE_IMAGE_PATH_KEY] = path
         }
     }
 }
-

@@ -2,6 +2,9 @@ package com.mrdartsidetm.wasm.ui
 
 import android.graphics.BitmapFactory
 import android.util.LruCache
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -27,14 +30,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -46,30 +48,30 @@ import com.mrdartsidetm.wasm.data.WhatsAppConversationEntity
 import com.mrdartsidetm.wasm.ui.onboarding.ContainedExpressiveLoadingIndicator
 import com.mrdartsidetm.wasm.ui.theme.LocalIsDarkTheme
 import com.mrdartsidetm.wasm.ui.theme.SfProBold
-import com.mrdartsidetm.wasm.ui.theme.SfProBoldItalic
 import com.mrdartsidetm.wasm.ui.theme.SfProItalic
 import com.mrdartsidetm.wasm.ui.theme.SfProSemibold
-import com.mrdartsidetm.wasm.ui.theme.SfProRegular
+import com.mrdartsidetm.wasm.ui.theme.opaqueContainer
+import com.mrdartsidetm.wasm.util.ChatRichTextParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import kotlin.math.abs
 
-// Material 3 Expressive Container Color backward-compatibility extensions
+// Material 3 Expressive opaque tonal container extensions (fixes translucent layering color bleed)
 val ColorScheme.surfaceContainerLowest: Color
-    get() = surface.copy(alpha = 0.95f)
+    get() = opaqueContainer(0f)
 
 val ColorScheme.surfaceContainerLow: Color
-    get() = surfaceVariant.copy(alpha = 0.5f)
+    get() = opaqueContainer(0.28f)
 
 val ColorScheme.surfaceContainer: Color
-    get() = surfaceVariant.copy(alpha = 0.7f)
+    get() = opaqueContainer(0.42f)
 
 val ColorScheme.surfaceContainerHigh: Color
-    get() = surfaceVariant.copy(alpha = 0.85f)
+    get() = opaqueContainer(0.58f)
 
 val ColorScheme.surfaceContainerHighest: Color
-    get() = surfaceVariant
+    get() = opaqueContainer(0.78f)
 
 private val WhatsAppAccentGreen = Color(0xFF25D366)
 
@@ -162,7 +164,8 @@ fun ChatScreen(
     viewModel: ChatViewModel,
     onImportClick: () -> Unit,
     onBackToPlatformChooser: (() -> Unit)? = null,
-    onCloseConversation: (() -> Unit)? = null
+    onCloseConversation: (() -> Unit)? = null,
+    onOpenWallpaper: () -> Unit = {}
 ) {
     val conversations by viewModel.filteredConversations.collectAsStateWithLifecycle()
     val allConversations by viewModel.conversations.collectAsStateWithLifecycle()
@@ -287,6 +290,7 @@ fun ChatScreen(
                 viewModel = viewModel,
                 onBack = { (onCloseConversation ?: { viewModel.closeConversation() }).invoke() },
                 onSwitchIdentity = { showIdentityDialog = true },
+                onOpenWallpaper = onOpenWallpaper,
                 onDeleteThisChat = { activeConversation?.let { conversationToDelete = it } },
                 onImageClick = { fullScreenImageFile = it }
             )
@@ -547,22 +551,13 @@ private fun WhatsAppConversationCard(
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Initial Avatar Circle
-            Surface(
-                shape = CircleShape,
-                color = getWhatsAppAvatarColor(conversation.title),
+            // Avatar Circle (custom photo if set, else monogram)
+            ConversationAvatar(
+                title = conversation.title,
+                avatarPath = conversation.avatarPath,
+                fallbackColor = getWhatsAppAvatarColor(conversation.title),
                 modifier = Modifier.size(50.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    val initial = conversation.title.trim().firstOrNull()?.uppercaseChar()?.toString() ?: "W"
-                    Text(
-                        text = initial,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
-            }
+            )
 
             Spacer(modifier = Modifier.width(14.dp))
 
@@ -641,6 +636,59 @@ private fun WhatsAppConversationCard(
 }
 
 /**
+ * Reusable circular avatar displaying a custom picked photo if available, or an initial monogram.
+ */
+@Composable
+fun ConversationAvatar(
+    title: String,
+    avatarPath: String?,
+    fallbackColor: Color,
+    modifier: Modifier = Modifier,
+    textStyle: androidx.compose.ui.text.TextStyle = MaterialTheme.typography.titleMedium
+) {
+    val avatarFile = remember(avatarPath) {
+        avatarPath?.takeIf { it.isNotBlank() }?.let(::File)?.takeIf { it.exists() }
+    }
+    val bitmapState = produceState<ImageBitmap?>(initialValue = null, key1 = avatarFile?.absolutePath) {
+        value = if (avatarFile != null) {
+            BitmapMemoryCache.get(avatarFile.absolutePath) ?: withContext(Dispatchers.IO) {
+                decodeSampledBitmap(avatarFile, 256, 256)?.also {
+                    BitmapMemoryCache.put(avatarFile.absolutePath, it)
+                }
+            }
+        } else {
+            null
+        }
+    }
+
+    val bmp = bitmapState.value
+    if (bmp != null) {
+        Image(
+            bitmap = bmp,
+            contentDescription = title,
+            contentScale = ContentScale.Crop,
+            modifier = modifier.clip(CircleShape)
+        )
+    } else {
+        Surface(
+            shape = CircleShape,
+            color = fallbackColor,
+            modifier = modifier
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                val initial = title.trim().firstOrNull()?.uppercaseChar()?.toString() ?: "C"
+                Text(
+                    text = initial,
+                    style = textStyle,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+        }
+    }
+}
+
+/**
  * WhatsApp Individual Chat Detail Screen (viewing messages of a single selected conversation).
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -655,15 +703,26 @@ private fun WhatsAppChatDetailScreen(
     viewModel: ChatViewModel,
     onBack: () -> Unit,
     onSwitchIdentity: () -> Unit,
+    onOpenWallpaper: () -> Unit,
     onDeleteThisChat: () -> Unit,
     onImageClick: (File) -> Unit
 ) {
+    val context = LocalContext.current
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val targetMessageId by viewModel.targetMessageId.collectAsStateWithLifecycle()
     var isSearchActive by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
     val isDark = LocalIsDarkTheme.current
+
+    val avatarPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        val convId = conversation?.id ?: return@rememberLauncherForActivityResult
+        if (uri != null) {
+            viewModel.updateConversationAvatar(convId, uri, context.contentResolver)
+        }
+    }
 
     LaunchedEffect(messages.size, targetMessageId) {
         val targetId = targetMessageId ?: return@LaunchedEffect
@@ -722,40 +781,20 @@ private fun WhatsAppChatDetailScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = getWhatsAppAvatarColor(conversation?.title ?: "Chat"),
-                                modifier = Modifier.size(38.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    val initial = conversation?.title?.trim()?.firstOrNull()?.uppercaseChar()?.toString() ?: "W"
-                                    Text(
-                                        text = initial,
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White
-                                    )
-                                }
-                            }
-                            Column {
-                                Text(
-                                    text = conversation?.title ?: "WhatsApp Chat",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                val subtitle = if (searchQuery.isNotBlank()) {
-                                    "${messages.size} found of ${allMessages.size}"
-                                } else {
-                                    "${allMessages.size} messages" + if (currentUser.isNotBlank()) " • Me: $currentUser" else ""
-                                }
-                                Text(
-                                    text = subtitle,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                            ConversationAvatar(
+                                title = conversation?.title ?: "Chat",
+                                avatarPath = conversation?.avatarPath,
+                                fallbackColor = getWhatsAppAvatarColor(conversation?.title ?: "Chat"),
+                                modifier = Modifier.size(38.dp),
+                                textStyle = MaterialTheme.typography.titleSmall
+                            )
+                            Text(
+                                text = conversation?.title ?: "WhatsApp Chat",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
                     },
                     actions = {
@@ -765,7 +804,7 @@ private fun WhatsAppChatDetailScreen(
                             }
                             if (senders.isNotEmpty()) {
                                 IconButton(onClick = onSwitchIdentity) {
-                                    Icon(Icons.Default.Person, contentDescription = "Switch User Identity")
+                                    Icon(Icons.Default.Person, contentDescription = "Switch Identity")
                                 }
                             }
                         }
@@ -778,6 +817,14 @@ private fun WhatsAppChatDetailScreen(
                                 onDismissRequest = { showMenu = false }
                             ) {
                                 DropdownMenuItem(
+                                    text = { Text("Change Wallpaper") },
+                                    leadingIcon = { Icon(Icons.Default.Wallpaper, contentDescription = null) },
+                                    onClick = {
+                                        showMenu = false
+                                        onOpenWallpaper()
+                                    }
+                                )
+                                DropdownMenuItem(
                                     text = { Text("Switch Identity") },
                                     leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
                                     onClick = {
@@ -786,7 +833,17 @@ private fun WhatsAppChatDetailScreen(
                                     }
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Delete This Chat") },
+                                    text = { Text("Change Avatar Photo") },
+                                    leadingIcon = { Icon(Icons.Default.AccountCircle, contentDescription = null) },
+                                    onClick = {
+                                        showMenu = false
+                                        avatarPickerLauncher.launch(
+                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                        )
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Delete Chat") },
                                     leadingIcon = {
                                         Icon(
                                             Icons.Default.DeleteSweep,
@@ -1184,162 +1241,18 @@ fun WhatsAppFormattedMessage(
 }
 
 /**
- * Parses inline formatting tags for WhatsApp messages recursively to support nesting:
- * e.g., *_bold and italic_*, *~bold strike~*, `code`, ```monospace```.
- * Uses dedicated San Francisco Pro FontFamily definitions for authentic bold and italic typography.
+ * Parses single-line inline formatting tags (`*bold*`, `_italic_`, `~strike~`, `` `code` ``, ```` ```mono``` ````).
+ * Never matches across line breaks (`\n`).
  */
 fun parseWhatsAppInlineFormattedText(
     text: String,
     isDark: Boolean,
     textColor: Color = if (isDark) Color(0xFFE9EDEF) else Color(0xFF111B21)
-): AnnotatedString {
-    val builder = AnnotatedString.Builder()
-    val codeBackground = if (isDark) Color(0x33FFFFFF) else Color(0x1F000000)
-
-    data class ActiveFormat(
-        val bold: Boolean = false,
-        val italic: Boolean = false,
-        val strike: Boolean = false
-    )
-
-    fun getSpanStyle(active: ActiveFormat): SpanStyle {
-        val family = when {
-            active.bold && active.italic -> SfProBoldItalic
-            active.bold -> SfProBold
-            active.italic -> SfProItalic
-            else -> null
-        }
-        val weight = if (active.bold) FontWeight.Bold else null
-        val style = if (active.italic) FontStyle.Italic else null
-        val decoration = if (active.strike) TextDecoration.LineThrough else null
-
-        return SpanStyle(
-            fontFamily = family,
-            fontWeight = weight,
-            fontStyle = style,
-            textDecoration = decoration,
-            color = textColor
-        )
-    }
-
-    fun parse(segment: String, active: ActiveFormat) {
-        var i = 0
-        while (i < segment.length) {
-            // Triple backtick monospace: ```text```
-            if (segment.startsWith("```", i)) {
-                val closeIdx = segment.indexOf("```", i + 3)
-                if (closeIdx != -1) {
-                    val inner = segment.substring(i + 3, closeIdx)
-                    val start = builder.length
-                    builder.append(inner)
-                    builder.addStyle(
-                        SpanStyle(
-                            fontFamily = FontFamily.Monospace,
-                            background = codeBackground,
-                            color = textColor
-                        ),
-                        start,
-                        builder.length
-                    )
-                    i = closeIdx + 3
-                    continue
-                }
-            }
-
-            // Single backtick inline code: `text`
-            if (segment[i] == '`') {
-                val closeIdx = segment.indexOf('`', i + 1)
-                if (closeIdx != -1) {
-                    val inner = segment.substring(i + 1, closeIdx)
-                    val start = builder.length
-                    builder.append(inner)
-                    builder.addStyle(
-                        SpanStyle(
-                            fontFamily = FontFamily.Monospace,
-                            background = codeBackground,
-                            color = textColor
-                        ),
-                        start,
-                        builder.length
-                    )
-                    i = closeIdx + 1
-                    continue
-                }
-            }
-
-            // Bold: *text*
-            if (segment[i] == '*') {
-                val closeIdx = findClosingDelimiter(segment, i, '*')
-                if (closeIdx != -1) {
-                    val inner = segment.substring(i + 1, closeIdx)
-                    val start = builder.length
-                    parse(inner, active.copy(bold = true))
-                    val end = builder.length
-                    if (end > start) {
-                        builder.addStyle(getSpanStyle(active.copy(bold = true)), start, end)
-                    }
-                    i = closeIdx + 1
-                    continue
-                }
-            }
-
-            // Italic: _text_
-            if (segment[i] == '_') {
-                val closeIdx = findClosingDelimiter(segment, i, '_')
-                if (closeIdx != -1) {
-                    val inner = segment.substring(i + 1, closeIdx)
-                    val start = builder.length
-                    parse(inner, active.copy(italic = true))
-                    val end = builder.length
-                    if (end > start) {
-                        builder.addStyle(getSpanStyle(active.copy(italic = true)), start, end)
-                    }
-                    i = closeIdx + 1
-                    continue
-                }
-            }
-
-            // Strikethrough: ~text~
-            if (segment[i] == '~') {
-                val closeIdx = findClosingDelimiter(segment, i, '~')
-                if (closeIdx != -1) {
-                    val inner = segment.substring(i + 1, closeIdx)
-                    val start = builder.length
-                    parse(inner, active.copy(strike = true))
-                    val end = builder.length
-                    if (end > start) {
-                        builder.addStyle(getSpanStyle(active.copy(strike = true)), start, end)
-                    }
-                    i = closeIdx + 1
-                    continue
-                }
-            }
-
-            // Plain text character
-            val charStart = builder.length
-            builder.append(segment[i])
-            if (active.bold || active.italic || active.strike) {
-                builder.addStyle(getSpanStyle(active), charStart, builder.length)
-            }
-            i++
-        }
-    }
-
-    parse(text, ActiveFormat())
-    return builder.toAnnotatedString()
-}
-
-private fun findClosingDelimiter(text: String, startIndex: Int, delimiter: Char): Int {
-    if (startIndex + 1 >= text.length || text[startIndex + 1].isWhitespace()) return -1
-    for (j in (startIndex + 1) until text.length) {
-        if (text[j] == delimiter && j > startIndex + 1) {
-            if (!text[j - 1].isWhitespace()) {
-                return j
-            }
-        }
-    }
-    return -1
-}
+): AnnotatedString = ChatRichTextParser.parseInlineSingleLine(
+    text = text,
+    isDark = isDark,
+    textColor = textColor
+)
 
 /**
  * Attachment card rendering photos, audio, documents with memory caching.

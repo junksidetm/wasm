@@ -11,6 +11,9 @@ import android.widget.ImageView
 import android.widget.MediaController
 import android.widget.Toast
 import android.widget.VideoView
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -58,14 +61,17 @@ import com.mrdartsidetm.wasm.data.InstagramAccountEntity
 import com.mrdartsidetm.wasm.data.InstagramConversationEntity
 import com.mrdartsidetm.wasm.data.InstagramMessageEntity
 import com.mrdartsidetm.wasm.ui.BitmapMemoryCache
+import com.mrdartsidetm.wasm.ui.ConversationAvatar
 import com.mrdartsidetm.wasm.ui.DateSeparatorHeader
 import com.mrdartsidetm.wasm.ui.FullScreenImageDialog
+import com.mrdartsidetm.wasm.ui.IdentitySelectionDialog
 import com.mrdartsidetm.wasm.ui.ImportUiState
 import com.mrdartsidetm.wasm.ui.decodeSampledBitmap
 import com.mrdartsidetm.wasm.ui.extractDate
 import com.mrdartsidetm.wasm.ui.formatFileSize
 import com.mrdartsidetm.wasm.ui.onboarding.ContainedExpressiveLoadingIndicator
 import com.mrdartsidetm.wasm.util.AudioPlayerManager
+import com.mrdartsidetm.wasm.util.ChatRichTextParser
 import com.mrdartsidetm.wasm.util.GalleryDownloader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -105,7 +111,8 @@ fun InstagramScreen(
     viewModel: InstagramViewModel,
     onImportClick: () -> Unit,
     onBackToPlatformChooser: (() -> Unit)? = null,
-    onCloseConversation: (() -> Unit)? = null
+    onCloseConversation: (() -> Unit)? = null,
+    onOpenWallpaper: () -> Unit = {}
 ) {
     val account by viewModel.account.collectAsStateWithLifecycle()
     val importState by viewModel.importUiState.collectAsStateWithLifecycle()
@@ -200,6 +207,7 @@ fun InstagramScreen(
                     viewModel = viewModel,
                     onBack = { (onCloseConversation ?: { viewModel.closeConversation() }).invoke() },
                     onOpenDetails = { viewModel.openConversationDetails() },
+                    onOpenWallpaper = onOpenWallpaper,
                     onImageClick = { fullScreenImageFile = it },
                     onVideoClick = { activeVideoFile = it },
                     onOpenGroupMedia = { list, title -> viewModel.openExpandedMedia(list, title) }
@@ -771,20 +779,12 @@ fun InstagramConversationListItem(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(52.dp)
-                .clip(CircleShape)
-                .background(getAvatarColor(item.title)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = item.title.take(1).uppercase(),
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontSize = 20.sp
-            )
-        }
+        ConversationAvatar(
+            title = item.title,
+            avatarPath = item.avatarPath,
+            fallbackColor = getAvatarColor(item.title),
+            modifier = Modifier.size(52.dp)
+        )
 
         Spacer(Modifier.width(14.dp))
 
@@ -865,17 +865,73 @@ fun InstagramDmThreadScreen(
     viewModel: InstagramViewModel,
     onBack: () -> Unit,
     onOpenDetails: () -> Unit,
+    onOpenWallpaper: () -> Unit = {},
     onImageClick: (File) -> Unit,
     onVideoClick: (File) -> Unit,
     onOpenGroupMedia: (List<Pair<String, File>>, String) -> Unit
 ) {
+    val context = LocalContext.current
     val conversation by viewModel.currentConversation.collectAsStateWithLifecycle()
     val messages by viewModel.currentMessages.collectAsStateWithLifecycle()
     val searchQuery by viewModel.conversationSearchQuery.collectAsStateWithLifecycle()
     val targetMessageId by viewModel.targetMessageId.collectAsStateWithLifecycle()
+    val senders by viewModel.uniqueSenders.collectAsStateWithLifecycle()
+    val activeIdentity by viewModel.activeIdentity.collectAsStateWithLifecycle()
 
     var isSearchActive by remember { mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(false) }
+    var showIdentityDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
+
+    val avatarPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        val convId = conversation?.id ?: return@rememberLauncherForActivityResult
+        if (uri != null) {
+            viewModel.updateConversationAvatar(convId, uri, context.contentResolver)
+        }
+    }
+
+    if (showIdentityDialog && senders.isNotEmpty() && conversation != null) {
+        IdentitySelectionDialog(
+            senders = senders,
+            currentSelected = activeIdentity,
+            onSelected = { selectedName ->
+                conversation?.id?.let { id ->
+                    viewModel.setIdentityForConversation(id, selectedName)
+                }
+                showIdentityDialog = false
+            },
+            onDismiss = { showIdentityDialog = false }
+        )
+    }
+
+    if (showDeleteDialog && conversation != null) {
+        val conv = conversation!!
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            icon = { Icon(Icons.Default.DeleteSweep, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+            title = { Text("Delete Chat?") },
+            text = { Text("Permanently delete conversation with \"${conv.title}\" and all its messages and media?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteConversation(conv.id)
+                        showDeleteDialog = false
+                        onBack()
+                    }
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     LaunchedEffect(messages.size, targetMessageId) {
         if (messages.isNotEmpty()) {
@@ -930,44 +986,29 @@ fun InstagramDmThreadScreen(
             } else {
                 TopAppBar(
                     title = {
-                        // Tapping the username opens the Conversation Details & Media Gallery page
+                        // Tapping the avatar/name opens the Conversation Details & Media Gallery page
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
                                 .clickable(onClick = onOpenDetails)
                                 .padding(horizontal = 4.dp, vertical = 2.dp)
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(38.dp)
-                                    .clip(CircleShape)
-                                    .background(getAvatarColor(conversation?.title ?: "")),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = (conversation?.title ?: "").take(1).uppercase(),
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-
-                            Spacer(Modifier.width(10.dp))
-
-                            Column {
-                                Text(
-                                    text = conversation?.title ?: "Chat",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Text(
-                                    text = "${messages.size} messages • Tap for media",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                            ConversationAvatar(
+                                title = conversation?.title ?: "Chat",
+                                avatarPath = conversation?.avatarPath,
+                                fallbackColor = getAvatarColor(conversation?.title ?: "Chat"),
+                                modifier = Modifier.size(38.dp),
+                                textStyle = MaterialTheme.typography.titleSmall
+                            )
+                            Text(
+                                text = conversation?.title ?: "Instagram DM",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
                     },
                     navigationIcon = {
@@ -979,8 +1020,62 @@ fun InstagramDmThreadScreen(
                         IconButton(onClick = { isSearchActive = true }) {
                             Icon(Icons.Default.Search, contentDescription = "Search messages")
                         }
-                        IconButton(onClick = onOpenDetails) {
-                            Icon(Icons.Default.Info, contentDescription = "Conversation Details")
+                        if (senders.isNotEmpty()) {
+                            IconButton(onClick = { showIdentityDialog = true }) {
+                                Icon(Icons.Default.Person, contentDescription = "Switch Identity")
+                            }
+                        }
+                        Box {
+                            IconButton(onClick = { showMenu = true }) {
+                                Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                            }
+                            DropdownMenu(
+                                expanded = showMenu,
+                                onDismissRequest = { showMenu = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Change Wallpaper") },
+                                    leadingIcon = { Icon(Icons.Default.Wallpaper, contentDescription = null) },
+                                    onClick = {
+                                        showMenu = false
+                                        onOpenWallpaper()
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Switch Identity") },
+                                    leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+                                    onClick = {
+                                        showMenu = false
+                                        if (senders.isNotEmpty()) {
+                                            showIdentityDialog = true
+                                        }
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Change Avatar Photo") },
+                                    leadingIcon = { Icon(Icons.Default.AccountCircle, contentDescription = null) },
+                                    onClick = {
+                                        showMenu = false
+                                        avatarPickerLauncher.launch(
+                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                        )
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Delete Chat") },
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.Default.DeleteSweep,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.error
+                                        )
+                                    },
+                                    onClick = {
+                                        showMenu = false
+                                        showDeleteDialog = true
+                                    }
+                                )
+                            }
                         }
                     }
                 )
@@ -1171,12 +1266,20 @@ fun InstagramChatBubble(
                     Spacer(Modifier.height(4.dp))
                 }
 
-                // Text Content
+                // Text Content (single-line rich formatting: *bold*, _italic_, ~strike~, ```mono``` / `code`)
                 if (message.content.isNotBlank() && (mediaList.isEmpty() || message.content != message.sharedTitle)) {
+                    val bubbleTextColor = if (isMe) Color.White else incomingTextColor
+                    val formatted = remember(message.content, isDark, bubbleTextColor) {
+                        ChatRichTextParser.parseInlineSingleLine(
+                            text = message.content,
+                            isDark = isDark,
+                            textColor = bubbleTextColor
+                        )
+                    }
                     Text(
-                        text = message.content,
+                        text = formatted,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = if (isMe) Color.White else incomingTextColor
+                        color = bubbleTextColor
                     )
                 }
 

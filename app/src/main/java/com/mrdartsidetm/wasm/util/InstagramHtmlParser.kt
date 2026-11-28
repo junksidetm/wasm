@@ -23,11 +23,8 @@ object InstagramHtmlParser {
 
     private val senderRegex = Pattern.compile("<h2 class=\"[^\"]*\">([^<]+)</h2>")
     private val timeRegex = Pattern.compile("<div class=\"_3-94 _a6-o\">([^<]+)</div>")
-    private val audioRegex = Pattern.compile("<audio[^>]*src=\"([^\"]+)\"")
-    private val videoRegex = Pattern.compile("<video[^>]*src=\"([^\"]+)\"")
-    private val photoRegex = Pattern.compile("<img[^>]*src=\"([^\"]*photos/[^\"]+)\"")
-    private val gifRegex = Pattern.compile("<img[^>]*src=\"([^\"]*gifs/[^\"]+)\"")
-    private val anyImgRegex = Pattern.compile("<img[^>]*src=\"([^\"]+)\"")
+    private val mediaTagRegex = Pattern.compile("<(audio|video|img)\\b[^>]*src=\"([^\"]+)\"", Pattern.CASE_INSENSITIVE)
+    private val numericEntityRegex = Regex("&#(x?[0-9a-fA-F]+);")
     private val reactionRegex = Pattern.compile("<ul class=\"_a6-q\"><li><span>([^<]+)</span></li></ul>")
     private val sharedLinkRegex = Pattern.compile("<a target=\"_blank\" href=\"(https?://[^\"]+)\">")
 
@@ -163,36 +160,27 @@ object InstagramHtmlParser {
 
             val epochTime = parseTimestampToEpoch(timestamp)
 
-            // 3. Audio, Video, Photo, Gif Media (Extract all items in message block)
+            // 3. Audio, Video, Photo, Gif Media (Extract in exact HTML document order)
             val mediaItems = mutableListOf<Pair<String, String>>()
+            val mediaMatcher = mediaTagRegex.matcher(rawBlock)
+            while (mediaMatcher.find()) {
+                val tag = mediaMatcher.group(1)?.lowercase(Locale.US) ?: continue
+                val path = mediaMatcher.group(2)?.trim()
+                if (path.isNullOrBlank()) continue
 
-            val audioMatcher = audioRegex.matcher(rawBlock)
-            while (audioMatcher.find()) {
-                val path = audioMatcher.group(1)?.trim()
-                if (!path.isNullOrBlank()) {
-                    mediaItems.add(Pair("audio", path))
-                }
-            }
-
-            val videoMatcher = videoRegex.matcher(rawBlock)
-            while (videoMatcher.find()) {
-                val path = videoMatcher.group(1)?.trim()
-                if (!path.isNullOrBlank()) {
-                    mediaItems.add(Pair("video", path))
-                }
-            }
-
-            val anyImgMatcher = anyImgRegex.matcher(rawBlock)
-            while (anyImgMatcher.find()) {
-                val src = anyImgMatcher.group(1)?.trim()
-                if (!src.isNullOrBlank() && !src.contains("Instagram-Logo")) {
-                    val type = when {
-                        src.contains("gifs/") || src.endsWith(".gif", ignoreCase = true) -> "gif"
+                val type = when (tag) {
+                    "audio" -> "audio"
+                    "video" -> "video"
+                    "img" -> when {
+                        path.contains("Instagram-Logo") -> null
+                        path.contains("gifs/") || path.endsWith(".gif", ignoreCase = true) -> "gif"
                         else -> "photo"
                     }
-                    if (mediaItems.none { it.second == src }) {
-                        mediaItems.add(Pair(type, src))
-                    }
+                    else -> null
+                } ?: continue
+
+                if (mediaItems.none { it.second == path }) {
+                    mediaItems.add(Pair(type, path))
                 }
             }
 
@@ -271,8 +259,15 @@ object InstagramHtmlParser {
             )
         }
 
-        // Instagram exports messages newest to oldest. Reverse to show chronologically (oldest first).
-        return parsedMessages.reversed()
+        // Instagram exports are normally newest-to-oldest; reverse to chronological (oldest first),
+        // while preserving fixtures that are already strictly ascending chronologically.
+        val firstTimed = parsedMessages.firstOrNull { it.epochTime > 0L }?.epochTime
+        val lastTimed = parsedMessages.lastOrNull { it.epochTime > 0L }?.epochTime
+        return if (firstTimed != null && lastTimed != null && firstTimed < lastTimed) {
+            parsedMessages
+        } else {
+            parsedMessages.reversed()
+        }
     }
 
     /**
@@ -291,11 +286,11 @@ object InstagramHtmlParser {
     }
 
     /**
-     * Decodes common HTML character entities.
+     * Decodes named and numeric (`&#9889;`, `&#x26A1;`) HTML character entities.
      */
     fun unescapeHtml(input: String): String {
         if (input.isEmpty()) return ""
-        return input
+        val named = input
             .replace("&amp;", "&")
             .replace("&#039;", "'")
             .replace("&apos;", "'")
@@ -304,6 +299,19 @@ object InstagramHtmlParser {
             .replace("&gt;", ">")
             .replace("&#064;", "@")
             .replace("&nbsp;", " ")
+        return numericEntityRegex.replace(named) { match ->
+            val raw = match.groupValues[1]
+            val codePoint = if (raw.startsWith("x", ignoreCase = true)) {
+                raw.substring(1).toIntOrNull(16)
+            } else {
+                raw.toIntOrNull(10)
+            }
+            if (codePoint != null && Character.isValidCodePoint(codePoint)) {
+                String(Character.toChars(codePoint))
+            } else {
+                match.value
+            }
+        }
     }
 
     /**

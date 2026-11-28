@@ -1225,3 +1225,37 @@
   - `IMPORT_META_LOGO_PATH` (`Union_17`, `PathFillType.EvenOdd`)
   - `OnboardingSvgPaths.filePlusIconPaths` (`Union_15`)
 - Restored the exact wireframe copy on `ImportScreen`: `"Nah! Fuck Meta"`, `"Our app is smart enough that it can categorises the imported file in both Whatsapp and Instagram automatically"`, and `"Just Import the fucking .zip"`.
+
+
+## [0.11.0-r2] - 2026-11-28 17:16:00 IST
+### Storage Exact SVG Icons, Color-Coded Storage Pill, `- Move` Axis Rotations & Uniform WhatsApp/Instagram Heights
+- **Exact SVG Icons & Color-Coding (`ui/StorageScreen.kt`)**:
+  - Replaced generic Material icons with all 7 exact normalized SVG paths from `assests/wireframes/main/Storage Screen.svg`: Instagram (`Instagram icon_2`), WhatsApp (`Vector_29`), Voice (`Union_11`), Images (`Icon_9` stroked), Video (`Union_10`), GIFs (`Union_9`), and Stickers (`Union_8`).
+  - Color-coded all 7 categories consistently across each breakdown row icon, size badge pill, and the multi-segment Storage Pill bar (`#E1306C` Instagram, `#4CAF50` WhatsApp, `#F59E0B` Voice, `#2196F3` Images, `#8B5CF6` Video, `#14B8A6` GIFs, `#EC4899` Stickers).
+- **`- Move` Center-Axis Rotations (`ui/StorageScreen.kt`)**:
+  - Animated `8 leaf Clover - Move` (`shape_16`) and `Pill - Move` (`shape_17`) continuously on their geometric center axes inside the Storage dashboard card.
+- **Uniform WhatsApp & Instagram Heights Everywhere (`res/drawable/ic_nav_whatsapp.xml`, `OnboardingScreen.kt`, `HomeScreen.kt`, `ImportScreen.kt`, `PlatformChooserScreen.kt`)**:
+  - Rebuilt `ic_nav_whatsapp.xml` using the edge-to-edge normalized path (`27x27` viewport, zero outer margin) so WhatsApp and Instagram icons render at identical height everywhere they appear side-by-side.
+  - Equalized WhatsApp (`4 SIded Cookie`) and Instagram (`Flower`) badge sizes, vertical `yFraction` alignment, inner icon scale (`0.45f`), and Screen 3 label container heights (`44.dp`) in `OnboardingScreen.kt`.
+  - Standardized `ImportScreen.kt` tiles (`86.dp`, `10.dp` radius, `48.dp` icons), `HomeScreen.kt` `ConnectedSegmentPill` (`42.dp` height, `19.dp` icons), and `PlatformChooserScreen.kt` card subtitle single-line clamping.
+
+
+## [0.11.0-r3] - 2026-11-28 19:53:00 IST
+### Home Archive, Chat TopBars & Formatting, Dedicated Personalization HUDs, Storage & Data, Opaque Containers & Parser Fixes
+- **Home & Import UX (`ui/HomeScreen.kt`, `ui/ImportScreen.kt`, `data/UserPreferencesRepository.kt`)**:
+  - Scaled Archive banner icon to `14.dp` (`0.5x`), matched list row styling (`surfaceContainerLow`, `RoundedCornerShape(20.dp)`, `16.sp` Medium), fixed spelling (`Archive`), hid the `Whatsapp` | `Instagram` connected button while Archive view is active, added long-press on Archive banner to hide it (`archive_hidden` in DataStore), and added `"Show Archive"` in Home `⋮` menu when hidden.
+  - Updated `ImportScreen` to close immediately upon `ImportUiState.Success` while showing error snackbars on failure.
+  - Wired saved per-conversation `avatarPath` into `HomeConnectedChatListItem` and conversation lists.
+- **Opened Chat TopBar, Avatar, Wallpaper & Single-Line Formatting (`ui/ChatScreen.kt`, `ui/instagram/InstagramScreen.kt`, `util/ChatRichTextParser.kt`, `data/*`, `ChatViewModel.kt`, `InstagramViewModel.kt`)**:
+  - Standardized opened chat `TopAppBar` across WhatsApp & Instagram to: Back -> Circular Avatar (`ConversationAvatar`) -> Title only (removed message counter & `"• Me: ..."` subtitle) -> Search -> Person (Switch Identity) -> `⋮` Menu (`Change Wallpaper`, `Switch Identity`, `Change Avatar Photo`, `Delete Chat`).
+  - Upgraded Room schema (`ChatDatabase` v5 -> v6 with `MIGRATION_5_6`) storing per-chat `avatarPath`, and added `InstagramViewModel` single-chat delete, identity toggle, and per-chat avatar persistence.
+  - Replaced translucent `ColorScheme.surfaceContainer*` alpha copies with opaque M3 tonal surface blending (`ColorScheme.opaqueContainer`) to fix visual color bleed.
+  - Added `ChatRichTextParser.parseInlineSingleLine` across both WhatsApp & Instagram using bundled `Google Sans Code` (`res/font/google_sans_code.ttf`) for monospace ```` ```text``` ```` / `` `text` ``, strictly enforcing single-line delimiter matching (`\n` terminates formatting spans).
+- **Settings, General & 4 New Dedicated Sub-Pages (`ui/SettingsScreen.kt`, `ui/GeneralScreen.kt`, `ui/ColorVariantsScreen.kt`, `ui/WallpaperScreen.kt`, `ui/FontSelectionScreen.kt`, `ui/StorageDataScreen.kt`, `ui/AboutScreen.kt`, `MainActivity.kt`)**:
+  - Simplified `SettingsScreen` rows to title-only labels and wired `Storage & Data` + `General` sub-screens cleanly.
+  - Rebuilt `GeneralScreen`: fixed `"System Default"` segment pill layout so it never ellipsizes, added `VerticalDivider` before the Dynamic Color switch, removed secondary Profile/Identity/Replay section, and navigated into dedicated sub-pages.
+  - Built `ColorVariantsScreen` (Dynamic Color toggle + all 9 M3 `DynamicSchemeVariant` tri-tone swatches when ON / 6 static palettes when OFF), `WallpaperScreen` (top full-width `"Add Photo from Gallery"` button + 9:16 rounded wallpaper HUD grid, also reachable directly from chat `⋮` menus), `FontSelectionScreen` (live preview + `Google Sans Code` monospace + conditional 6-axis `Google Sans Flex` sliders matching `Wallet-Flutter`), and `StorageDataScreen` (connected platform toggle, bulk delete + media category wipe + per-chat storage breakdown, also reachable from `StorageScreen`'s new `"Delete Storage"` bottom button).
+  - Updated `AboutScreen` with accurate repository mirrors (`junksidetm/wasm` Main, `mrdarksidetm/wasm` GitLab & Codeberg Mirrors) and offline M3 architecture specs.
+- **Storage Classification & Instagram Parser Fixes (`util/StorageMediaHelper.kt`, `ui/StorageScreen.kt`, `util/InstagramHtmlParser.kt`, `util/ChatRichTextParserTest.kt`, `util/RealZipVerificationTest.kt`)**:
+  - Added folder-aware media classification (`StorageMediaHelper`) so extensionless `photos/` images and `audio/*.mp4` voice clips vs `videos/*.mp4` categorize accurately.
+  - Fixed `InstagramHtmlParser` numeric HTML entity decoding (`&#9889;`, hex/decimal entities), HTML document order for `mediaItems`, and chronological timestamp ordering for ascending fixtures vs newest-first real Instagram exports.

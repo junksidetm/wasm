@@ -12,11 +12,16 @@ import com.mrdartsidetm.wasm.ui.ImportUiState
 import com.mrdartsidetm.wasm.util.AudioPlayerManager
 import com.mrdartsidetm.wasm.util.InstagramHtmlParser
 import com.mrdartsidetm.wasm.util.InstagramZipExtractor
+import com.mrdartsidetm.wasm.util.MediaCategoryBreakdown
+import com.mrdartsidetm.wasm.util.StorageMediaCategory
+import com.mrdartsidetm.wasm.util.StorageMediaHelper
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.FileOutputStream
 
 enum class InstagramConversationFilter {
     ALL,
@@ -24,6 +29,7 @@ enum class InstagramConversationFilter {
     REQUESTS
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class InstagramViewModel(
     private val instagramDao: InstagramDao,
     val instagramBaseDir: File
@@ -96,6 +102,18 @@ class InstagramViewModel(
             list.filter { it.content.lowercase().contains(q) || it.sender.lowercase().contains(q) }
         }
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    val uniqueSenders: StateFlow<List<String>> = currentMessages.map { list ->
+        list.map { it.sender }
+            .distinct()
+            .filter { it.isNotBlank() && !it.equals("System", ignoreCase = true) }
+    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    val activeIdentity: StateFlow<String> = combine(account, currentMessages) { acc, msgs ->
+        msgs.firstOrNull { it.isOutgoing }?.sender
+            ?: acc?.displayName
+            ?: ""
+    }.stateIn(viewModelScope, SharingStarted.Lazily, "")
 
     private val _importUiState = MutableStateFlow<ImportUiState>(ImportUiState.Idle)
     val importUiState: StateFlow<ImportUiState> = _importUiState.asStateFlow()
@@ -460,6 +478,79 @@ class InstagramViewModel(
         }
 
         return null
+    }
+
+    fun setIdentityForConversation(conversationId: String, identity: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            instagramDao.updateMessagesOutgoingForIdentity(conversationId, identity)
+        }
+    }
+
+    fun updateConversationAvatar(conversationId: String, uri: Uri, contentResolver: ContentResolver) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val avatarsDir = File(instagramBaseDir, "_avatars").apply { mkdirs() }
+                val dest = File(avatarsDir, "ig_${conversationId}_${System.currentTimeMillis()}.jpg")
+                contentResolver.openInputStream(uri)?.use { input ->
+                    FileOutputStream(dest).use { output -> input.copyTo(output) }
+                } ?: return@launch
+                if (dest.length() > 0L) {
+                    instagramDao.updateConversationAvatar(conversationId, dest.absolutePath)
+                }
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    fun resolveConversationDir(conv: InstagramConversationEntity): File? {
+        val messagesDir = File(instagramBaseDir, "messages").takeIf { it.exists() } ?: instagramBaseDir
+        val candidates = listOfNotNull(
+            conv.folderPath.takeIf { it.isNotBlank() }?.let { File(instagramBaseDir, it) },
+            conv.folderPath.takeIf { it.isNotBlank() }?.let { File(messagesDir, it) },
+            File(messagesDir, "inbox/${conv.id}"),
+            File(messagesDir, "message_requests/${conv.id}")
+        )
+        return candidates.firstOrNull { it.exists() }
+    }
+
+    fun computeConversationBreakdown(conv: InstagramConversationEntity): MediaCategoryBreakdown {
+        val dir = resolveConversationDir(conv)
+        val folderBreakdown = if (dir != null) StorageMediaHelper.scanDirectory(dir) else MediaCategoryBreakdown()
+        val estimatedTextDbBytes = conv.messageCount.toLong() * 160L
+        return folderBreakdown.copy(textBytes = folderBreakdown.textBytes + estimatedTextDbBytes)
+    }
+
+    fun deleteConversation(conversationId: String) {
+        viewModelScope.launch {
+            audioPlayerManager.stop()
+            withContext(Dispatchers.IO) {
+                val conv = instagramDao.getConversation(conversationId).firstOrNull()
+                instagramDao.deleteMessagesForConversation(conversationId)
+                instagramDao.deleteConversation(conversationId)
+                if (conv != null) {
+                    resolveConversationDir(conv)?.deleteRecursively()
+                }
+            }
+            if (selectedConversationId.value == conversationId) {
+                selectedConversationId.value = null
+            }
+        }
+    }
+
+    fun deleteConversationCategory(conversationId: String, category: StorageMediaCategory) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val conv = instagramDao.getConversation(conversationId).firstOrNull() ?: return@launch
+            val dir = resolveConversationDir(conv) ?: return@launch
+            StorageMediaHelper.deleteCategoryInDirectory(dir, category)
+        }
+    }
+
+    fun deleteAllCategoryMedia(category: StorageMediaCategory) {
+        viewModelScope.launch(Dispatchers.IO) {
+            if (instagramBaseDir.exists()) {
+                StorageMediaHelper.deleteCategoryInDirectory(instagramBaseDir, category)
+            }
+        }
     }
 
     /**
