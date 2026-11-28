@@ -1333,3 +1333,13 @@
     2. `testNewlineBreaksInlineFormatting`: An unclosed ```` ``` ```` sequence fell through to single-backtick `` ` `` matching and paired its third backtick with a later single backtick on the same line. Now unclosed ```` ``` ```` sequences are emitted literally (`i += 3`) and single-backtick closing ignores ```` ``` ```` markers.
 - **Status**:
   - Pending remote GitHub Actions CI run verification across both `Analysis & Unit Tests` (with zero unit test failures) and `Build Universal Production APK`.
+
+## [0.11.1] - 2026-11-28 20:57:00 IST
+### Release `v0.11.1` (Build `17`)
+- **Version Bump (`app/build.gradle.kts`, `AboutScreen.kt`, `README.md`, `docs/index.html`, `fastlane/metadata/android/en-US/changelogs/17.txt`)**:
+  - Bumped `versionCode = 17` and `versionName = "0.11.1"`.
+  - Updated `AboutScreen.kt` badge to `v0.11.1 • Build 17`, `README.md` release badge to `v0.11.1`, `docs/index.html` navbar badge to `v0.11.1`, and added Fastlane changelog `17.txt`.
+- **Includes All Verified `0.11.0-r1` through `0.11.0-r7` Improvements**:
+  - Exact Import Screen & Storage SVG paths/color-coding, Home Archive polish & hide toggle, standardized chat TopBars & Room v6 per-chat avatars, opaque tonal surfaces, single-line `ChatRichTextParser` + `Google Sans Code`, dedicated `ColorVariantsScreen`, `WallpaperScreen`, `FontSelectionScreen`, `StorageDataScreen`, `StorageMediaHelper`, Instagram parser fixes, and green CI verification (`46158629370`).
+- **Status**:
+  - Pending tag `v0.11.1` CI build and GitHub Release publication.

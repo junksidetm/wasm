@@ -1,0 +1,4 @@
+- Restored exact Import Screen Figma SVG paths & copy, plus all 7 exact Storage category SVG icons, color-coded Storage pill segments, and center-axis `- Move` rotations.
+- Standardized opened chat TopBars, Room v6 per-chat avatars, opaque M3 tonal surfaces, and single-line inline rich text formatting (`Google Sans Code`).
+- Added dedicated Color Variants (all 9 M3 dynamic scheme variants), 9:16 Wallpaper HUD, Font Selection (with 6-axis Google Sans Flex sliders), and Storage & Data purge sub-pages.
+- Improved Archive card styling/long-press hide, folder-aware media classification (`StorageMediaHelper`), and Instagram HTML entity/timestamp parsing.

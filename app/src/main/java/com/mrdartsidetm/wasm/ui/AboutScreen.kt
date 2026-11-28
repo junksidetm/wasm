@@ -125,7 +125,7 @@ fun AboutScreen(
                         color = MaterialTheme.colorScheme.secondaryContainer
                     ) {
                         Text(
-                            text = "v0.11.0 • Build 16",
+                            text = "v0.11.1 • Build 17",
                             style = MaterialTheme.typography.labelMedium.copy(fontFamily = GoogleSansCodeFontFamily),
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSecondaryContainer,
