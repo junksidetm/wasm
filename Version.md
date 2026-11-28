@@ -1484,3 +1484,12 @@
 - **Release Bump (`app/build.gradle.kts`, `v0.12.0`)**:
   - Bumped `versionCode` from `20` to `21` and `versionName` from `0.11.4` to `0.12.0` (`BuildConfig.VERSION_NAME`).
   - Preparing signed commit, multi-remote synchronization across GitHub (`origin`), GitLab (`gitlab`), and Codeberg (`codeberg`), and signed release tag `v0.12.0` verification.
+
+
+## [0.12.0-ci-verified] - 2026-11-29 02:06 IST
+- **GitHub Actions CI & Release Verification (`Run 46186547710`)**:
+  - `:app:testDebugUnitTest`: **BUILD SUCCESSFUL** in `21s` (`ChatRichTextLinksAndNumbersTest`, `ChatRichTextParserTest`, `ChatSearchFilterTest`, `WhatsAppParserTest`, `WhatsAppParserAbhijeetExportTest`, `WhatsAppGroupAndEmojiTest`, `AvatarCropMathTest`, `RealZipVerificationTest`, `InstagramHtmlParserTest`, `ZipArchiveDetectorTest`).
+  - `Build Universal Production APK`: **BUILD SUCCESSFUL** (`3m38s`); `apksigner verify` passed for v1/v2/v3 signing schemes.
+  - Published standalone signed release **`v0.12.0`** on GitHub Releases (`wasm-universal-release.apk` & `wasm-fdroid-universal.apk`, `130,495,108` bytes, SHA-256 `2eca5011f5f31c2927599ad065a32b9cae5477ff87cf866af8e4a1409fe87ef5`).
+  - `Deploy GitHub Pages` (`46186486561`): **completed / success**.
+  - Signed `v0.12.0` tags verified and pushed across GitHub (`origin`), GitLab (`gitlab`), and Codeberg (`codeberg`).
