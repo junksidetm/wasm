@@ -1191,3 +1191,37 @@
 - **Onboarding Refinements (`ui/onboarding/OnboardingScreen.kt`)**:
   - Updated Screen 4 WhatsApp heading casing to `"WhatsApp"` (`Onboarding Screen 4 - Whatsapp.svg`) and froze `Outer-Yellow` on Screen 5 (`outerYellowRotation = 0f`, `Onboarding Screen 5.svg`).
 - **Release `v0.10.0`**: Bumped `versionCode = 15`, `versionName = "0.10.0"` across `app/build.gradle.kts`, `AboutScreen.kt`, `README.md`, `docs/index.html`, and `fastlane/metadata/android/en-US/changelogs/15.txt`.
+
+
+---
+
+## [0.11.0] - 2026-11-28 15:15:00 IST
+### Complete 13-Screen SVG Extraction, General Settings Screen, App-Wide Theme/Color/Wallpaper/Font Engine & Storage Bar Polish
+- **Complete Wireframe SVG Extraction (`assests/wireframes/onboarding/`, `assests/wireframes/main/`)**:
+  - Extracted all 13 self-contained `412x917` SVGs from the master Figma wireframe export (`Onboarding Screen 1..5`, `Onboarding Screen 4 - Whatsapp/Instagram`, `Onboarding Language Changer`, `Home Screen`, `Storage Screen`, `Settings Screen`, `General.svg`, `Import Screen`, and `Language Changer`) with zero missing `<defs>` references.
+- **General Settings Screen (`ui/GeneralScreen.kt`, `ui/SettingsScreen.kt`)**:
+  - Built `GeneralScreen` matching `assests/wireframes/main/General.svg`: bold `General` header with back navigation, `Search Settings` pill bar filtering entries live, and an M3 Expressive connected card stack (`16.dp` outer / `4.dp` inner radii, `2.dp` spacing):
+    1. **Theme**: 3-segment M3 Expressive connected button group (`System Default` | `Light` | `Dark`) with spring-morphing pill selection.
+    2. **Dynamic Color & Variants**: Material You / Monet dynamic color switch plus 6 selectable M3 tonal color variants (`Default (Monet)`, `Ocean Blue`, `Emerald Green`, `Expressive Violet`, `Sunset Coral`, `Rose Quartz`).
+    3. **Wallpaper**: Chat background selector with 7 light/dark adaptive presets (`Classic WhatsApp`, `Material Surface`, `Soft Sage`, `Ocean Mist`, `Warm Sand`, `Lavender Dusk`, `OLED Black`) plus custom gallery photo picking (`PickVisualMedia`).
+    4. **Font Selection**: Live typography switcher (`Google Sans Flex`, `SF Pro Display`, `System Default`, `Monospace`) with iOS emoji fallback on API 29+.
+  - Preserved `Personalize Profile`, `Sender Identity (Me)`, and `Replay Onboarding` in a secondary connected group inside `GeneralScreen` and hid the bottom `NavigationBar` on Settings sub-screens (`General`, `Language Changer`, `About`) to match the wireframe.
+- **App-Wide Theme, Wallpaper & Font Wiring (`UserPreferencesRepository.kt`, `Theme.kt`, `Type.kt`, `MainActivity.kt`, `ChatWallpaperContainer.kt`, `ChatScreen.kt`, `InstagramScreen.kt`)**:
+  - Persisted all General preferences in DataStore (`theme_mode`, `dynamic_color_enabled`, `color_variant`, `chat_wallpaper`, `chat_wallpaper_image_path`, `font_selection`).
+  - Added `LocalIsDarkTheme` and `LocalChatWallpaper` across WhatsApp and Instagram chat threads with shared downsampled custom wallpaper decoding in `ChatWallpaperContainer`.
+- **Storage Bar Polish (`ui/StorageScreen.kt`)**:
+  - Updated the Storage progress pill bar so Instagram and WhatsApp colored pill segments layer cleanly with rounded pill caps matching `Storage Screen.svg`.
+- **Release `v0.11.0`**:
+  - Bumped `versionCode = 16`, `versionName = "0.11.0"` across `app/build.gradle.kts`, `AboutScreen.kt`, `SettingsScreen.kt`, `README.md`, `docs/index.html`, and `fastlane/metadata/android/en-US/changelogs/16.txt`.
+
+### Status
+- 100% Implemented and statically verified (SVG def integrity and Kotlin syntax/brace balance checked); ready for remote GitHub Actions CI build verification.
+
+
+## [0.11.0-r1] - 2026-11-28 15:30:00 IST
+### Exact Import Screen Wireframe Shapes & Copy (`ImportScreen.kt`, `WasmLocalization.kt`)
+- Replaced `Icons.Default.Layers`, `Icons.Default.AllInclusive`, and `Icons.Default.UploadFile` on `ImportScreen.kt` with the exact Figma SVG paths extracted from `Import Screen.svg`:
+  - `IMPORT_LAYERS_PATH` (`Vector_30`, `PathFillType.EvenOdd`)
+  - `IMPORT_META_LOGO_PATH` (`Union_17`, `PathFillType.EvenOdd`)
+  - `OnboardingSvgPaths.filePlusIconPaths` (`Union_15`)
+- Restored the exact wireframe copy on `ImportScreen`: `"Nah! Fuck Meta"`, `"Our app is smart enough that it can categorises the imported file in both Whatsapp and Instagram automatically"`, and `"Just Import the fucking .zip"`.

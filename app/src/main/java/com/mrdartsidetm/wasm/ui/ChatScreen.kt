@@ -9,7 +9,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -45,6 +44,7 @@ import com.mrdartsidetm.wasm.R
 import com.mrdartsidetm.wasm.data.MessageEntity
 import com.mrdartsidetm.wasm.data.WhatsAppConversationEntity
 import com.mrdartsidetm.wasm.ui.onboarding.ContainedExpressiveLoadingIndicator
+import com.mrdartsidetm.wasm.ui.theme.LocalIsDarkTheme
 import com.mrdartsidetm.wasm.ui.theme.SfProBold
 import com.mrdartsidetm.wasm.ui.theme.SfProBoldItalic
 import com.mrdartsidetm.wasm.ui.theme.SfProItalic
@@ -663,7 +663,7 @@ private fun WhatsAppChatDetailScreen(
     var isSearchActive by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalIsDarkTheme.current
 
     LaunchedEffect(messages.size, targetMessageId) {
         val targetId = targetMessageId ?: return@LaunchedEffect
@@ -806,7 +806,9 @@ private fun WhatsAppChatDetailScreen(
             }
         }
     ) { innerPadding ->
-        Box(
+        ChatWallpaperContainer(
+            usePlatformDefaultWhenUnset = true,
+            defaultBackgroundColor = if (isDark) Color(0xFF0B141A) else Color(0xFFEFEAE2),
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
@@ -934,7 +936,7 @@ fun ExpressiveChatBubble(
     mediaDir: File,
     onImageClick: (File) -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalIsDarkTheme.current
 
     // Authentic WhatsApp speech bubble colors
     val bubbleColor = if (isMe) {
@@ -1067,7 +1069,7 @@ fun WhatsAppFormattedMessage(
     textColor: Color = MaterialTheme.colorScheme.onSurface,
     modifier: Modifier = Modifier
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalIsDarkTheme.current
     val lines = remember(content) { content.lines() }
 
     val hasBlockElements = remember(lines) {

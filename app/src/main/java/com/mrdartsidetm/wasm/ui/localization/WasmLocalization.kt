@@ -133,16 +133,34 @@ data class WasmStrings(
     val gifsLabel: String = "GIFs",
     val stickerLabel: String = "stickers",
     val choosePlatformTitle: String = "Choose Platform",
-    val smartDetectionSubtitle: String = "Smart archive auto-detection",
-    val autoCategorizeNotice: String = "Our app is smart enough to categorize the imported file into WhatsApp and Instagram automatically.",
-    val importZipHint: String = "Select an exported .zip or .txt archive to import",
+    val smartDetectionSubtitle: String = "Nah! Fuck Meta",
+    val autoCategorizeNotice: String = "Our app is smart enough that it can categorises the imported file in both Whatsapp and Instagram automatically",
+    val importZipHint: String = "Just Import the fucking .zip",
     val searchSettingsPlaceholder: String = "Search Settings",
     val settingsGeneralTitle: String = "General",
-    val settingsGeneralSubtitle: String = "Profile, sender identity & replay onboarding",
+    val settingsGeneralSubtitle: String = "Theme, dynamic color, wallpaper & fonts",
     val settingsPrivacyTitle: String = "Privacy & Terms of Service",
     val settingsPrivacySubtitle: String = "100% offline storage & Apache 2.0 license",
     val settingsStorageDataTitle: String = "Storage & Data",
-    val settingsAboutSubtitle: String = "Version, device specs & developer info"
+    val settingsAboutSubtitle: String = "Version, device specs & developer info",
+
+    // Wireframe General Screen
+    val themeTitle: String = "Theme",
+    val themeSubtitle: String = "Choose System Default, Light, or Dark mode",
+    val themeSystemDefault: String = "System Default",
+    val themeLight: String = "Light",
+    val themeDark: String = "Dark",
+    val dynamicColorVariantsTitle: String = "Dynamic Color & Variants",
+    val dynamicColorVariantsSubtitle: String = "Wallpaper Monet palette & color accents",
+    val wallpaperTitle: String = "Wallpaper",
+    val wallpaperSubtitle: String = "Customize chat background color or photo",
+    val fontSelectionTitle: String = "Font Selection",
+    val fontSelectionSubtitle: String = "Switch app & message typography",
+    val colorVariantPickerTitle: String = "Color Variants",
+    val wallpaperPickerTitle: String = "Chat Wallpaper",
+    val fontPickerTitle: String = "Font Selection",
+    val choosePhotoFromGallery: String = "Choose Photo",
+    val resetToDefault: String = "Reset"
 )
 
 val LocalWasmStrings = staticCompositionLocalOf { englishStrings() }

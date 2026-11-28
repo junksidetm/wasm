@@ -144,7 +144,7 @@ fun AboutScreen(
                 color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
             ) {
                 Text(
-                    text = "Version 0.10.0 (Universal Release)",
+                    text = "Version 0.11.0 (Universal Release)",
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)

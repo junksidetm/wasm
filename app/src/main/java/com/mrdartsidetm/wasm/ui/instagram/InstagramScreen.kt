@@ -19,7 +19,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -53,6 +52,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mrdartsidetm.wasm.ui.ChatWallpaperContainer
+import com.mrdartsidetm.wasm.ui.theme.LocalIsDarkTheme
 import com.mrdartsidetm.wasm.data.InstagramAccountEntity
 import com.mrdartsidetm.wasm.data.InstagramConversationEntity
 import com.mrdartsidetm.wasm.data.InstagramMessageEntity
@@ -986,7 +987,9 @@ fun InstagramDmThreadScreen(
             }
         }
     ) { padding ->
-        Box(
+        ChatWallpaperContainer(
+            usePlatformDefaultWhenUnset = true,
+            defaultBackgroundColor = MaterialTheme.colorScheme.background,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
@@ -1080,7 +1083,7 @@ fun InstagramChatBubble(
     onVideoClick: (File) -> Unit,
     onOpenGroupMedia: (List<Pair<String, File>>) -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalIsDarkTheme.current
 
     val bubbleAlignment = if (isMe) Alignment.CenterEnd else Alignment.CenterStart
 

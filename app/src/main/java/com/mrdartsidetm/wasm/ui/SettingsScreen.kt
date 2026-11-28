@@ -1,12 +1,5 @@
 package com.mrdartsidetm.wasm.ui
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -67,27 +60,28 @@ fun SettingsScreen(
     prefs: UserPreferencesRepository,
     selectedLanguageCode: String = "en",
     onReplayOnboarding: () -> Unit = {},
+    onSubScreenChanged: (Boolean) -> Unit = {},
     onBackToHome: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val strings = LocalWasmStrings.current
     val scope = rememberCoroutineScope()
-    val currentUser by whatsappViewModel.currentUser.collectAsStateWithLifecycle()
     val waConversations by whatsappViewModel.conversations.collectAsStateWithLifecycle()
     val waTotalMessages by whatsappViewModel.totalMessageCount.collectAsStateWithLifecycle()
     val igAccount by instagramViewModel.account.collectAsStateWithLifecycle()
     val igConversations by instagramViewModel.conversations.collectAsStateWithLifecycle()
 
     var searchQuery by rememberSaveable { mutableStateOf("") }
+    var showGeneralScreen by rememberSaveable { mutableStateOf(false) }
     var showLanguageChanger by rememberSaveable { mutableStateOf(false) }
     var showAboutScreen by rememberSaveable { mutableStateOf(false) }
-    var isPersonalizeOpen by rememberSaveable { mutableStateOf(false) }
 
-    var showGeneralDialog by remember { mutableStateOf(false) }
+    LaunchedEffect(showGeneralScreen, showLanguageChanger, showAboutScreen) {
+        onSubScreenChanged(showGeneralScreen || showLanguageChanger || showAboutScreen)
+    }
+
     var showPrivacyDialog by remember { mutableStateOf(false) }
     var showStorageDataDialog by remember { mutableStateOf(false) }
-    var showIdentityDialog by remember { mutableStateOf(false) }
-    var newIdentityText by remember { mutableStateOf("") }
     var showClearWhatsAppDialog by remember { mutableStateOf(false) }
     var showClearInstagramDialog by remember { mutableStateOf(false) }
 
@@ -133,104 +127,6 @@ fun SettingsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showClearInstagramDialog = false }) {
-                    Text(strings.cancel)
-                }
-            }
-        )
-    }
-
-    if (showIdentityDialog) {
-        AlertDialog(
-            onDismissRequest = { showIdentityDialog = false },
-            icon = { Icon(Icons.Default.Person, contentDescription = null) },
-            title = { Text("Set Default User Identity") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = strings.identityHelpText,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    OutlinedTextField(
-                        value = newIdentityText,
-                        onValueChange = { newIdentityText = it },
-                        placeholder = { Text("e.g. Kajal Sinha") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        if (newIdentityText.isNotBlank()) {
-                            whatsappViewModel.setIdentity(newIdentityText.trim())
-                        }
-                        showIdentityDialog = false
-                    }
-                ) {
-                    Text(strings.save)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showIdentityDialog = false }) {
-                    Text(strings.cancel)
-                }
-            }
-        )
-    }
-
-    if (showGeneralDialog) {
-        AlertDialog(
-            onDismissRequest = { showGeneralDialog = false },
-            icon = { Icon(Icons.Default.Tune, contentDescription = null) },
-            title = { Text(strings.settingsGeneralTitle) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    FilledTonalButton(
-                        onClick = {
-                            showGeneralDialog = false
-                            isPersonalizeOpen = true
-                        },
-                        shape = RoundedCornerShape(14.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text(strings.personalizeProfile, maxLines = 1)
-                    }
-                    FilledTonalButton(
-                        onClick = {
-                            showGeneralDialog = false
-                            newIdentityText = currentUser
-                            showIdentityDialog = true
-                        },
-                        shape = RoundedCornerShape(14.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(Icons.Default.Badge, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            text = if (currentUser.isNotEmpty()) "${strings.changeIdentity}: $currentUser" else strings.setIdentity,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    OutlinedButton(
-                        onClick = {
-                            showGeneralDialog = false
-                            onReplayOnboarding()
-                        },
-                        shape = RoundedCornerShape(14.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(Icons.Default.Replay, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text(strings.replayOnboarding, maxLines = 1)
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showGeneralDialog = false }) {
                     Text(strings.cancel)
                 }
             }
@@ -355,6 +251,17 @@ fun SettingsScreen(
         )
     }
 
+    // Opens main/General.svg screen
+    if (showGeneralScreen) {
+        GeneralScreen(
+            whatsappViewModel = whatsappViewModel,
+            prefs = prefs,
+            onReplayOnboarding = onReplayOnboarding,
+            onBack = { showGeneralScreen = false }
+        )
+        return
+    }
+
     // Opens main/Language Changer.svg screen variant
     if (showLanguageChanger) {
         LanguageChangerScreen(
@@ -408,7 +315,7 @@ fun SettingsScreen(
             SettingsCategoryItem(
                 key = SettingsEntryKey.ABOUT,
                 title = strings.aboutTitle,
-                subtitle = "Version 0.10.0 • Abhijeet Yadav",
+                subtitle = "Version 0.11.0 • Abhijeet Yadav",
                 icon = Icons.Default.Info
             )
         )
@@ -418,8 +325,11 @@ fun SettingsScreen(
         if (searchQuery.isBlank()) categories
         else {
             val q = searchQuery.trim().lowercase()
-            categories.filter {
-                it.title.lowercase().contains(q) || it.subtitle.lowercase().contains(q)
+            categories.filter { item ->
+                val matchesMain = item.title.lowercase().contains(q) || item.subtitle.lowercase().contains(q)
+                val matchesGeneralKeywords = item.key == SettingsEntryKey.GENERAL &&
+                    ("theme dark light dynamic color variant wallpaper font profile identity".contains(q))
+                matchesMain || matchesGeneralKeywords
             }
         }
     }
@@ -545,7 +455,7 @@ fun SettingsScreen(
                     Surface(
                         onClick = {
                             when (item.key) {
-                                SettingsEntryKey.GENERAL -> showGeneralDialog = true
+                                SettingsEntryKey.GENERAL -> showGeneralScreen = true
                                 SettingsEntryKey.LANGUAGE -> showLanguageChanger = true
                                 SettingsEntryKey.PRIVACY -> showPrivacyDialog = true
                                 SettingsEntryKey.STORAGE_DATA -> showStorageDataDialog = true
@@ -601,24 +511,6 @@ fun SettingsScreen(
                     }
                 }
             }
-        }
-
-        AnimatedVisibility(
-            visible = isPersonalizeOpen,
-            enter = slideInVertically(
-                initialOffsetY = { -it },
-                animationSpec = tween(400, easing = FastOutSlowInEasing)
-            ) + fadeIn(tween(400)),
-            exit = slideOutVertically(
-                targetOffsetY = { -it },
-                animationSpec = tween(350, easing = FastOutSlowInEasing)
-            ) + fadeOut(tween(350))
-        ) {
-            PersonalizeScreen(
-                prefs = prefs,
-                onDismiss = { isPersonalizeOpen = false },
-                onNavigateToSettings = { isPersonalizeOpen = false }
-            )
         }
     }
 }

@@ -49,6 +49,12 @@ import com.mrdartsidetm.wasm.ui.localization.languageByCode
 import com.mrdartsidetm.wasm.ui.localization.wasmStringsFor
 import com.mrdartsidetm.wasm.ui.onboarding.OnboardingBgBottom
 import com.mrdartsidetm.wasm.ui.onboarding.OnboardingFlow
+import com.mrdartsidetm.wasm.ui.theme.AppFontOption
+import com.mrdartsidetm.wasm.ui.theme.ChatWallpaperConfig
+import com.mrdartsidetm.wasm.ui.theme.ChatWallpaperPreset
+import com.mrdartsidetm.wasm.ui.theme.ColorVariantOption
+import com.mrdartsidetm.wasm.ui.theme.LocalChatWallpaper
+import com.mrdartsidetm.wasm.ui.theme.ThemeModeOption
 import com.mrdartsidetm.wasm.ui.theme.WasmTheme
 import kotlinx.coroutines.launch
 import java.io.File
@@ -59,9 +65,21 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            WasmTheme {
-                val db = remember { ChatDatabase.getDatabase(applicationContext) }
-                val prefs = remember { UserPreferencesRepository(applicationContext) }
+            val db = remember { ChatDatabase.getDatabase(applicationContext) }
+            val prefs = remember { UserPreferencesRepository(applicationContext) }
+            val themeMode by prefs.themeMode.collectAsStateWithLifecycle(initialValue = ThemeModeOption.SYSTEM.id)
+            val dynamicColorEnabled by prefs.dynamicColorEnabled.collectAsStateWithLifecycle(initialValue = true)
+            val colorVariant by prefs.colorVariant.collectAsStateWithLifecycle(initialValue = ColorVariantOption.DEFAULT.id)
+            val chatWallpaper by prefs.chatWallpaper.collectAsStateWithLifecycle(initialValue = ChatWallpaperPreset.DEFAULT.id)
+            val chatWallpaperImagePath by prefs.chatWallpaperImagePath.collectAsStateWithLifecycle(initialValue = null)
+            val fontSelection by prefs.fontSelection.collectAsStateWithLifecycle(initialValue = AppFontOption.GOOGLE_SANS_FLEX.id)
+
+            WasmTheme(
+                themeMode = themeMode,
+                dynamicColor = dynamicColorEnabled,
+                colorVariant = colorVariant,
+                fontSelection = fontSelection
+            ) {
                 val coroutineScope = rememberCoroutineScope()
                 val whatsappMediaDir = remember { File(applicationContext.filesDir, "media") }
                 val instagramBaseDir = remember { File(applicationContext.filesDir, "instagram_data") }
@@ -103,10 +121,13 @@ class MainActivity : ComponentActivity() {
                 var homePreferredPlatform by rememberSaveable { mutableStateOf<String?>(null) }
                 // Full-screen Import Screen modal launched by Home FAB
                 var showImportScreen by rememberSaveable { mutableStateOf(false) }
+                // Tracks whether Settings is currently showing a sub-screen (General, Language Changer, About)
+                var isSettingsSubScreen by rememberSaveable { mutableStateOf(false) }
 
                 CompositionLocalProvider(
                     LocalWasmStrings provides strings,
-                    LocalLayoutDirection provides layoutDirection
+                    LocalLayoutDirection provides layoutDirection,
+                    LocalChatWallpaper provides ChatWallpaperConfig(chatWallpaper, chatWallpaperImagePath)
                 ) {
                     when {
                         onboardingCompleted == null -> {
@@ -208,7 +229,7 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     }
-                    selectedTab != 0 && !showImportScreen -> {
+                    selectedTab != 0 && !showImportScreen && !isSettingsSubScreen -> {
                         BackHandler {
                             selectedTab = 0
                         }
@@ -217,7 +238,7 @@ class MainActivity : ComponentActivity() {
 
                 Scaffold(
                     bottomBar = {
-                        if (!showImportScreen && activeMessagesPlatform == null) {
+                        if (!showImportScreen && activeMessagesPlatform == null && !(selectedTab == 2 && isSettingsSubScreen)) {
                             NavigationBar {
                                 NavigationBarItem(
                                     selected = selectedTab == 0,
@@ -365,6 +386,7 @@ class MainActivity : ComponentActivity() {
                                 prefs = prefs,
                                 selectedLanguageCode = appLanguage,
                                 onReplayOnboarding = { forceShowOnboarding = true },
+                                onSubScreenChanged = { isSettingsSubScreen = it },
                                 onBackToHome = { selectedTab = 0 }
                             )
                         }

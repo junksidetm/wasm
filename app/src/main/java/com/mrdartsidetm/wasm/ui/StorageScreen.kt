@@ -386,33 +386,32 @@ fun StorageScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Multi-segment Storage Bar (Instagram | WhatsApp | Free track)
+                // Multi-segment Storage Bar matching Storage Screen.svg (Instagram pill layered over WhatsApp pill)
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(44.dp)
+                        .height(48.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 ) {
-                    Row(modifier = Modifier.fillMaxSize()) {
-                        val igFrac = animIgFrac.coerceIn(0f, 1f)
-                        val waFrac = animWaFrac.coerceIn(0f, (1f - igFrac).coerceAtLeast(0f))
-                        if (igFrac > 0.005f) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxHeight()
-                                    .fillMaxWidth(igFrac)
-                                    .background(MaterialTheme.colorScheme.tertiary, CircleShape)
-                            )
-                        }
-                        if (waFrac > 0.005f) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxHeight()
-                                    .fillMaxWidth(waFrac / (1f - igFrac).coerceAtLeast(0.01f))
-                                    .background(Color(0xFF4CAF50), CircleShape)
-                            )
-                        }
+                    val igFrac = animIgFrac.coerceIn(0f, 1f)
+                    val waFrac = animWaFrac.coerceIn(0f, (1f - igFrac).coerceAtLeast(0f))
+                    val combinedFrac = (igFrac + waFrac).coerceIn(0f, 1f)
+                    if (waFrac > 0.005f) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .fillMaxWidth(combinedFrac)
+                                .background(Color(0xFF709D5B), CircleShape)
+                        )
+                    }
+                    if (igFrac > 0.005f) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .fillMaxWidth(igFrac)
+                                .background(MaterialTheme.colorScheme.tertiary, CircleShape)
+                        )
                     }
                 }
 

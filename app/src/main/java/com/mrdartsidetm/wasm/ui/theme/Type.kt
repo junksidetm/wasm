@@ -205,6 +205,91 @@ val SfProBlack = createGoogleSansFlexFamily(weight = 900)
 val SfProBlackItalic = createGoogleSansFlexFamily(weight = 900, slant = -10f, style = FontStyle.Italic)
 
 /**
+ * Supported app typography options selectable from General Settings.
+ */
+enum class AppFontOption(val id: String, val displayName: String) {
+    GOOGLE_SANS_FLEX("google_sans_flex", "Google Sans Flex"),
+    SF_PRO("sf_pro", "SF Pro Display"),
+    SYSTEM("system", "System Default"),
+    MONOSPACE("monospace", "Monospace");
+
+    companion object {
+        fun fromId(id: String): AppFontOption =
+            values().firstOrNull { it.id == id } ?: GOOGLE_SANS_FLEX
+    }
+}
+
+val SfProDisplayFontFamily = FontFamily(
+    Font(resId = R.font.sf_pro_display_thin, weight = FontWeight.Thin),
+    Font(resId = R.font.sf_pro_display_ultralight, weight = FontWeight.ExtraLight),
+    Font(resId = R.font.sf_pro_display_light, weight = FontWeight.Light),
+    Font(resId = R.font.sf_pro_display_regular, weight = FontWeight.Normal),
+    Font(resId = R.font.sf_pro_display_regular_italic, weight = FontWeight.Normal, style = FontStyle.Italic),
+    Font(resId = R.font.sf_pro_display_medium, weight = FontWeight.Medium),
+    Font(resId = R.font.sf_pro_display_semibold, weight = FontWeight.SemiBold),
+    Font(resId = R.font.sf_pro_display_bold, weight = FontWeight.Bold),
+    Font(resId = R.font.sf_pro_display_bold_italic, weight = FontWeight.Bold, style = FontStyle.Italic),
+    Font(resId = R.font.sf_pro_display_heavy, weight = FontWeight.ExtraBold),
+    Font(resId = R.font.sf_pro_display_black, weight = FontWeight.Black)
+)
+
+/**
+ * Builds SF Pro Display FontFamily with bundled iOS emoji fallback on Android 10+ (API 29+).
+ */
+fun getSfProFontFamily(context: Context): FontFamily {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        try {
+            val weightResPairs = listOf(
+                R.font.sf_pro_display_thin,
+                R.font.sf_pro_display_ultralight,
+                R.font.sf_pro_display_light,
+                R.font.sf_pro_display_regular,
+                R.font.sf_pro_display_regular_italic,
+                R.font.sf_pro_display_medium,
+                R.font.sf_pro_display_semibold,
+                R.font.sf_pro_display_bold,
+                R.font.sf_pro_display_bold_italic,
+                R.font.sf_pro_display_heavy,
+                R.font.sf_pro_display_black
+            )
+            var familyBuilder: android.graphics.fonts.FontFamily.Builder? = null
+            for (resId in weightResPairs) {
+                val f = android.graphics.fonts.Font.Builder(context.resources, resId).build()
+                if (familyBuilder == null) {
+                    familyBuilder = android.graphics.fonts.FontFamily.Builder(f)
+                } else {
+                    familyBuilder.addFont(f)
+                }
+            }
+            val primaryFamily = familyBuilder?.build()
+            if (primaryFamily != null) {
+                val emojiFont = android.graphics.fonts.Font.Builder(context.assets, "fonts/ios_emoji.ttf").build()
+                val emojiFamily = android.graphics.fonts.FontFamily.Builder(emojiFont).build()
+                val compositeTypeface = Typeface.CustomFallbackBuilder(primaryFamily)
+                    .addCustomFallback(emojiFamily)
+                    .build()
+                return FontFamily(compositeTypeface)
+            }
+        } catch (_: Throwable) {
+            // Fall back to static SfProDisplayFontFamily
+        }
+    }
+    return SfProDisplayFontFamily
+}
+
+/**
+ * Resolves the user's selected FontFamily with bundled iOS emoji fallback.
+ */
+fun getSelectedAppFontFamily(context: Context, fontSelection: String): FontFamily {
+    return when (AppFontOption.fromId(fontSelection)) {
+        AppFontOption.GOOGLE_SANS_FLEX -> getAppFontFamily(context)
+        AppFontOption.SF_PRO -> getSfProFontFamily(context)
+        AppFontOption.SYSTEM -> FontFamily.Default
+        AppFontOption.MONOSPACE -> FontFamily.Monospace
+    }
+}
+
+/**
  * Builds the primary Google Sans Flex FontFamily with bundled iOS emoji fallback on Android 10+ (API 29+).
  */
 fun getAppFontFamily(context: Context): FontFamily {

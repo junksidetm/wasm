@@ -17,6 +17,12 @@ class UserPreferencesRepository(private val context: Context) {
     private val PROFILE_IMAGE_PATH_KEY = stringPreferencesKey("profile_image_path")
     private val APP_LANGUAGE_KEY = stringPreferencesKey("app_language")
     private val ONBOARDING_COMPLETED_KEY = booleanPreferencesKey("onboarding_completed")
+    private val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
+    private val DYNAMIC_COLOR_ENABLED_KEY = booleanPreferencesKey("dynamic_color_enabled")
+    private val COLOR_VARIANT_KEY = stringPreferencesKey("color_variant")
+    private val CHAT_WALLPAPER_KEY = stringPreferencesKey("chat_wallpaper")
+    private val CHAT_WALLPAPER_IMAGE_PATH_KEY = stringPreferencesKey("chat_wallpaper_image_path")
+    private val FONT_SELECTION_KEY = stringPreferencesKey("font_selection")
 
     // Flow that emits the current saved name (or empty string if not set)
     val userIdentity: Flow<String> = context.dataStore.data.map { prefs ->
@@ -43,6 +49,36 @@ class UserPreferencesRepository(private val context: Context) {
         prefs[ONBOARDING_COMPLETED_KEY] ?: false
     }
 
+    // Theme mode: "system", "light", or "dark"
+    val themeMode: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[THEME_MODE_KEY] ?: "system"
+    }
+
+    // Whether Material You / Monet dynamic color is enabled
+    val dynamicColorEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[DYNAMIC_COLOR_ENABLED_KEY] ?: true
+    }
+
+    // Selected color palette variant: "default", "ocean", "emerald", "violet", "coral", "rose"
+    val colorVariant: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[COLOR_VARIANT_KEY] ?: "default"
+    }
+
+    // Selected chat wallpaper preset or "custom"
+    val chatWallpaper: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[CHAT_WALLPAPER_KEY] ?: "default"
+    }
+
+    // Saved custom chat wallpaper image local path
+    val chatWallpaperImagePath: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[CHAT_WALLPAPER_IMAGE_PATH_KEY]
+    }
+
+    // Selected typography family: "google_sans_flex", "sf_pro", "system", "monospace"
+    val fontSelection: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[FONT_SELECTION_KEY] ?: "google_sans_flex"
+    }
+
     // Function to save selected language code
     suspend fun saveAppLanguage(languageCode: String) {
         context.dataStore.edit { prefs ->
@@ -54,6 +90,46 @@ class UserPreferencesRepository(private val context: Context) {
     suspend fun setOnboardingCompleted(completed: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[ONBOARDING_COMPLETED_KEY] = completed
+        }
+    }
+
+    suspend fun saveThemeMode(mode: String) {
+        context.dataStore.edit { prefs ->
+            prefs[THEME_MODE_KEY] = mode
+        }
+    }
+
+    suspend fun saveDynamicColorEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[DYNAMIC_COLOR_ENABLED_KEY] = enabled
+        }
+    }
+
+    suspend fun saveColorVariant(variant: String) {
+        context.dataStore.edit { prefs ->
+            prefs[COLOR_VARIANT_KEY] = variant
+        }
+    }
+
+    suspend fun saveChatWallpaper(wallpaper: String) {
+        context.dataStore.edit { prefs ->
+            prefs[CHAT_WALLPAPER_KEY] = wallpaper
+        }
+    }
+
+    suspend fun saveChatWallpaperImagePath(path: String?) {
+        context.dataStore.edit { prefs ->
+            if (path == null) {
+                prefs.remove(CHAT_WALLPAPER_IMAGE_PATH_KEY)
+            } else {
+                prefs[CHAT_WALLPAPER_IMAGE_PATH_KEY] = path
+            }
+        }
+    }
+
+    suspend fun saveFontSelection(font: String) {
+        context.dataStore.edit { prefs ->
+            prefs[FONT_SELECTION_KEY] = font
         }
     }
 
