@@ -1313,3 +1313,13 @@
     2. `ChatScreen.kt:84`: Changed `getWhatsAppAvatarColor` visibility from `private` to `public` so `HomeScreen.kt:986` and `StorageDataScreen.kt:76` can access it directly.
 - **Status**:
   - Pending remote GitHub Actions CI verification for `assembleRelease` and full release packaging.
+
+## [0.11.0-r6] - 2026-11-28 20:36:30 IST
+### Fix Unit Test API References (`RealZipVerificationTest.kt`) & Record Successful APK Build (`46157464698`)
+- **CI Run `46157464698` Verification**:
+  - `Build Universal Production APK` (`141017852201`) **passed** end-to-end (`assembleRelease`, `apksigner` signature & alignment check, Universal APK, F-Droid APK, SHA256 checksums, and `build-diagnostics` push).
+  - Inspected `Analysis & Unit Tests` (`141017186937`) logs and caught a unit-test compilation error in `RealZipVerificationTest.kt` (`continue-on-error: true` masked it on the job badge): `DetectedArchivePlatform.INSTAGRAM`/`WHATSAPP` and `ZipArchiveDetector.detectFromEntryNames(names)` did not match `ZipArchiveDetector.kt`.
+- **Unit Test Fix (`app/src/test/java/com/mrdartsidetm/wasm/util/RealZipVerificationTest.kt`)**:
+  - Updated lines 23 and 83 to `DetectedArchivePlatform.INSTAGRAM_ZIP` / `DetectedArchivePlatform.WHATSAPP_ZIP` and `ZipArchiveDetector.detectFromFile(...)` matching `ZipArchiveDetector.kt`.
+- **Status**:
+  - Pending final remote GitHub Actions CI run verification with clean `:app:testDebugUnitTest` execution.

@@ -20,7 +20,7 @@ class RealZipVerificationTest {
 
         ZipFile(igZipFile).use { zip ->
             val names = zip.entries().asSequence().map { it.name }.toList()
-            assertEquals(DetectedArchivePlatform.INSTAGRAM, ZipArchiveDetector.detectFromEntryNames(names))
+            assertEquals(DetectedArchivePlatform.INSTAGRAM_ZIP, ZipArchiveDetector.detectFromFile(igZipFile))
 
             val startHereEntry = zip.getEntry("start_here.html")
             assertNotNull(startHereEntry)
@@ -80,7 +80,7 @@ class RealZipVerificationTest {
 
         ZipFile(waZipFile).use { zip ->
             val names = zip.entries().asSequence().map { it.name }.toList()
-            assertEquals(DetectedArchivePlatform.WHATSAPP, ZipArchiveDetector.detectFromEntryNames(names))
+            assertEquals(DetectedArchivePlatform.WHATSAPP_ZIP, ZipArchiveDetector.detectFromFile(waZipFile))
 
             val txtEntry = zip.entries().asSequence().firstOrNull { it.name.endsWith(".txt", ignoreCase = true) }
             assertNotNull(txtEntry)
