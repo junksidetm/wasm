@@ -766,18 +766,18 @@ private fun ConnectedSegmentPill(
 ) {
     val containerColor by animateColorAsState(
         targetValue = if (selected) {
-            MaterialTheme.colorScheme.secondary
+            MaterialTheme.colorScheme.primary
         } else {
-            MaterialTheme.colorScheme.secondaryContainer
+            MaterialTheme.colorScheme.surfaceContainerHigh
         },
         animationSpec = tween(220),
         label = "SegmentContainer"
     )
     val contentColor by animateColorAsState(
         targetValue = if (selected) {
-            MaterialTheme.colorScheme.onSecondary
+            MaterialTheme.colorScheme.onPrimary
         } else {
-            MaterialTheme.colorScheme.onSecondaryContainer
+            MaterialTheme.colorScheme.onSurfaceVariant
         },
         animationSpec = tween(220),
         label = "SegmentContent"
@@ -876,7 +876,7 @@ private fun HomeArchiveBanner(
                 modifier = Modifier.size(42.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Canvas(modifier = Modifier.size(14.dp)) {
+                Canvas(modifier = Modifier.size(22.dp)) {
                     val scale = min(size.width / 33f, size.height / 33f)
                     val dx = (size.width - 33f * scale) / 2f
                     val dy = (size.height - 33f * scale) / 2f

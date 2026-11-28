@@ -1343,3 +1343,17 @@
   - Exact Import Screen & Storage SVG paths/color-coding, Home Archive polish & hide toggle, standardized chat TopBars & Room v6 per-chat avatars, opaque tonal surfaces, single-line `ChatRichTextParser` + `Google Sans Code`, dedicated `ColorVariantsScreen`, `WallpaperScreen`, `FontSelectionScreen`, `StorageDataScreen`, `StorageMediaHelper`, Instagram parser fixes, and green CI verification (`46158629370`).
 - **Status**:
   - Pending tag `v0.11.1` CI build and GitHub Release publication.
+
+## [0.11.1-r1] - 2026-11-28 22:16:00 IST
+### Connected Button Colors, Archive Icon Sizing & LongShotPDF-Aligned About Page
+- **Connected Button Groups (`ui/HomeScreen.kt`, `ui/GeneralScreen.kt`)**:
+  - Updated `ConnectedSegmentPill` (used on Home & Storage & Data) and `ThemeConnectedSegment` (used on General Settings) so selected segments use `MaterialTheme.colorScheme.primary` / `onPrimary` and unselected segments use `MaterialTheme.colorScheme.surfaceContainerHigh` / `onSurfaceVariant` across light, dark, and Monet dynamic color schemes.
+- **Archive Icon Sizing (`ui/HomeScreen.kt`)**:
+  - Updated `HomeArchiveBanner` icon canvas from `14.dp` to `22.dp` inside its `42.dp` leading slot to match Settings icon sizing.
+- **Full-Bleed App Logo Vector (`res/drawable/app_logo.xml`, `app/build.gradle.kts`)**:
+  - Converted `assests/WASM - Logo.svg` into `res/drawable/app_logo.xml` (full-bleed `108x108` logo without the 66px adaptive icon safe-zone shrink).
+  - Enabled `buildFeatures.buildConfig = true` in `app/build.gradle.kts` so `AboutScreen` dynamically reads `BuildConfig.VERSION_NAME` and `BuildConfig.VERSION_CODE`.
+- **About Page Rebuild (`ui/AboutScreen.kt`, `res/drawable/shape_bun.xml`, `shape_9_side_cookie.xml`, `ic_github.xml`, `ic_email_at.xml`)**:
+  - Rebuilt `AboutScreen` matching `LongShotPDF`'s Universal About Page: `CenterAlignedTopAppBar`, `200.dp` squircle hero housing `R.drawable.app_logo` at `150.dp` (`75%`) flanked by animated `shape_bun` and `shape_9_side_cookie` M3 Expressive shapes, clickable dynamic version badge with 7-tap Developer Mode easter egg, Developer Profile Card (`R.drawable.developer` + GitHub & Email pills), `JuneAboutGroup` / `JuneAboutTile` spring-morphing FOSS list (Updates, GitHub Main, GitLab & Codeberg Mirrors, Material 3 Guidelines, and in-app Apache 2.0 License `ModalBottomSheet`), and `"Made with ❤️"` footer.
+- **Status**:
+  - Pending remote GitHub Actions CI build and unit test verification.
