@@ -4,20 +4,24 @@ import android.content.Context
 import android.os.Environment
 import android.os.StatFs
 import android.text.format.Formatter
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -41,8 +45,10 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -51,6 +57,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mrdartsidetm.wasm.data.UserPreferencesRepository
 import com.mrdartsidetm.wasm.ui.instagram.InstagramViewModel
 import com.mrdartsidetm.wasm.ui.localization.LocalWasmStrings
+import com.mrdartsidetm.wasm.ui.motion.WasmMechanicalText
+import com.mrdartsidetm.wasm.ui.motion.WasmMotionTokens
+import com.mrdartsidetm.wasm.ui.motion.performWasmTickHaptic
+import com.mrdartsidetm.wasm.ui.motion.rememberAnimatorsEnabled
+import com.mrdartsidetm.wasm.ui.motion.rememberLazyListHeaderFalloff
+import com.mrdartsidetm.wasm.ui.motion.wasmFeatheredVerticalViewport
+import com.mrdartsidetm.wasm.ui.motion.wasmLuminousElasticClickable
 import com.mrdartsidetm.wasm.ui.theme.GoogleSansFlexOnboarding535
 import com.mrdartsidetm.wasm.ui.theme.GoogleSansFlexOnboarding875
 import com.mrdartsidetm.wasm.util.StorageMediaCategory
@@ -160,6 +173,7 @@ private data class StoragePillSegment(
  * - Consistent color-coding across each row icon and the segmented Storage Pill bar
  * - Continuous center-axis rotation for `- Move` dashboard shapes (`8 leaf Clover - Move`, `Pill - Move`)
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun StorageScreen(
     whatsappViewModel: ChatViewModel,
@@ -171,6 +185,8 @@ fun StorageScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val view = LocalView.current
+    val animatorsEnabled = rememberAnimatorsEnabled()
     val strings = LocalWasmStrings.current
 
     val waConversations by whatsappViewModel.conversations.collectAsStateWithLifecycle()
@@ -181,6 +197,9 @@ fun StorageScreen(
 
     var showOverflowMenu by remember { mutableStateOf(false) }
     var isPersonalizeOpen by rememberSaveable { mutableStateOf(false) }
+    var highlightedCategoryId by remember { mutableStateOf<String?>(null) }
+    val listState = rememberLazyListState()
+    val headerFalloff by rememberLazyListHeaderFalloff(listState)
 
     var diskMetrics by remember { mutableStateOf(StorageDiskMetrics()) }
     LaunchedEffect(waTotalMessages, igTotalMessages, waConversations.size, igConversations.size) {
@@ -193,14 +212,9 @@ fun StorageScreen(
         }
     }
 
-    val animatedTotal by animateIntAsState(
-        targetValue = totalMessages,
-        animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
-        label = "StorageTotalMsgAnim"
-    )
-
-    val formattedTotal = remember(animatedTotal) {
-        NumberFormat.getNumberInstance(Locale.getDefault()).format(animatedTotal)
+    val numFmt = remember { NumberFormat.getNumberInstance(Locale.getDefault()) }
+    val formattedTotal = remember(totalMessages, numFmt) {
+        numFmt.format(totalMessages)
     }
 
     val appUsedBytes = diskMetrics.dbBytes + diskMetrics.waMediaBytes + diskMetrics.igMediaBytes
@@ -249,29 +263,35 @@ fun StorageScreen(
 
     // Continuous center-axis rotations for `8 leaf Clover - Move` & `Pill - Move`
     val infiniteTransition = rememberInfiniteTransition(label = "StorageMoveShapes")
-    val cloverRotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 16000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "CloverMoveAxis"
-    )
-    val pillRotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = -360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 12000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "PillMoveAxis"
-    )
+    val cloverRotation by if (animatorsEnabled) {
+        infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 16000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "CloverMoveAxis"
+        )
+    } else {
+        remember { mutableFloatStateOf(0f) }
+    }
+    val pillRotation by if (animatorsEnabled) {
+        infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = -360f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 12000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "PillMoveAxis"
+        )
+    } else {
+        remember { mutableFloatStateOf(0f) }
+    }
 
     val burstPath = remember { PathParser().parsePathString(STORAGE_DECOR_BURST_PATH).toPath() }
     val capsulePath = remember { PathParser().parsePathString(STORAGE_DECOR_CAPSULE_PATH).toPath() }
-
-    val numFmt = remember { NumberFormat.getNumberInstance(Locale.getDefault()) }
     val rows = remember(waTotalMessages, igTotalMessages, igTotalBytes, waTotalBytes, diskMetrics, strings) {
         listOf(
             StorageRowUi(
@@ -339,9 +359,15 @@ fun StorageScreen(
             .background(MaterialTheme.colorScheme.background)
     ) {
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 16.dp)
+                .wasmFeatheredVerticalViewport(
+                    active = listState.canScrollForward || listState.canScrollBackward,
+                    topFadeFraction = 0.025f * (0.4f + 0.6f * headerFalloff),
+                    bottomFadeFraction = 0.055f
+                ),
             contentPadding = PaddingValues(top = 10.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
@@ -350,7 +376,11 @@ fun StorageScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 4.dp, vertical = 6.dp),
+                        .padding(horizontal = 4.dp, vertical = 6.dp)
+                        .graphicsLayer {
+                            alpha = 1f - 0.14f * headerFalloff
+                            translationY = -4.dp.toPx() * headerFalloff
+                        },
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -465,7 +495,7 @@ fun StorageScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.height(6.dp))
-                            Text(
+                            WasmMechanicalText(
                                 text = formattedTotal,
                                 style = MaterialTheme.typography.displayLarge.copy(
                                     fontFamily = GoogleSansFlexOnboarding875,
@@ -543,11 +573,17 @@ fun StorageScreen(
                             horizontalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
                             normalizedWeights.forEach { (seg, weight) ->
+                                val isSegmentHighlighted = highlightedCategoryId == null || highlightedCategoryId == seg.id
+                                val segmentAlpha by animateFloatAsState(
+                                    targetValue = if (isSegmentHighlighted) 1f else 0.30f,
+                                    animationSpec = tween(220),
+                                    label = "segAlpha_${seg.id}"
+                                )
                                 Box(
                                     modifier = Modifier
                                         .fillMaxHeight()
                                         .weight(weight)
-                                        .background(seg.color)
+                                        .background(seg.color.copy(alpha = segmentAlpha))
                                 )
                             }
                         }
@@ -563,10 +599,32 @@ fun StorageScreen(
                 key = { _, item -> item.id }
             ) { index, row ->
                 val shape = storageConnectedItemShape(index = index, totalCount = rows.size)
+                val isSelectedRow = highlightedCategoryId == row.id
+                val rowBg by animateColorAsState(
+                    targetValue = if (isSelectedRow) {
+                        MaterialTheme.colorScheme.surfaceContainerHigh
+                    } else {
+                        MaterialTheme.colorScheme.surfaceContainerLow
+                    },
+                    animationSpec = tween(200),
+                    label = "storageRowBg_${row.id}"
+                )
                 Surface(
                     shape = shape,
-                    color = MaterialTheme.colorScheme.surfaceContainerLow,
-                    modifier = Modifier.fillMaxWidth()
+                    color = rowBg,
+                    border = if (isSelectedRow) BorderStroke(1.25.dp, row.color.copy(alpha = 0.65f)) else null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .animateItemPlacement(WasmMotionTokens.SpringListPlacement)
+                        .wasmLuminousElasticClickable(
+                            shape = shape,
+                            maxStretchPercent = 0.025f,
+                            pressedScale = 0.978f,
+                            onClick = {
+                                view.performWasmTickHaptic(true)
+                                highlightedCategoryId = if (isSelectedRow) null else row.id
+                            }
+                        )
                 ) {
                     Row(
                         modifier = Modifier
@@ -582,7 +640,7 @@ fun StorageScreen(
 
                         Spacer(modifier = Modifier.width(14.dp))
 
-                        Text(
+                        WasmMechanicalText(
                             text = row.countText,
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontFamily = GoogleSansFlexOnboarding535,
@@ -590,6 +648,7 @@ fun StorageScreen(
                                 fontSize = 20.sp
                             ),
                             color = MaterialTheme.colorScheme.onSurface,
+                            staggerDelayMs = 20,
                             maxLines = 1
                         )
 

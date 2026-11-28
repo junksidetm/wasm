@@ -1,13 +1,21 @@
 package com.mrdartsidetm.wasm.ui
 
 import android.graphics.BitmapFactory
+import android.net.Uri
 import android.util.LruCache
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -29,6 +37,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -43,13 +52,26 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mrdartsidetm.wasm.R
+import com.mrdartsidetm.wasm.ui.components.ChatSearchFilterBar
+import com.mrdartsidetm.wasm.ui.components.WasmAvatarCropperDialog
+import com.mrdartsidetm.wasm.ui.components.WasmClickableAnnotatedText
+import com.mrdartsidetm.wasm.ui.components.WasmExternalFileCard
+import com.mrdartsidetm.wasm.ui.components.WasmInlineAudioBubble
+import com.mrdartsidetm.wasm.ui.components.WasmInlineStickerOrGif
+import com.mrdartsidetm.wasm.ui.components.WasmInlineVideoCard
+import com.mrdartsidetm.wasm.ui.components.WasmMediaViewerScreen
+import com.mrdartsidetm.wasm.ui.components.WasmViewerMediaItem
+import com.mrdartsidetm.wasm.ui.components.WasmViewerMediaType
+import com.mrdartsidetm.wasm.ui.motion.wasmElasticClickable
+import com.mrdartsidetm.wasm.ui.motion.wasmFeatheredVerticalViewport
+import com.mrdartsidetm.wasm.ui.motion.wasmLuminousElasticClickable
+import com.mrdartsidetm.wasm.util.AudioPlayerManager
 import com.mrdartsidetm.wasm.data.MessageEntity
 import com.mrdartsidetm.wasm.data.WhatsAppConversationEntity
 import com.mrdartsidetm.wasm.ui.onboarding.ContainedExpressiveLoadingIndicator
+import com.mrdartsidetm.wasm.ui.theme.GoogleSansCodeFontFamily
 import com.mrdartsidetm.wasm.ui.theme.LocalIsDarkTheme
-import com.mrdartsidetm.wasm.ui.theme.SfProBold
-import com.mrdartsidetm.wasm.ui.theme.SfProItalic
-import com.mrdartsidetm.wasm.ui.theme.SfProSemibold
+import com.mrdartsidetm.wasm.ui.theme.LocalWasmMonoFontFamily
 import com.mrdartsidetm.wasm.ui.theme.opaqueContainer
 import com.mrdartsidetm.wasm.util.ChatRichTextParser
 import kotlinx.coroutines.Dispatchers
@@ -82,7 +104,7 @@ private val AvatarColorsList = listOf(
 )
 
 fun getWhatsAppAvatarColor(name: String): Color {
-    val hash = abs(name.hashCode())
+    val hash = name.hashCode() and 0x7fffffff
     return AvatarColorsList[hash % AvatarColorsList.size]
 }
 
@@ -165,7 +187,8 @@ fun ChatScreen(
     onImportClick: () -> Unit,
     onBackToPlatformChooser: (() -> Unit)? = null,
     onCloseConversation: (() -> Unit)? = null,
-    onOpenWallpaper: () -> Unit = {}
+    onOpenWallpaper: () -> Unit = {},
+    onConfirmation: (String) -> Unit = {}
 ) {
     val conversations by viewModel.filteredConversations.collectAsStateWithLifecycle()
     val allConversations by viewModel.conversations.collectAsStateWithLifecycle()
@@ -175,10 +198,11 @@ fun ChatScreen(
     val allMessages by viewModel.activeMessages.collectAsStateWithLifecycle()
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     val senders by viewModel.uniqueSenders.collectAsStateWithLifecycle()
+    val isGroupConversation by viewModel.isGroupConversation.collectAsStateWithLifecycle()
     val importState by viewModel.importUiState.collectAsStateWithLifecycle()
 
     var showIdentityDialog by remember { mutableStateOf(false) }
-    var fullScreenImageFile by remember { mutableStateOf<File?>(null) }
+    var viewerMediaItem by remember { mutableStateOf<WasmViewerMediaItem?>(null) }
     var conversationToDelete by remember { mutableStateOf<WhatsAppConversationEntity?>(null) }
     var showClearAllDialog by remember { mutableStateOf(false) }
 
@@ -251,9 +275,13 @@ fun ChatScreen(
         )
     }
 
-    // Full-screen image viewer dialog
-    fullScreenImageFile?.let { file ->
-        FullScreenImageDialog(file = file, onDismiss = { fullScreenImageFile = null })
+    // Dedicated black-background full-screen Photo & Video viewer page
+    viewerMediaItem?.let { item ->
+        WasmMediaViewerScreen(
+            item = item,
+            onDismiss = { viewerMediaItem = null },
+            onConfirmation = onConfirmation
+        )
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -286,13 +314,16 @@ fun ChatScreen(
                 allMessages = allMessages,
                 currentUser = currentUser,
                 senders = senders,
+                isGroupChat = isGroupConversation,
                 chatMediaDir = chatMediaDir,
                 viewModel = viewModel,
                 onBack = { (onCloseConversation ?: { viewModel.closeConversation() }).invoke() },
                 onSwitchIdentity = { showIdentityDialog = true },
                 onOpenWallpaper = onOpenWallpaper,
                 onDeleteThisChat = { activeConversation?.let { conversationToDelete = it } },
-                onImageClick = { fullScreenImageFile = it }
+                onImageClick = { viewerMediaItem = WasmViewerMediaItem(it, WasmViewerMediaType.PHOTO) },
+                onVideoClick = { viewerMediaItem = WasmViewerMediaItem(it, WasmViewerMediaType.VIDEO) },
+                onConfirmation = onConfirmation
             )
         }
 
@@ -372,7 +403,15 @@ private fun WhatsAppConversationsListScreen(
 
     Scaffold(
         topBar = {
-            if (isSearchActive) {
+            AnimatedContent(
+                targetState = isSearchActive,
+                transitionSpec = {
+                    (fadeIn(tween(180)) + slideInVertically { -it / 4 }) togetherWith
+                        (fadeOut(tween(140)) + slideOutVertically { -it / 4 })
+                },
+                label = "waListSearchTopBar"
+            ) { searching ->
+            if (searching) {
                 TopAppBar(
                     title = {
                         TextField(
@@ -481,6 +520,7 @@ private fun WhatsAppConversationsListScreen(
                     }
                 )
             }
+            }
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
@@ -542,8 +582,12 @@ private fun WhatsAppConversationCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .clickable(onClick = onClick)
+            .wasmLuminousElasticClickable(
+                shape = RoundedCornerShape(20.dp),
+                maxStretchPercent = 0.025f,
+                pressedScale = 0.978f,
+                onClick = onClick
+            )
     ) {
         Row(
             modifier = Modifier
@@ -699,167 +743,239 @@ private fun WhatsAppChatDetailScreen(
     allMessages: List<MessageEntity>,
     currentUser: String,
     senders: List<String>,
+    isGroupChat: Boolean,
     chatMediaDir: File,
     viewModel: ChatViewModel,
     onBack: () -> Unit,
     onSwitchIdentity: () -> Unit,
     onOpenWallpaper: () -> Unit,
     onDeleteThisChat: () -> Unit,
-    onImageClick: (File) -> Unit
+    onImageClick: (File) -> Unit,
+    onVideoClick: (File) -> Unit,
+    onConfirmation: (String) -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val dateTimeFilter by viewModel.dateTimeFilter.collectAsStateWithLifecycle()
     val targetMessageId by viewModel.targetMessageId.collectAsStateWithLifecycle()
     var isSearchActive by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
     val isDark = LocalIsDarkTheme.current
+    var initialScrollDoneForId by remember(conversation?.id) { mutableStateOf(false) }
+
+    val showScrollToBottom by remember(messages.size) {
+        derivedStateOf {
+            messages.isNotEmpty() &&
+                (listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) < messages.lastIndex
+        }
+    }
+
+    var pendingAvatarCropUri by remember { mutableStateOf<Uri?>(null) }
 
     val avatarPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
-        val convId = conversation?.id ?: return@rememberLauncherForActivityResult
-        if (uri != null) {
-            viewModel.updateConversationAvatar(convId, uri, context.contentResolver)
+        if (uri != null && conversation != null) {
+            pendingAvatarCropUri = uri
         }
     }
 
-    LaunchedEffect(messages.size, targetMessageId) {
-        val targetId = targetMessageId ?: return@LaunchedEffect
-        val idx = messages.indexOfFirst { it.id == targetId }
-        if (idx >= 0) {
-            listState.scrollToItem(idx)
-            viewModel.consumeTargetMessage()
+    pendingAvatarCropUri?.let { cropUri ->
+        WasmAvatarCropperDialog(
+            imageUri = cropUri,
+            onDismiss = { pendingAvatarCropUri = null },
+            onCroppedFile = { croppedFile ->
+                conversation?.id?.let { convId ->
+                    viewModel.updateConversationAvatar(convId, croppedFile)
+                    onConfirmation("Avatar updated")
+                }
+                pendingAvatarCropUri = null
+            },
+            onError = { msg -> onConfirmation(msg) }
+        )
+    }
+
+    LaunchedEffect(messages.size, targetMessageId, conversation?.id) {
+        if (messages.isEmpty()) return@LaunchedEffect
+        val targetId = targetMessageId
+        if (targetId != null) {
+            val idx = messages.indexOfFirst { it.id == targetId }
+            if (idx >= 0) {
+                listState.scrollToItem(idx)
+                initialScrollDoneForId = true
+                viewModel.consumeTargetMessage()
+            }
+        } else if (!initialScrollDoneForId) {
+            listState.scrollToItem(messages.lastIndex)
+            initialScrollDoneForId = true
         }
     }
 
     Scaffold(
         containerColor = if (isDark) Color(0xFF0B141A) else Color(0xFFEFEAE2),
         topBar = {
-            if (isSearchActive) {
-                TopAppBar(
-                    title = {
-                        TextField(
-                            value = searchQuery,
-                            onValueChange = { viewModel.setSearchQuery(it) },
-                            placeholder = { Text("Search in chat...") },
-                            singleLine = true,
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        )
+            Column {
+                AnimatedContent(
+                    targetState = isSearchActive,
+                    transitionSpec = {
+                        (fadeIn(tween(180)) + slideInVertically { -it / 4 }) togetherWith
+                            (fadeOut(tween(140)) + slideOutVertically { -it / 4 })
                     },
-                    navigationIcon = {
-                        IconButton(onClick = {
-                            isSearchActive = false
-                            viewModel.setSearchQuery("")
-                        }) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Exit search")
-                        }
-                    },
-                    actions = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                                Icon(Icons.Default.Close, contentDescription = "Clear search")
-                            }
-                        }
-                    }
-                )
-            } else {
-                TopAppBar(
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back to chats")
-                        }
-                    },
-                    title = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            ConversationAvatar(
-                                title = conversation?.title ?: "Chat",
-                                avatarPath = conversation?.avatarPath,
-                                fallbackColor = getWhatsAppAvatarColor(conversation?.title ?: "Chat"),
-                                modifier = Modifier.size(38.dp),
-                                textStyle = MaterialTheme.typography.titleSmall
-                            )
-                            Text(
-                                text = conversation?.title ?: "WhatsApp Chat",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    },
-                    actions = {
-                        if (allMessages.isNotEmpty()) {
-                            IconButton(onClick = { isSearchActive = true }) {
-                                Icon(Icons.Default.Search, contentDescription = "Search messages")
-                            }
-                            if (senders.isNotEmpty()) {
-                                IconButton(onClick = onSwitchIdentity) {
-                                    Icon(Icons.Default.Person, contentDescription = "Switch Identity")
+                    label = "waChatSearchTopBar"
+                ) { searching ->
+                    if (searching) {
+                        TopAppBar(
+                            title = {
+                                TextField(
+                                    value = searchQuery,
+                                    onValueChange = { viewModel.setSearchQuery(it) },
+                                    placeholder = { Text("Search in chat...") },
+                                    singleLine = true,
+                                    colors = TextFieldDefaults.colors(
+                                        focusedContainerColor = Color.Transparent,
+                                        unfocusedContainerColor = Color.Transparent,
+                                        focusedIndicatorColor = Color.Transparent,
+                                        unfocusedIndicatorColor = Color.Transparent
+                                    ),
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            },
+                            navigationIcon = {
+                                IconButton(onClick = {
+                                    isSearchActive = false
+                                    viewModel.clearSearchFilters()
+                                }) {
+                                    Icon(Icons.Default.ArrowBack, contentDescription = "Exit search")
+                                }
+                            },
+                            actions = {
+                                if (searchQuery.isNotEmpty() || dateTimeFilter.isActive) {
+                                    IconButton(onClick = { viewModel.clearSearchFilters() }) {
+                                        Icon(Icons.Default.Close, contentDescription = "Clear search")
+                                    }
                                 }
                             }
-                        }
-                        Box {
-                            IconButton(onClick = { showMenu = true }) {
-                                Icon(Icons.Default.MoreVert, contentDescription = "More options")
-                            }
-                            DropdownMenu(
-                                expanded = showMenu,
-                                onDismissRequest = { showMenu = false }
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text("Change Wallpaper") },
-                                    leadingIcon = { Icon(Icons.Default.Wallpaper, contentDescription = null) },
-                                    onClick = {
-                                        showMenu = false
-                                        onOpenWallpaper()
+                        )
+                    } else {
+                        TopAppBar(
+                            navigationIcon = {
+                                IconButton(onClick = onBack) {
+                                    Icon(Icons.Default.ArrowBack, contentDescription = "Back to chats")
+                                }
+                            },
+                            title = {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    ConversationAvatar(
+                                        title = conversation?.title ?: "Chat",
+                                        avatarPath = conversation?.avatarPath,
+                                        fallbackColor = getWhatsAppAvatarColor(conversation?.title ?: "Chat"),
+                                        modifier = Modifier.size(38.dp),
+                                        textStyle = MaterialTheme.typography.titleSmall
+                                    )
+                                    Column(modifier = Modifier.weight(1f, fill = false)) {
+                                        Text(
+                                            text = conversation?.title ?: "WhatsApp Chat",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        if (isGroupChat && senders.isNotEmpty()) {
+                                            Text(
+                                                text = "Group · ${senders.size} participants",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
                                     }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Switch Identity") },
-                                    leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
-                                    onClick = {
-                                        showMenu = false
-                                        onSwitchIdentity()
+                                }
+                            },
+                            actions = {
+                                if (allMessages.isNotEmpty()) {
+                                    IconButton(onClick = { isSearchActive = true }) {
+                                        Icon(Icons.Default.Search, contentDescription = "Search messages")
                                     }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Change Avatar Photo") },
-                                    leadingIcon = { Icon(Icons.Default.AccountCircle, contentDescription = null) },
-                                    onClick = {
-                                        showMenu = false
-                                        avatarPickerLauncher.launch(
-                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                }
+                                Box {
+                                    IconButton(onClick = { showMenu = true }) {
+                                        Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                                    }
+                                    DropdownMenu(
+                                        expanded = showMenu,
+                                        onDismissRequest = { showMenu = false }
+                                    ) {
+                                        if (messages.isNotEmpty()) {
+                                            DropdownMenuItem(
+                                                text = { Text("Go to top Message") },
+                                                leadingIcon = { Icon(Icons.Default.VerticalAlignTop, contentDescription = null) },
+                                                onClick = {
+                                                    showMenu = false
+                                                    scope.launch { listState.animateScrollToItem(0) }
+                                                }
+                                            )
+                                        }
+                                        DropdownMenuItem(
+                                            text = { Text("Change Wallpaper") },
+                                            leadingIcon = { Icon(Icons.Default.Wallpaper, contentDescription = null) },
+                                            onClick = {
+                                                showMenu = false
+                                                onOpenWallpaper()
+                                            }
+                                        )
+                                        if (senders.isNotEmpty()) {
+                                            DropdownMenuItem(
+                                                text = { Text("Switch Identity") },
+                                                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+                                                onClick = {
+                                                    showMenu = false
+                                                    onSwitchIdentity()
+                                                }
+                                            )
+                                        }
+                                        DropdownMenuItem(
+                                            text = { Text("Change Avatar Photo") },
+                                            leadingIcon = { Icon(Icons.Default.AccountCircle, contentDescription = null) },
+                                            onClick = {
+                                                showMenu = false
+                                                avatarPickerLauncher.launch(
+                                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                                )
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("Delete Chat") },
+                                            leadingIcon = {
+                                                Icon(
+                                                    Icons.Default.DeleteSweep,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.error
+                                                )
+                                            },
+                                            onClick = {
+                                                showMenu = false
+                                                onDeleteThisChat()
+                                            }
                                         )
                                     }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Delete Chat") },
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.Default.DeleteSweep,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.error
-                                        )
-                                    },
-                                    onClick = {
-                                        showMenu = false
-                                        onDeleteThisChat()
-                                    }
-                                )
+                                }
                             }
-                        }
+                        )
                     }
-                )
+                }
+                AnimatedVisibility(visible = isSearchActive) {
+                    ChatSearchFilterBar(
+                        filter = dateTimeFilter,
+                        resultCount = messages.size,
+                        onFilterChange = { viewModel.setDateTimeFilter(it) }
+                    )
+                }
             }
         }
     ) { innerPadding ->
@@ -870,53 +986,92 @@ private fun WhatsAppChatDetailScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
-            ) {
-                itemsIndexed(messages, key = { _, message -> message.id }) { index, message ->
-                    val currentDate = extractDate(message.timestamp)
-                    val prevMessage = if (index > 0) messages[index - 1] else null
-                    val prevDate = prevMessage?.let { extractDate(it.timestamp) } ?: ""
-                    val isDateBreak = currentDate != prevDate && currentDate.isNotEmpty()
+            Box(modifier = Modifier.fillMaxSize()) {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                ) {
+                    itemsIndexed(messages, key = { _, message -> message.id }) { index, message ->
+                        val currentDate = extractDate(message.timestamp)
+                        val prevMessage = if (index > 0) messages[index - 1] else null
+                        val prevDate = prevMessage?.let { extractDate(it.timestamp) } ?: ""
+                        val isDateBreak = currentDate != prevDate && currentDate.isNotEmpty()
 
-                    if (isDateBreak) {
-                        DateSeparatorHeader(date = currentDate)
-                    }
+                        if (isDateBreak) {
+                            DateSeparatorHeader(date = currentDate)
+                        }
 
-                    if (message.isSystemMessage) {
-                        SystemMessageChip(content = message.content)
-                    } else {
-                        val isMe = message.sender == currentUser
+                        if (message.isSystemMessage) {
+                            SystemMessageChip(content = message.content)
+                        } else {
+                            val isMe = message.sender == currentUser
 
-                        // Grouping rule:
-                        // Sender name is shown only on the first message of a consecutive sender sequence.
-                        // Exception: When a message crosses another day break, show the sender name again on the first message.
-                        val isFirstInGroup = prevMessage == null ||
+                            val isFirstInGroup = prevMessage == null ||
                                 prevMessage.isSystemMessage ||
                                 prevMessage.sender != message.sender ||
                                 isDateBreak
 
-                        val nextMessage = if (index < messages.size - 1) messages[index + 1] else null
-                        val nextDate = nextMessage?.let { extractDate(it.timestamp) } ?: ""
-                        val isNextDateBreak = nextDate != currentDate && nextDate.isNotEmpty()
-                        val isLastInGroup = nextMessage == null ||
+                            val nextMessage = if (index < messages.size - 1) messages[index + 1] else null
+                            val nextDate = nextMessage?.let { extractDate(it.timestamp) } ?: ""
+                            val isNextDateBreak = nextDate != currentDate && nextDate.isNotEmpty()
+                            val isLastInGroup = nextMessage == null ||
                                 nextMessage.isSystemMessage ||
                                 nextMessage.sender != message.sender ||
                                 isNextDateBreak
 
-                        val showSenderName = !isMe && message.sender.isNotBlank() && isFirstInGroup
+                            // Hide sender name inside 1-on-1 DMs; show sender attribution + avatar ONLY in group chats
+                            val showSenderName = isGroupChat && !isMe && message.sender.isNotBlank() && isFirstInGroup
+                            val showGroupAvatar = isGroupChat && !isMe && message.sender.isNotBlank()
 
-                        ExpressiveChatBubble(
-                            message = message,
-                            isMe = isMe,
-                            showSenderName = showSenderName,
-                            isFirstInGroup = isFirstInGroup,
-                            isLastInGroup = isLastInGroup,
-                            mediaDir = chatMediaDir,
-                            onImageClick = onImageClick
-                        )
+                            ExpressiveChatBubble(
+                                message = message,
+                                isMe = isMe,
+                                showSenderName = showSenderName,
+                                showGroupAvatar = showGroupAvatar,
+                                isFirstInGroup = isFirstInGroup,
+                                isLastInGroup = isLastInGroup,
+                                mediaDir = chatMediaDir,
+                                audioPlayerManager = viewModel.audioPlayerManager,
+                                onImageClick = onImageClick,
+                                onVideoClick = onVideoClick,
+                                onConfirmation = onConfirmation
+                            )
+                        }
+                    }
+                }
+
+                // WhatsApp-style Quick Scroll-to-Bottom Button
+                AnimatedVisibility(
+                    visible = showScrollToBottom,
+                    enter = androidx.compose.animation.scaleIn(initialScale = 0.78f) + fadeIn(tween(150)),
+                    exit = androidx.compose.animation.scaleOut(targetScale = 0.78f) + fadeOut(tween(130)),
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 14.dp, bottom = 14.dp)
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.94f),
+                        contentColor = MaterialTheme.colorScheme.onSurface,
+                        shadowElevation = 3.dp,
+                        modifier = Modifier
+                            .size(44.dp)
+                            .wasmElasticClickable(shape = CircleShape) {
+                                scope.launch {
+                                    if (messages.isNotEmpty()) {
+                                        listState.animateScrollToItem(messages.lastIndex)
+                                    }
+                                }
+                            }
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.KeyboardArrowDown,
+                                contentDescription = "Go to latest message",
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -988,10 +1143,14 @@ fun ExpressiveChatBubble(
     message: MessageEntity,
     isMe: Boolean,
     showSenderName: Boolean = false,
+    showGroupAvatar: Boolean = false,
     isFirstInGroup: Boolean = true,
     isLastInGroup: Boolean = true,
     mediaDir: File,
-    onImageClick: (File) -> Unit
+    audioPlayerManager: AudioPlayerManager? = null,
+    onImageClick: (File) -> Unit,
+    onVideoClick: (File) -> Unit = {},
+    onConfirmation: (String) -> Unit = {}
 ) {
     val isDark = LocalIsDarkTheme.current
 
@@ -1031,76 +1190,156 @@ fun ExpressiveChatBubble(
         }
     }
 
-    val alignment = if (isMe) Alignment.End else Alignment.Start
     val bottomSpacing = if (isLastInGroup) 6.dp else 2.dp
+    val mediaFile = remember(mediaDir, message.mediaName) {
+        if (!message.mediaName.isNullOrBlank()) File(mediaDir, message.mediaName) else null
+    }
+    val isStandaloneSticker = mediaFile != null &&
+        message.mediaName!!.endsWith(".webp", ignoreCase = true)
 
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 4.dp)
             .padding(bottom = bottomSpacing),
-        horizontalAlignment = alignment
+        horizontalArrangement = if (isMe) Arrangement.End else Arrangement.Start,
+        verticalAlignment = Alignment.Top
     ) {
-        Surface(
-            shape = bubbleShape,
-            color = bubbleColor,
-            shadowElevation = 1.dp,
-            tonalElevation = 0.dp,
-            modifier = Modifier.widthIn(min = 72.dp, max = 320.dp)
-        ) {
-            Column(modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp)) {
+        if (showGroupAvatar) {
+            if (isFirstInGroup) {
+                ConversationAvatar(
+                    title = message.sender,
+                    avatarPath = null,
+                    fallbackColor = getWhatsAppAvatarColor(message.sender),
+                    modifier = Modifier
+                        .padding(end = 6.dp, top = 2.dp)
+                        .size(28.dp),
+                    textStyle = MaterialTheme.typography.labelSmall
+                )
+            } else {
+                Spacer(modifier = Modifier.width(34.dp))
+            }
+        }
+
+        if (isStandaloneSticker && mediaFile != null && mediaFile.exists()) {
+            Column(horizontalAlignment = if (isMe) Alignment.End else Alignment.Start) {
                 if (showSenderName) {
                     Text(
                         text = message.sender,
-                        style = MaterialTheme.typography.labelMedium.copy(fontFamily = SfProBold),
+                        style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = getWhatsAppAvatarColor(message.sender),
                         modifier = Modifier.padding(bottom = 2.dp)
                     )
                 }
-
-                // Render media attachment if present
-                if (!message.mediaName.isNullOrBlank()) {
-                    val mediaFile = File(mediaDir, message.mediaName)
-                    MediaAttachmentCard(
-                        file = mediaFile,
-                        fileName = message.mediaName,
-                        onImageClick = onImageClick
-                    )
-                    Spacer(Modifier.height(4.dp))
-                }
-
-                // Render text if not just a file placeholder
-                val isRedundantPlaceholder = !message.mediaName.isNullOrBlank() &&
-                        (message.content.equals("${message.mediaName} (file attached)", ignoreCase = true) ||
-                         message.content.equals("<attached: ${message.mediaName}>", ignoreCase = true))
-
-                if (!isRedundantPlaceholder && message.content.isNotBlank()) {
-                    WhatsAppFormattedMessage(
-                        content = message.content,
-                        textColor = contentTextColor
-                    )
-                }
-
-                // Timestamp and read receipt
-                Row(
-                    modifier = Modifier.align(Alignment.End),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                WasmInlineStickerOrGif(
+                    file = mediaFile,
+                    isSticker = true,
+                    contentColor = contentTextColor,
+                    onConfirmation = onConfirmation
+                )
+                val timeOnly = message.timestamp.substringAfter(',').trim()
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
+                    modifier = Modifier.padding(top = 2.dp)
                 ) {
-                    val timeOnly = message.timestamp.substringAfter(',').trim()
                     Text(
                         text = timeOnly,
                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                        color = timestampColor
+                        color = timestampColor,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
-                    if (isMe) {
-                        Icon(
-                            imageVector = Icons.Default.DoneAll,
-                            contentDescription = "Read",
-                            tint = Color(0xFF53BDEB),
-                            modifier = Modifier.size(14.dp)
+                }
+            }
+        } else {
+            Surface(
+                shape = bubbleShape,
+                color = bubbleColor,
+                shadowElevation = 1.dp,
+                tonalElevation = 0.dp,
+                modifier = Modifier.widthIn(min = 72.dp, max = 310.dp)
+            ) {
+                Column(modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp)) {
+                    if (showSenderName) {
+                        Text(
+                            text = message.sender,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = getWhatsAppAvatarColor(message.sender),
+                            modifier = Modifier.padding(bottom = 2.dp)
                         )
+                    }
+
+                    // Render media attachment if present
+                    if (mediaFile != null && !message.mediaName.isNullOrBlank()) {
+                        MediaAttachmentCard(
+                            file = mediaFile,
+                            fileName = message.mediaName,
+                            bubbleContentColor = contentTextColor,
+                            audioPlayerManager = audioPlayerManager,
+                            onImageClick = onImageClick,
+                            onVideoClick = onVideoClick,
+                            onConfirmation = onConfirmation
+                        )
+                        Spacer(Modifier.height(4.dp))
+                    }
+
+                    // Render text if not just a file placeholder
+                    val isRedundantPlaceholder = !message.mediaName.isNullOrBlank() &&
+                            (message.content.equals("${message.mediaName} (file attached)", ignoreCase = true) ||
+                             message.content.equals("<attached: ${message.mediaName}>", ignoreCase = true))
+
+                    val isEditedMessage = message.content.endsWith("<This message was edited>", ignoreCase = true)
+                    val displayContent = if (isEditedMessage) {
+                        message.content.removeSuffix("<This message was edited>").trimEnd()
+                    } else {
+                        message.content
+                    }
+
+                    if (!isRedundantPlaceholder && displayContent.isNotBlank()) {
+                        WhatsAppFormattedMessage(
+                            content = displayContent,
+                            textColor = contentTextColor,
+                            onConfirmation = onConfirmation
+                        )
+                    } else if (message.mediaName.isNullOrBlank() && displayContent.isBlank()) {
+                        Text(
+                            text = "Unsupported or empty message",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontStyle = FontStyle.Italic,
+                            color = timestampColor
+                        )
+                    }
+
+                    // Timestamp and read receipt
+                    Row(
+                        modifier = Modifier.align(Alignment.End),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        if (isEditedMessage) {
+                            Text(
+                                text = "Edited",
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                fontStyle = FontStyle.Italic,
+                                color = timestampColor
+                            )
+                        }
+                        val timeOnly = message.timestamp.substringAfter(',').trim()
+                        Text(
+                            text = timeOnly,
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                            color = timestampColor
+                        )
+                        if (isMe) {
+                            Icon(
+                                imageVector = Icons.Default.DoneAll,
+                                contentDescription = "Read",
+                                tint = Color(0xFF53BDEB),
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -1124,9 +1363,11 @@ fun ExpressiveChatBubble(
 fun WhatsAppFormattedMessage(
     content: String,
     textColor: Color = MaterialTheme.colorScheme.onSurface,
+    onConfirmation: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val isDark = LocalIsDarkTheme.current
+    val monoFontFamily = LocalWasmMonoFontFamily.current
     val lines = remember(content) { content.lines() }
 
     val hasBlockElements = remember(lines) {
@@ -1139,13 +1380,14 @@ fun WhatsAppFormattedMessage(
     }
 
     if (!hasBlockElements) {
-        val annotated = remember(content, isDark, textColor) {
-            parseWhatsAppInlineFormattedText(content, isDark, textColor)
+        val annotated = remember(content, isDark, textColor, monoFontFamily) {
+            parseWhatsAppInlineFormattedText(content, isDark, textColor, monoFontFamily)
         }
-        Text(
+        WasmClickableAnnotatedText(
             text = annotated,
             style = MaterialTheme.typography.bodyMedium,
             color = textColor,
+            onConfirmation = onConfirmation,
             modifier = modifier
         )
     } else {
@@ -1174,13 +1416,13 @@ fun WhatsAppFormattedMessage(
                                     )
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = parseWhatsAppInlineFormattedText(quoteText, isDark, textColor),
+                            WasmClickableAnnotatedText(
+                                text = parseWhatsAppInlineFormattedText(quoteText, isDark, textColor, monoFontFamily),
                                 style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontFamily = SfProItalic,
                                     fontStyle = FontStyle.Italic
                                 ),
-                                color = textColor.copy(alpha = 0.88f)
+                                color = textColor.copy(alpha = 0.88f),
+                                onConfirmation = onConfirmation
                             )
                         }
                     }
@@ -1194,14 +1436,15 @@ fun WhatsAppFormattedMessage(
                         ) {
                             Text(
                                 text = "• ",
-                                style = MaterialTheme.typography.bodyMedium.copy(fontFamily = SfProBold),
+                                style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = WhatsAppAccentGreen
                             )
-                            Text(
-                                text = parseWhatsAppInlineFormattedText(itemText, isDark, textColor),
+                            WasmClickableAnnotatedText(
+                                text = parseWhatsAppInlineFormattedText(itemText, isDark, textColor, monoFontFamily),
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = textColor
+                                color = textColor,
+                                onConfirmation = onConfirmation
                             )
                         }
                     }
@@ -1216,22 +1459,24 @@ fun WhatsAppFormattedMessage(
                         ) {
                             Text(
                                 text = numPrefix,
-                                style = MaterialTheme.typography.bodyMedium.copy(fontFamily = SfProSemibold),
+                                style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 color = WhatsAppAccentGreen
                             )
-                            Text(
-                                text = parseWhatsAppInlineFormattedText(itemText, isDark, textColor),
+                            WasmClickableAnnotatedText(
+                                text = parseWhatsAppInlineFormattedText(itemText, isDark, textColor, monoFontFamily),
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = textColor
+                                color = textColor,
+                                onConfirmation = onConfirmation
                             )
                         }
                     }
                     else -> {
-                        Text(
-                            text = parseWhatsAppInlineFormattedText(rawLine, isDark, textColor),
+                        WasmClickableAnnotatedText(
+                            text = parseWhatsAppInlineFormattedText(rawLine, isDark, textColor, monoFontFamily),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = textColor
+                            color = textColor,
+                            onConfirmation = onConfirmation
                         )
                     }
                 }
@@ -1247,11 +1492,13 @@ fun WhatsAppFormattedMessage(
 fun parseWhatsAppInlineFormattedText(
     text: String,
     isDark: Boolean,
-    textColor: Color = if (isDark) Color(0xFFE9EDEF) else Color(0xFF111B21)
+    textColor: Color = if (isDark) Color(0xFFE9EDEF) else Color(0xFF111B21),
+    monoFontFamily: FontFamily = GoogleSansCodeFontFamily
 ): AnnotatedString = ChatRichTextParser.parseInlineSingleLine(
     text = text,
     isDark = isDark,
-    textColor = textColor
+    textColor = textColor,
+    monoFontFamily = monoFontFamily
 )
 
 /**
@@ -1261,93 +1508,97 @@ fun parseWhatsAppInlineFormattedText(
 fun MediaAttachmentCard(
     file: File,
     fileName: String,
-    onImageClick: (File) -> Unit
+    bubbleContentColor: Color = MaterialTheme.colorScheme.onSurface,
+    audioPlayerManager: AudioPlayerManager? = null,
+    onImageClick: (File) -> Unit,
+    onVideoClick: (File) -> Unit = {},
+    onConfirmation: (String) -> Unit = {}
 ) {
-    val isImage = fileName.endsWith(".jpg", true) ||
-            fileName.endsWith(".jpeg", true) ||
-            fileName.endsWith(".png", true) ||
-            fileName.endsWith(".webp", true)
+    val isPhoto = fileName.endsWith(".jpg", true) ||
+        fileName.endsWith(".jpeg", true) ||
+        fileName.endsWith(".png", true)
+    val isSticker = fileName.endsWith(".webp", true)
+    val isGif = fileName.endsWith(".gif", true)
+    val isAudio = fileName.endsWith(".mp3", true) ||
+        fileName.endsWith(".opus", true) ||
+        fileName.endsWith(".ogg", true) ||
+        fileName.endsWith(".m4a", true) ||
+        fileName.endsWith(".aac", true) ||
+        fileName.endsWith(".wav", true)
+    val isVideo = fileName.endsWith(".mp4", true) ||
+        fileName.endsWith(".mkv", true) ||
+        fileName.endsWith(".3gp", true) ||
+        fileName.endsWith(".webm", true)
 
-    if (isImage && file.exists()) {
-        val cached = BitmapMemoryCache.get(file.absolutePath)
-        val bitmapState = produceState(initialValue = cached, key1 = file.absolutePath) {
-            if (value == null) {
-                val decoded = withContext(Dispatchers.IO) {
-                    decodeSampledBitmap(file, reqWidth = 600, reqHeight = 600)
-                }
-                decoded?.let {
-                    BitmapMemoryCache.put(file.absolutePath, it)
-                    value = it
-                }
-            }
-        }
-
-        bitmapState.value?.let { imgBitmap ->
-            Image(
-                bitmap = imgBitmap,
-                contentDescription = fileName,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 120.dp, max = 220.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .clickable { onImageClick(file) }
+    when {
+        isSticker && file.exists() -> {
+            WasmInlineStickerOrGif(
+                file = file,
+                isSticker = true,
+                contentColor = bubbleContentColor,
+                onConfirmation = onConfirmation
             )
         }
-    } else {
-        // Non-image file attachment card (Audio, PDF, Archive, Video)
-        val isAudio = fileName.endsWith(".mp3", true) || fileName.endsWith(".opus", true) || fileName.endsWith(".m4a", true) || fileName.endsWith(".aac", true)
-        val isPdf = fileName.endsWith(".pdf", true)
-        val isVideo = fileName.endsWith(".mp4", true) || fileName.endsWith(".mkv", true) || fileName.endsWith(".3gp", true)
-
-        val icon = when {
-            isAudio -> Icons.Default.Audiotrack
-            isPdf -> Icons.Default.PictureAsPdf
-            isVideo -> Icons.Default.VideoFile
-            else -> Icons.Default.InsertDriveFile
+        isGif && file.exists() -> {
+            WasmInlineStickerOrGif(
+                file = file,
+                isSticker = false,
+                contentColor = bubbleContentColor,
+                onConfirmation = onConfirmation
+            )
         }
-
-        Surface(
-            shape = RoundedCornerShape(10.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier.padding(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(20.dp)
-                        )
+        isPhoto && file.exists() -> {
+            val cached = BitmapMemoryCache.get(file.absolutePath)
+            val bitmapState = produceState(initialValue = cached, key1 = file.absolutePath) {
+                if (value == null) {
+                    val decoded = withContext(Dispatchers.IO) {
+                        decodeSampledBitmap(file, reqWidth = 600, reqHeight = 600)
                     }
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = fileName,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    if (file.exists()) {
-                        Text(
-                            text = formatFileSize(file.length()),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    decoded?.let {
+                        BitmapMemoryCache.put(file.absolutePath, it)
+                        value = it
                     }
                 }
             }
+
+            bitmapState.value?.let { imgBitmap ->
+                Image(
+                    bitmap = imgBitmap,
+                    contentDescription = fileName,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 120.dp, max = 220.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .clickable { onImageClick(file) }
+                )
+            }
+        }
+        isVideo && file.exists() -> {
+            WasmInlineVideoCard(
+                file = file,
+                onClick = { onVideoClick(file) }
+            )
+        }
+        isAudio && file.exists() && audioPlayerManager != null -> {
+            WasmInlineAudioBubble(
+                file = file,
+                audioPlayerManager = audioPlayerManager,
+                accentColor = WhatsAppAccentGreen,
+                contentColor = bubbleContentColor,
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                onConfirmation = onConfirmation
+            )
+        }
+        else -> {
+            val sizeText = if (file.exists()) formatFileSize(file.length()) else ""
+            WasmExternalFileCard(
+                file = file,
+                fileName = fileName,
+                sizeText = sizeText,
+                contentColor = bubbleContentColor,
+                onConfirmation = onConfirmation
+            )
         }
     }
 }
@@ -1357,11 +1608,19 @@ fun MediaAttachmentCard(
  */
 @Composable
 fun FullScreenImageDialog(file: File, onDismiss: () -> Unit) {
+    val dialogScale = remember { Animatable(0.90f) }
+    val dialogAlpha = remember { Animatable(0f) }
+    LaunchedEffect(file.absolutePath) {
+        dialogScale.animateTo(1f, spring(stiffness = 420f, dampingRatio = 0.76f))
+    }
+    LaunchedEffect(file.absolutePath) {
+        dialogAlpha.animateTo(1f, tween(200))
+    }
     Dialog(onDismissRequest = onDismiss) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.9f))
+                .background(Color.Black.copy(alpha = 0.9f * dialogAlpha.value))
                 .clickable { onDismiss() },
             contentAlignment = Alignment.Center
         ) {
@@ -1376,6 +1635,11 @@ fun FullScreenImageDialog(file: File, onDismiss: () -> Unit) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp)
+                        .graphicsLayer {
+                            scaleX = dialogScale.value
+                            scaleY = dialogScale.value
+                            alpha = dialogAlpha.value
+                        }
                 )
             }
         }

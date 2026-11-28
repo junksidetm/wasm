@@ -3,27 +3,30 @@ package com.mrdartsidetm.wasm.ui
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ChatBubbleOutline
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -40,6 +43,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mrdartsidetm.wasm.R
 import com.mrdartsidetm.wasm.ui.instagram.InstagramViewModel
 import com.mrdartsidetm.wasm.ui.localization.LocalWasmStrings
+import com.mrdartsidetm.wasm.ui.motion.WasmConfirmationCapsule
+import com.mrdartsidetm.wasm.ui.motion.wasmElasticClickable
+import com.mrdartsidetm.wasm.ui.motion.wasmLuminousElasticClickable
 import com.mrdartsidetm.wasm.ui.onboarding.ContainedExpressiveLoadingIndicator
 import com.mrdartsidetm.wasm.ui.onboarding.OnboardingSvgPaths
 import com.mrdartsidetm.wasm.ui.onboarding.OnboardingWhatsAppArrowNeon
@@ -68,6 +74,7 @@ fun ImportScreen(
     whatsappViewModel: ChatViewModel,
     instagramViewModel: InstagramViewModel,
     onImportComplete: (platform: String) -> Unit,
+    onNavigateToDuplicateChat: (platform: String, conversationId: String) -> Unit = { _, _ -> },
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -81,6 +88,7 @@ fun ImportScreen(
 
     var awaitingPlatform by remember { mutableStateOf<String?>(null) }
     var isDetecting by remember { mutableStateOf(false) }
+    var duplicateMatch by remember { mutableStateOf<ImportUiState.Duplicate?>(null) }
 
     val isImporting = isDetecting ||
         (awaitingPlatform == "whatsapp" && waImportState is ImportUiState.Loading) ||
@@ -98,11 +106,15 @@ fun ImportScreen(
         val current = awaitingPlatform ?: return@LaunchedEffect
         when (activeState) {
             is ImportUiState.Success -> {
-                val msg = if (current == "whatsapp") strings.importedWhatsappSnackbar else strings.importedInstagramSnackbar
                 if (current == "whatsapp") whatsappViewModel.dismissImportState() else instagramViewModel.dismissImportState()
                 awaitingPlatform = null
-                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                duplicateMatch = null
                 onImportComplete(current)
+            }
+            is ImportUiState.Duplicate -> {
+                if (current == "whatsapp") whatsappViewModel.dismissImportState() else instagramViewModel.dismissImportState()
+                awaitingPlatform = null
+                duplicateMatch = activeState
             }
             is ImportUiState.Error -> {
                 val errMsg = activeState.message
@@ -152,6 +164,7 @@ fun ImportScreen(
 
     val launchAutoPicker = {
         if (!isImporting) {
+            duplicateMatch = null
             autoPickerLauncher.launch(
                 arrayOf(
                     "application/zip",
@@ -168,7 +181,9 @@ fun ImportScreen(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState)
+            SnackbarHost(hostState = snackbarHostState) { data ->
+                WasmConfirmationCapsule(data = data)
+            }
         }
     ) { innerPadding ->
         Column(
@@ -184,12 +199,16 @@ fun ImportScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
-                    onClick = { if (!isImporting) onBack() },
-                    enabled = !isImporting,
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.surfaceContainerHigh,
                     contentColor = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(42.dp)
+                    modifier = Modifier
+                        .size(42.dp)
+                        .wasmElasticClickable(
+                            enabled = !isImporting,
+                            shape = CircleShape,
+                            onClick = { if (!isImporting) onBack() }
+                        )
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
@@ -237,19 +256,27 @@ fun ImportScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Center interactive visual or loading indicator
+            // Center interactive visual, duplicate notice card, or loading indicator
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
+                val viewState = when {
+                    isImporting -> "loading"
+                    duplicateMatch != null -> "duplicate"
+                    else -> "idle"
+                }
                 AnimatedContent(
-                    targetState = isImporting,
-                    transitionSpec = { fadeIn() togetherWith fadeOut() },
+                    targetState = viewState,
+                    transitionSpec = {
+                        (fadeIn(tween(220)) + scaleIn(initialScale = 0.92f, animationSpec = spring(stiffness = 380f, dampingRatio = 0.78f))) togetherWith
+                            (fadeOut(tween(170)) + scaleOut(targetScale = 0.94f, animationSpec = tween(170)))
+                    },
                     label = "ImportContentState"
-                ) { loading ->
-                    if (loading) {
+                ) { state ->
+                    if (state == "loading") {
                         val stepText = when {
                             isDetecting -> strings.importingWait
                             waImportState is ImportUiState.Loading -> (waImportState as ImportUiState.Loading).step
@@ -283,6 +310,54 @@ fun ImportScreen(
                                 )
                             }
                         }
+                    } else if (state == "duplicate" && duplicateMatch != null) {
+                        val dup = duplicateMatch!!
+                        Surface(
+                            shape = RoundedCornerShape(28.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 24.dp, vertical = 28.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.secondaryContainer,
+                                    modifier = Modifier.size(64.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.Default.ContentCopy,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                            modifier = Modifier.size(30.dp)
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text = "Duplicate Chat Detected",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    textAlign = TextAlign.Center
+                                )
+                                Text(
+                                    text = "\"${dup.title}\" (${dup.messageCount} messages) is already imported in your ${if (dup.platform == "instagram") "Instagram" else "WhatsApp"} chats.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center
+                                )
+                                TextButton(onClick = launchAutoPicker) {
+                                    Text("Import a different archive")
+                                }
+                            }
+                        }
                     } else {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
@@ -298,8 +373,10 @@ fun ImportScreen(
                                     color = OnboardingWhatsAppArrowNeon,
                                     modifier = Modifier
                                         .size(86.dp)
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .clickable(onClick = launchAutoPicker)
+                                        .wasmLuminousElasticClickable(
+                                            shape = RoundedCornerShape(10.dp),
+                                            onClick = launchAutoPicker
+                                        )
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
                                         Icon(
@@ -314,7 +391,10 @@ fun ImportScreen(
                                 Box(
                                     modifier = Modifier
                                         .size(86.dp)
-                                        .clip(RoundedCornerShape(10.dp))
+                                        .wasmLuminousElasticClickable(
+                                            shape = RoundedCornerShape(10.dp),
+                                            onClick = launchAutoPicker
+                                        )
                                         .background(
                                             Brush.linearGradient(
                                                 colors = listOf(
@@ -323,8 +403,7 @@ fun ImportScreen(
                                                     Color(0xFF8134AF)
                                                 )
                                             )
-                                        )
-                                        .clickable(onClick = launchAutoPicker),
+                                        ),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
@@ -401,40 +480,75 @@ fun ImportScreen(
                     }
                 }
             }
-            Button(
-                onClick = launchAutoPicker,
-                enabled = !isImporting,
-                shape = CircleShape,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(64.dp)
-            ) {
-                val btnIconColor = LocalContentColor.current
-                Canvas(modifier = Modifier.size(22.dp)) {
-                    val s = min(
-                        size.width / OnboardingSvgPaths.importUnionWidth,
-                        size.height / OnboardingSvgPaths.importUnionHeight
+            if (duplicateMatch != null && !isImporting) {
+                val dup = duplicateMatch!!
+                Button(
+                    onClick = { onNavigateToDuplicateChat(dup.platform, dup.conversationId) },
+                    shape = CircleShape,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(64.dp)
+                        .wasmLuminousElasticClickable(
+                            shape = CircleShape,
+                            onClick = { onNavigateToDuplicateChat(dup.platform, dup.conversationId) }
+                        )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ChatBubbleOutline,
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp)
                     )
-                    val dx = (size.width - OnboardingSvgPaths.importUnionWidth * s) / 2f
-                    val dy = (size.height - OnboardingSvgPaths.importUnionHeight * s) / 2f
-                    withTransform({
-                        translate(dx, dy)
-                        scale(s, s, pivot = Offset.Zero)
-                    }) {
-                        importUnionPaths.forEach { p ->
-                            drawPath(path = p, color = btnIconColor)
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Go to that chat",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontFamily = GoogleSansFlexOnboarding535,
+                            fontWeight = FontWeight(535),
+                            fontSize = 18.sp
+                        )
+                    )
+                }
+            } else {
+                Button(
+                    onClick = launchAutoPicker,
+                    enabled = !isImporting,
+                    shape = CircleShape,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(64.dp)
+                        .wasmLuminousElasticClickable(
+                            enabled = !isImporting,
+                            shape = CircleShape,
+                            onClick = launchAutoPicker
+                        )
+                ) {
+                    val btnIconColor = LocalContentColor.current
+                    Canvas(modifier = Modifier.size(22.dp)) {
+                        val s = min(
+                            size.width / OnboardingSvgPaths.importUnionWidth,
+                            size.height / OnboardingSvgPaths.importUnionHeight
+                        )
+                        val dx = (size.width - OnboardingSvgPaths.importUnionWidth * s) / 2f
+                        val dy = (size.height - OnboardingSvgPaths.importUnionHeight * s) / 2f
+                        withTransform({
+                            translate(dx, dy)
+                            scale(s, s, pivot = Offset.Zero)
+                        }) {
+                            importUnionPaths.forEach { p ->
+                                drawPath(path = p, color = btnIconColor)
+                            }
                         }
                     }
-                }
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = strings.importFile,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontFamily = GoogleSansFlexOnboarding535,
-                        fontWeight = FontWeight(535),
-                        fontSize = 18.sp
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = strings.importFile,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontFamily = GoogleSansFlexOnboarding535,
+                            fontWeight = FontWeight(535),
+                            fontSize = 18.sp
+                        )
                     )
-                )
+                }
             }
         }
     }

@@ -266,7 +266,11 @@ val SfProRegular = createGoogleSansFlexFamily(weight = 400)
 val SfProMedium = createGoogleSansFlexFamily(weight = 500)
 val SfProSemibold = createGoogleSansFlexFamily(weight = 600)
 
-fun getSfProFontFamily(context: Context): FontFamily {
+fun getSfProFontFamily(
+    context: Context,
+    emojiPackId: String = EmojiPackOption.DEFAULT.id,
+    emojiRevision: Int = 0
+): FontFamily {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         try {
             val weightResPairs = listOf(
@@ -290,12 +294,7 @@ fun getSfProFontFamily(context: Context): FontFamily {
             }
             val primaryFamily = familyBuilder?.build()
             if (primaryFamily != null) {
-                val emojiFont = android.graphics.fonts.Font.Builder(context.assets, "fonts/ios_emoji.ttf").build()
-                val emojiFamily = android.graphics.fonts.FontFamily.Builder(emojiFont).build()
-                val compositeTypeface = Typeface.CustomFallbackBuilder(primaryFamily)
-                    .addCustomFallback(emojiFamily)
-                    .build()
-                return FontFamily(compositeTypeface)
+                return buildCompositeTypefaceFamily(primaryFamily, context, emojiPackId, emojiRevision)
             }
         } catch (_: Throwable) {
         }
@@ -303,7 +302,11 @@ fun getSfProFontFamily(context: Context): FontFamily {
     return SfProDisplayFontFamily
 }
 
-fun getGoogleSansCodeFontFamily(context: Context): FontFamily {
+fun getGoogleSansCodeFontFamily(
+    context: Context,
+    emojiPackId: String = EmojiPackOption.DEFAULT.id,
+    emojiRevision: Int = 0
+): FontFamily {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         try {
             val weights = listOf(300, 400, 500, 600, 700, 800)
@@ -322,12 +325,7 @@ fun getGoogleSansCodeFontFamily(context: Context): FontFamily {
             }
             val primaryFamily = familyBuilder?.build()
             if (primaryFamily != null) {
-                val emojiFont = android.graphics.fonts.Font.Builder(context.assets, "fonts/ios_emoji.ttf").build()
-                val emojiFamily = android.graphics.fonts.FontFamily.Builder(emojiFont).build()
-                val compositeTypeface = Typeface.CustomFallbackBuilder(primaryFamily)
-                    .addCustomFallback(emojiFamily)
-                    .build()
-                return FontFamily(compositeTypeface)
+                return buildCompositeTypefaceFamily(primaryFamily, context, emojiPackId, emojiRevision)
             }
         } catch (_: Throwable) {
         }
@@ -337,7 +335,9 @@ fun getGoogleSansCodeFontFamily(context: Context): FontFamily {
 
 fun getAppFontFamily(
     context: Context,
-    axisConfig: GoogleSansFlexAxisConfig = GoogleSansFlexAxisConfig()
+    axisConfig: GoogleSansFlexAxisConfig = GoogleSansFlexAxisConfig(),
+    emojiPackId: String = EmojiPackOption.DEFAULT.id,
+    emojiRevision: Int = 0
 ): FontFamily {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         try {
@@ -370,12 +370,7 @@ fun getAppFontFamily(
             }
             val primaryFamily = familyBuilder?.build()
             if (primaryFamily != null) {
-                val emojiFont = android.graphics.fonts.Font.Builder(context.assets, "fonts/ios_emoji.ttf").build()
-                val emojiFamily = android.graphics.fonts.FontFamily.Builder(emojiFont).build()
-                val compositeTypeface = Typeface.CustomFallbackBuilder(primaryFamily)
-                    .addCustomFallback(emojiFamily)
-                    .build()
-                return FontFamily(compositeTypeface)
+                return buildCompositeTypefaceFamily(primaryFamily, context, emojiPackId, emojiRevision)
             }
         } catch (_: Throwable) {
         }
@@ -390,16 +385,71 @@ fun getAppFontFamily(
     )
 }
 
+fun getSystemFontFamilyWithEmoji(
+    context: Context,
+    emojiPackId: String = EmojiPackOption.DEFAULT.id,
+    emojiRevision: Int = 0
+): FontFamily {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        val emojiFamily = EmojiFontManager.getCachedPlatformEmojiFamily(context, emojiPackId, emojiRevision)
+            ?: return FontFamily.Default
+        try {
+            val robotoFonts = android.graphics.fonts.SystemFonts.getAvailableFonts()
+                .filter { f ->
+                    val name = f.file?.name ?: return@filter false
+                    name.startsWith("Roboto-", ignoreCase = true) && name.endsWith(".ttf", ignoreCase = true)
+                }
+            var familyBuilder: android.graphics.fonts.FontFamily.Builder? = null
+            for (rf in robotoFonts.take(10)) {
+                val file = rf.file ?: continue
+                val built = android.graphics.fonts.Font.Builder(file).build()
+                if (familyBuilder == null) familyBuilder = android.graphics.fonts.FontFamily.Builder(built)
+                else familyBuilder.addFont(built)
+            }
+            val primary = familyBuilder?.build()
+            if (primary != null) {
+                val compositeTypeface = Typeface.CustomFallbackBuilder(primary)
+                    .addCustomFallback(emojiFamily)
+                    .setSystemFallback("sans-serif")
+                    .build()
+                return FontFamily(compositeTypeface)
+            }
+        } catch (_: Throwable) {
+        }
+    }
+    return FontFamily.Default
+}
+
+private fun buildCompositeTypefaceFamily(
+    primaryFamily: android.graphics.fonts.FontFamily,
+    context: Context,
+    emojiPackId: String,
+    emojiRevision: Int
+): FontFamily {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+        return FontFamily.Default
+    }
+    val emojiFamily = EmojiFontManager.getCachedPlatformEmojiFamily(context, emojiPackId, emojiRevision)
+    val builder = Typeface.CustomFallbackBuilder(primaryFamily)
+    if (emojiFamily != null) {
+        builder.addCustomFallback(emojiFamily)
+    }
+    builder.setSystemFallback("sans-serif")
+    return FontFamily(builder.build())
+}
+
 fun getSelectedAppFontFamily(
     context: Context,
     fontSelection: String,
-    axisConfig: GoogleSansFlexAxisConfig = GoogleSansFlexAxisConfig()
+    axisConfig: GoogleSansFlexAxisConfig = GoogleSansFlexAxisConfig(),
+    emojiPackId: String = EmojiPackOption.DEFAULT.id,
+    emojiRevision: Int = 0
 ): FontFamily {
     return when (AppFontOption.fromId(fontSelection)) {
-        AppFontOption.GOOGLE_SANS_FLEX -> getAppFontFamily(context, axisConfig)
-        AppFontOption.SF_PRO -> getSfProFontFamily(context)
-        AppFontOption.SYSTEM -> FontFamily.Default
-        AppFontOption.MONOSPACE -> getGoogleSansCodeFontFamily(context)
+        AppFontOption.GOOGLE_SANS_FLEX -> getAppFontFamily(context, axisConfig, emojiPackId, emojiRevision)
+        AppFontOption.SF_PRO -> getSfProFontFamily(context, emojiPackId, emojiRevision)
+        AppFontOption.SYSTEM -> getSystemFontFamilyWithEmoji(context, emojiPackId, emojiRevision)
+        AppFontOption.MONOSPACE -> getGoogleSansCodeFontFamily(context, emojiPackId, emojiRevision)
     }
 }
 

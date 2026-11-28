@@ -2,10 +2,19 @@ package com.mrdartsidetm.wasm.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -22,7 +31,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -33,6 +41,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mrdartsidetm.wasm.data.UserPreferencesRepository
+import com.mrdartsidetm.wasm.ui.motion.WasmMotionTokens
+import com.mrdartsidetm.wasm.ui.motion.wasmFeatheredVerticalViewport
+import com.mrdartsidetm.wasm.ui.motion.wasmLuminousElasticClickable
 import com.mrdartsidetm.wasm.ui.theme.ColorVariantOption
 import com.mrdartsidetm.wasm.ui.theme.DynamicVariantOption
 import com.mrdartsidetm.wasm.ui.theme.LocalIsDarkTheme
@@ -89,14 +100,18 @@ fun ColorVariantsScreen(
                     containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                 ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wasmLuminousElasticClickable(
+                        shape = RoundedCornerShape(22.dp),
+                        maxStretchPercent = 0.025f,
+                        pressedScale = 0.975f,
+                        onClick = { scope.launch { prefs.saveDynamicColorEnabled(!dynamicEnabled) } }
+                    )
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable {
-                            scope.launch { prefs.saveDynamicColorEnabled(!dynamicEnabled) }
-                        }
                         .padding(horizontal = 16.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(14.dp)
@@ -152,6 +167,10 @@ fun ColorVariantsScreen(
 
             AnimatedContent(
                 targetState = dynamicEnabled,
+                transitionSpec = {
+                    (fadeIn(tween(220)) + scaleIn(initialScale = 0.96f, animationSpec = spring(stiffness = 380f, dampingRatio = 0.80f))) togetherWith
+                        (fadeOut(tween(160)) + scaleOut(targetScale = 0.97f, animationSpec = tween(160)))
+                },
                 label = "ColorVariantsGridTransition",
                 modifier = Modifier.weight(1f)
             ) { isDynamicMode ->
@@ -169,7 +188,9 @@ fun ColorVariantsScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             contentPadding = PaddingValues(bottom = 24.dp),
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .wasmFeatheredVerticalViewport(topFadeFraction = 0.02f, bottomFadeFraction = 0.06f)
                         ) {
                             items(DynamicVariantOption.values(), key = { it.id }) { option ->
                                 val selected = option.id == selectedDynamicId
@@ -235,23 +256,38 @@ private fun TriTonePaletteCard(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
-    val containerColor = if (isSelected) {
-        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
-    } else {
-        MaterialTheme.colorScheme.surfaceContainerLow
-    }
+    val borderColor by animateColorAsState(
+        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f),
+        animationSpec = tween(220),
+        label = "paletteBorderColor"
+    )
+    val borderWidth by animateDpAsState(
+        targetValue = if (isSelected) 2.dp else 1.dp,
+        animationSpec = spring(stiffness = 500f, dampingRatio = 0.72f),
+        label = "paletteBorderWidth"
+    )
+    val containerColor by animateColorAsState(
+        targetValue = if (isSelected) {
+            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerLow
+        },
+        animationSpec = tween(220),
+        label = "paletteContainerColor"
+    )
     val outlineStroke = MaterialTheme.colorScheme.outlineVariant
 
     Card(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = containerColor),
-        border = BorderStroke(if (isSelected) 2.dp else 1.dp, if (isSelected) borderColor else outlineStroke.copy(alpha = 0.45f)),
+        border = BorderStroke(borderWidth, borderColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .clickable(onClick = onClick)
+            .wasmLuminousElasticClickable(
+                shape = RoundedCornerShape(20.dp),
+                onClick = onClick
+            )
     ) {
         Column(
             modifier = Modifier
@@ -304,7 +340,11 @@ private fun TriTonePaletteCard(
                     )
                 }
 
-                if (isSelected) {
+                AnimatedVisibility(
+                    visible = isSelected,
+                    enter = scaleIn(initialScale = 0.55f, animationSpec = WasmMotionTokens.SpringSelectionTick) + fadeIn(tween(110)),
+                    exit = scaleOut(targetScale = 0.7f, animationSpec = tween(140)) + fadeOut(tween(110))
+                ) {
                     Surface(
                         shape = CircleShape,
                         color = MaterialTheme.colorScheme.primary,

@@ -1,7 +1,7 @@
 package com.mrdartsidetm.wasm.ui
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,7 +14,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -22,6 +21,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mrdartsidetm.wasm.ui.instagram.InstagramViewModel
 import com.mrdartsidetm.wasm.ui.instagram.getAvatarColor
+import com.mrdartsidetm.wasm.ui.motion.WasmMechanicalText
+import com.mrdartsidetm.wasm.ui.motion.WasmMotionTokens
+import com.mrdartsidetm.wasm.ui.motion.wasmFeatheredVerticalViewport
+import com.mrdartsidetm.wasm.ui.motion.wasmLuminousElasticClickable
 import com.mrdartsidetm.wasm.util.MediaCategoryBreakdown
 import com.mrdartsidetm.wasm.util.StorageMediaCategory
 import kotlinx.coroutines.Dispatchers
@@ -42,12 +45,13 @@ private data class ChatStorageRowItem(
  * bulk media-type deletion (Images, Videos, Voice Notes, GIFs, Stickers),
  * and per-chat individual storage inspection & deletion.
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun StorageDataScreen(
     whatsappViewModel: ChatViewModel,
     instagramViewModel: InstagramViewModel,
     initialPlatform: String = "whatsapp",
+    onConfirmation: (String) -> Unit = {},
     onBack: () -> Unit
 ) {
     var activePlatform by remember { mutableStateOf(initialPlatform) }
@@ -107,6 +111,7 @@ fun StorageDataScreen(
                         action()
                         refreshNonce++
                         confirmBulkAction = null
+                        onConfirmation("Storage updated")
                     }
                 ) {
                     Text("Delete", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
@@ -190,6 +195,7 @@ fun StorageDataScreen(
                         }
                         refreshNonce++
                         selectedRowForManage = null
+                        onConfirmation("Chat removed from storage")
                     }
                 ) {
                     Text("Delete Entire Chat", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
@@ -225,7 +231,8 @@ fun StorageDataScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
+                .padding(padding)
+                .wasmFeatheredVerticalViewport(topFadeFraction = 0.02f, bottomFadeFraction = 0.05f),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
@@ -262,7 +269,7 @@ fun StorageDataScreen(
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
-                                Text(
+                                WasmMechanicalText(
                                     text = "${rows.size} chats • ${formatFileSize(totalPlatformBytes)}",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -380,8 +387,13 @@ fun StorageDataScreen(
                         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(18.dp))
-                            .clickable { selectedRowForManage = row }
+                            .animateItemPlacement(WasmMotionTokens.SpringListPlacement)
+                            .wasmLuminousElasticClickable(
+                                shape = RoundedCornerShape(18.dp),
+                                maxStretchPercent = 0.025f,
+                                pressedScale = 0.975f,
+                                onClick = { selectedRowForManage = row }
+                            )
                     ) {
                         Row(
                             modifier = Modifier

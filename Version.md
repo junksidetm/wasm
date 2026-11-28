@@ -1388,3 +1388,82 @@
   - Bumped `versionCode = 20`, `versionName = "0.11.4"` in `app/build.gradle.kts`, updated `README.md` and `docs/index.html` badges, and added Fastlane changelog `20.txt`.
 - **Status**:
   - Pending tag `v0.11.4` CI build, multi-platform tag sync, and GitHub Release publication.
+
+
+---
+
+## [0.11.4-r1] - 2026-11-29 00:05:00 IST
+### Material 3 Expressive Motion & Animation Suite (Inspired by Expressive Clock v0.1.19)
+- **Motion Foundation (`ui/motion/WasmMotionTokens.kt`, `WasmElasticModifiers.kt`, `WasmMechanicalText.kt`, `WasmConfirmationCapsule.kt`, `WasmDock.kt`)**:
+  - Added centralized spring & settlement physics tokens (`SpringNav`, `SpringBouncy`, `SpringSelectionTick`, `SpringPillCorner`, `SpringListPlacement`), API-26+ safe `rememberAnimatorsEnabled()` (`ValueAnimator.areAnimatorsEnabled()`) reduced-motion gating, and `performWasmTickHaptic()`.
+  - Added `wasmLuminousElasticClickable` / `wasmElasticClickable` providing touch-origin radial luminous bloom, expanding ripple, directional elastic stretch/translation, and spring release overshoot.
+  - Added `WasmMechanicalText` per-character staggered rolling odometer with 3D `rotationX` tilt and API-31+ guarded motion blur, `wasmFeatheredVerticalViewport` (`BlendMode.DstIn` offscreen scroll edge feathering), `rememberLazyListHeaderFalloff`, and `WasmConfirmationCapsule` / `WasmConfirmationPresenter`.
+  - Built `WasmDock` floating M3 Expressive capsule dock with 1:1 live fractional pager indicator tracking during placement (`pagePosition`), per-tab spring icon animations (Home jump, Storage 360° PieChart spin, Settings gear rotation on swipe & repeat tap), and detached contextual `+` Import FAB on Home.
+- **Root Pager, Predictive Back & Onboarding Handoff (`MainActivity.kt`, `app/build.gradle.kts`)**:
+  - Upgraded `androidx.activity:activity-compose` from `1.8.1` to `1.9.3` to enable interactive `PredictiveBackHandler` gesture scrubbing across full-screen child destinations (`ImportScreen`, `ChatScreen`, `InstagramScreen`, `WallpaperScreen`, `StorageDataScreen`) with parallax background recede.
+  - Replaced static tab switching with retained 3-tab `HorizontalPager` (`Home` · `Storage` · `Settings`) synced cleanly with `WasmDock` and `updateTransition.AnimatedContent` onboarding handoff + post-onboarding card stagger.
+- **Hierarchical Settings & Customization Polish (`SettingsScreen.kt`, `GeneralScreen.kt`, `ColorVariantsScreen.kt`, `WallpaperScreen.kt`, `FontSelectionScreen.kt`, `StorageDataScreen.kt`)**:
+  - Added depth-aware directional `AnimatedContent` slide+scale transitions across all `SettingsRoute` levels while preserving the step-by-step back hierarchy.
+  - Applied `wasmLuminousElasticClickable`, `animateItemPlacement`, `wasmFeatheredVerticalViewport`, animated border/color transitions, spring checkmark pop-ins (`SpringSelectionTick`), expressive `expandVertically` font axis reveal, and `WasmMechanicalText` storage counters.
+- **Screen Micro-Interactions (`HomeScreen.kt`, `StorageScreen.kt`, `ChatScreen.kt`, `InstagramScreen.kt`, `ImportScreen.kt`)**:
+  - Upgraded `HomeScreen` with post-onboarding stagger reveal, directional platform/Archive transitions, short-lived exit preservation + `animateItemPlacement` on chat archive actions, `WasmMechanicalText` archive count, and elastic row press feedback.
+  - Upgraded `StorageScreen` with `WasmMechanicalText` rolling totals and counts, reduced-motion-safe infinite decorative shape rotation, feathered scroll edges, and interactive category row tap-highlighting synced to pill segments.
+  - Added animated expandable search top bars in `ChatScreen` and `InstagramScreen`, spring-scaled `FullScreenImageDialog`, animated selection bottom bar, and expressive loading/capsule confirmations in `ImportScreen`.
+- **Status**:
+  - Local edits complete; running lightweight Gradle unit tests (`:app:testDebugUnitTest`) and lint verification. No pushes/tags executed per user instruction.
+
+
+## [0.11.4-r2] - 2026-11-29 01:03 IST
+- **Material 3 Expressive Sliders (`WasmExpressiveSlider.kt`, `FontSelectionScreen.kt`)**:
+  - Created custom Compose `Canvas`-rendered `WasmExpressiveSlider` featuring a thick pill track (`18.dp`), active/inactive gap separation around a dynamic widening vertical pill handle (`1.dp`–`5.dp`), subtle center/anchor detent dot, and tick haptics (`performWasmTickHaptic`). Replaced standard M3 axis sliders in `FontSelectionScreen`.
+  - Created `WasmSquigglySeekbar` inspired by `mpvEx` with animated sinusoidal active waveform while playing and smooth drag/tap seeking.
+- **Smart Chat Navigation & Header Cleanup (`ChatScreen.kt`, `InstagramScreen.kt`)**:
+  - Updated WhatsApp and Instagram chat threads to open at the latest (bottom) message by default when not navigating to a specific search match.
+  - Added a WhatsApp-style floating quick scroll-to-bottom FAB with unread jump indicator when scrolled away from the bottom, and added **"Go to top Message"** inside the 3-dot overflow menu.
+  - Removed the standalone **Switch Identity** icon button from TopAppBar actions in both WhatsApp and Instagram chat headers, keeping it exclusively inside the 3-dot overflow menu.
+- **Smart Duplicate Chat Detection & Animated Deep-Link (`ChatViewModel.kt`, `InstagramViewModel.kt`, `ImportScreen.kt`, `HomeScreen.kt`, `MainActivity.kt`)**:
+  - Added `ImportUiState.Duplicate` in `ImportScreen.kt` (showing existing conversation metadata and a bottom **"Go to that chat"** button without duplicating database/media files).
+  - Tapping **"Go to that chat"** orchestrates returning to `HomeScreen`, switching the connected platform pill (`WhatsApp` / `Instagram`), smoothly scrolling to the existing chat row, highlighting the card, and opening the conversation at the latest message.
+- **Strict In-App Media vs. External Document Boundary (`WasmMediaViewerScreen.kt`, `WasmChatMediaCards.kt`, `AttachmentOpenHelper.kt`, `GalleryDownloader.kt`, `AudioPlayerManager.kt`, `AndroidManifest.xml`, `file_paths.xml`)**:
+  - Configured `FileProvider` (`${applicationId}.fileprovider`) and `AttachmentOpenHelper.openFileExternally` so only **photos, videos, audio/voice notes, GIFs, and stickers** render natively inside Wasm, while `.pdf`, `.apk`, `.zip`, `.vcf`, and other attachments launch external viewers (`Intent.ACTION_VIEW`).
+  - Added `WasmMediaViewerScreen` (pure-black full-screen Photo & Video viewer): Photos support pinch/double-tap zoom, pan, and a 3-dot menu with **Rotate** and **Save to Gallery**; Videos feature `mpvEx`-style seekbar (`WasmSquigglySeekbar`), play/pause, mute/unmute, speed selector (`0.5x`–`2x`), double-tap ±10s seek, zoom/fit toggle, and ONLY **Save to Gallery** in the 3-dot menu.
+  - Added `WasmInlineStickerOrGif`, `WasmInlineAudioBubble`, `WasmInlineVideoCard`, and `WasmExternalFileCard`; upgraded `AudioPlayerManager` with `playbackSpeed` (`1x / 1.5x / 2x` via `PlaybackParams`) and `GalleryDownloader.saveToWasmDownloads` (`Downloads/!WASM/`) triggered on long-press of audio/voice notes, GIFs, and stickers across WhatsApp & Instagram (including Instagram Details voice notes).
+- **Links, Phone Numbers & Code Annotation (`ChatRichTextParser.kt`, `WasmClickableAnnotatedText.kt`)**:
+  - Preserved single-line `*bold*`, `_italic_`, `~strike~`, `` `code` ``, ```` ```mono``` ```` parsing and added bold blue interactive annotations (`TAG_URL`, `TAG_PHONE`, `TAG_CODE`) for explicit/schemeless URLs (`github.com`, `https://github.com`, `www.google.com`), 10-digit phone numbers (with optional country code/`0` prefix -> Dialer), and standalone 4-digit / 6-digit codes (tap copies to clipboard + confirmation capsule), protected inside monospace spans and avoiding dates/timestamps/filenames.
+- **1-on-1 DM vs. Group Attribution & Date/Time Search (`ChatScreen.kt`, `InstagramScreen.kt`, `ChatSearchFilter.kt`, `ChatSearchFilterBar.kt`, `WhatsAppParser.kt`)**:
+  - Added `isGroupConversation` derivation so 1-on-1 DMs hide redundant sender labels/avatars while group chats render colored sender names and 28dp participant avatars.
+  - Built `ChatSearchFilter` (`inferDateOrder` supporting both `DD/MM` and `MM/DD` WhatsApp exports plus Instagram timestamps) and expandable `ChatSearchFilterBar` (`Day`, `Date Range`, `Exact Time`, `Time Range` via M3 `DatePickerDialog`, `DateRangePicker`, `TimePicker`).
+- **Gravitas Skill & Unit Tests (`ChatRichTextLinksAndNumbersTest.kt`, `ChatSearchFilterTest.kt`, `WhatsAppParserAbhijeetExportTest.kt`)**:
+  - Installed `udaysharmadev/Gravitas` skill locally (`C:\Users\Abhi\.gemini\skills\gravitas`).
+  - Added JVM unit tests covering URL/phone/code extraction, `DMY`/`MDY` date-time filtering with `\u202F` narrow no-break spaces, and attachment MIME/sender validation against `WhatsApp Chat with Abhijeet 😎.zip` & `Deepanjali COC.zip` structures.
+- **Verification**:
+  - Verified all 53 main `.kt` files, 8 test `.kt` files, `AndroidManifest.xml`, and `res/xml/file_paths.xml` via static balance, Compose BOM `2023.10.01` API audit, cross-package `surfaceContainer*` import checks, and visibility checks (0 errors). Local Gradle execution skipped due to missing local JDK (`JAVA_HOME` unset/absent on host; deferred to GitHub Actions CI). No commits or pushes performed per user instruction.
+
+
+## [0.11.4-r3] - 2026-11-29 01:21 IST
+- **1:1 Square Avatar Cropper (`WasmAvatarCropperDialog.kt`, `AvatarCropMath.kt`)**:
+  - Added a pure native Jetpack Compose full-screen `WasmAvatarCropperDialog` with EXIF orientation decoding + downsampling (capped at `2048px`), `1:1` square viewfinder mask with circular avatar preview reticle, rule-of-thirds grid, expressive corner brackets, pinch-to-zoom (`1x`–`5x`), drag-to-pan with out-of-bounds clamping, 90° rotation, reset action, and `WasmExpressiveSlider` zoom control.
+  - Exports a cropped `1:1` square JPEG (`256px`–`1024px`) via `AvatarCropMath.computeSourceSquareRect`.
+- **WhatsApp & Instagram Integration (`ChatScreen.kt`, `InstagramScreen.kt`, `ChatViewModel.kt`, `InstagramViewModel.kt`)**:
+  - Intercepted image selection from **Change Avatar Photo** in both WhatsApp and Instagram chats with `WasmAvatarCropperDialog` before saving the square avatar into `_avatars/`.
+  - Added `updateConversationAvatar(conversationId, croppedFile)` overloads in `ChatViewModel` and `InstagramViewModel` (cleaning up temporary crop cache files in `finally`), and updated `InstagramConversationDetailsScreen` to display custom avatars via `ConversationAvatar`.
+- **Tests & Verification (`AvatarCropMathTest.kt`)**:
+  - Added JVM unit tests for rotation dimension swapping, landscape/portrait center square cropping, edge pan clamping, and EXIF transform mapping.
+  - Static check across all 55 main `.kt` files and 9 test `.kt` files passed (0 syntax/import/Compose-API errors); Gradle compilation and JUnit execution were not run locally due to the absence of a local JDK. No commits or pushes performed per user instruction.
+
+
+## [0.11.4-r4] - 2026-11-29 01:32 IST
+- **Updatable WhatsApp & Facebook Emoji Fonts (`EmojiFontManager.kt`, `Type.kt`, `Theme.kt`, `MainActivity.kt`, `UserPreferencesRepository.kt`, `FontSelectionScreen.kt`, `build.gradle.kts`)**:
+  - Bundled `WhatsApp 2.26.8.72.ttf` (`whatsapp_emoji.ttf`, 33.72 MB) and `Facebook 16.0.ttf` (`facebook_emoji.ttf`, 37.56 MB) into `app/src/main/assets/fonts/` alongside `ios_emoji.ttf`, and added `androidResources { noCompress += listOf("ttf", "otf") }` so Android mmaps font assets without decompressing into heap.
+  - Set `EmojiPackOption.WHATSAPP` (`2.26.8.72`) as the app-wide and WhatsApp default emoji style, with `FACEBOOK` (`16.0`), `IOS`, and `SYSTEM` switchable from **Font Selection**.
+  - Added cached platform `FontFamily` resolution (`EmojiFontManager.getCachedPlatformEmojiFamily`) and runtime `.ttf` update/override support (`installUpdatedEmojiFont` with SFNT header & platform parser validation, saved to `filesDir/emoji_packs/` with DataStore `emojiRevision` hot-reload and one-tap restore-to-bundled).
+  - Provided `LocalWasmMonoFontFamily` in `WasmTheme` and extended `System Default` typography via `SystemFonts` + `setSystemFallback("sans-serif")` so UI headings, group participant labels, monospace spans, and chat messages consistently follow the chosen emoji pack.
+- **Group Chat Verification & Parser/UI Fixes (`WhatsAppParser.kt`, `ChatViewModel.kt`, `ChatScreen.kt`, `InstagramScreen.kt`)**:
+  - Audited against real group export `WhatsApp Chat with Jhut ke karo phuch phuch 💦💦.zip`:
+    - Fixed `WhatsAppParser.standardPattern` / `iosPattern` so trailing empty-body lines (`Abhijeet Yadav 😎: `) remain attributed to their sender rather than turning into `"System"` chips.
+    - Stripped Unicode bidi isolates `\u2066..\u2069` in `WhatsAppParser.sanitizeLine` so `@mention` spans render cleanly without box glyphs.
+    - Expanded `ChatViewModel.isGroupConversation` triggers (`changed the group name`, `were added`, `joined using`, ` left`) and added a group participant count subtitle in the chat TopAppBar.
+    - Stripped `<This message was edited>` markers in `ChatScreen` into a clean `"Edited"` timestamp label, hardened `getWhatsAppAvatarColor` / `getAvatarColor` against `Int.MIN_VALUE`, and removed hardcoded `SfProBold` overrides on group sender names so sender emojis follow the active emoji font.
+- **Tests & Verification (`WhatsAppGroupAndEmojiTest.kt`)**:
+  - Added JVM unit tests for group system notices, empty-body sender lines, mention bidi cleanup, real group archive parsing, and `EmojiPackOption` / header validation.
+  - Verified all 56 main `.kt` files, 10 test `.kt` files, and bundled emoji TTF headers (`00010000`) statically cleanly. Prepared signed multi-remote push across GitHub, GitLab, and Codeberg.

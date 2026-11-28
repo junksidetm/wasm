@@ -10,6 +10,8 @@ import com.mrdartsidetm.wasm.data.InstagramDao
 import com.mrdartsidetm.wasm.data.InstagramMessageEntity
 import com.mrdartsidetm.wasm.ui.ImportUiState
 import com.mrdartsidetm.wasm.util.AudioPlayerManager
+import com.mrdartsidetm.wasm.util.ChatDateTimeFilter
+import com.mrdartsidetm.wasm.util.ChatSearchFilter
 import com.mrdartsidetm.wasm.util.InstagramHtmlParser
 import com.mrdartsidetm.wasm.util.InstagramZipExtractor
 import com.mrdartsidetm.wasm.util.MediaCategoryBreakdown
@@ -84,6 +86,7 @@ class InstagramViewModel(
     }.stateIn(viewModelScope, SharingStarted.Lazily, null)
 
     val conversationSearchQuery = MutableStateFlow("")
+    val conversationDateTimeFilter = MutableStateFlow(ChatDateTimeFilter())
 
     val currentMessages: StateFlow<List<InstagramMessageEntity>> = combine(
         selectedConversationId.flatMapLatest { id ->
@@ -93,13 +96,25 @@ class InstagramViewModel(
                 instagramDao.getMessagesForConversation(id)
             }
         },
-        conversationSearchQuery
-    ) { list, query ->
-        if (query.isBlank()) {
+        conversationSearchQuery,
+        conversationDateTimeFilter
+    ) { list, query, filter ->
+        val q = query.trim().lowercase()
+        if (q.isBlank() && !filter.isActive) {
             list
         } else {
-            val q = query.trim().lowercase()
-            list.filter { it.content.lowercase().contains(q) || it.sender.lowercase().contains(q) }
+            list.filter { msg ->
+                val matchesKeyword = q.isBlank() ||
+                    msg.content.lowercase().contains(q) ||
+                    msg.sender.lowercase().contains(q)
+                val matchesDt = if (!filter.isActive) {
+                    true
+                } else {
+                    val parsed = ChatSearchFilter.parseInstagramDateTime(msg.epochTime, msg.timestamp)
+                    ChatSearchFilter.matchesFilter(parsed?.first, parsed?.second, filter)
+                }
+                matchesKeyword && matchesDt
+            }
         }
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
@@ -108,6 +123,16 @@ class InstagramViewModel(
             .distinct()
             .filter { it.isNotBlank() && !it.equals("System", ignoreCase = true) }
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    val isGroupConversation: StateFlow<Boolean> = combine(currentMessages, currentConversation) { list, conv ->
+        val distinctSenders = list.asSequence()
+            .filter { it.sender.isNotBlank() && !it.sender.equals("System", ignoreCase = true) }
+            .map { it.sender }
+            .distinct()
+            .take(4)
+            .toList()
+        distinctSenders.size > 2 || (conv?.title?.contains(",") == true && distinctSenders.size >= 2)
+    }.stateIn(viewModelScope, SharingStarted.Lazily, false)
 
     val activeIdentity: StateFlow<String> = combine(account, currentMessages) { acc, msgs ->
         msgs.firstOrNull { it.isOutgoing }?.sender
@@ -132,6 +157,15 @@ class InstagramViewModel(
 
     fun setConversationSearchQuery(query: String) {
         conversationSearchQuery.value = query
+    }
+
+    fun setConversationDateTimeFilter(filter: ChatDateTimeFilter) {
+        conversationDateTimeFilter.value = filter
+    }
+
+    fun clearConversationSearchFilters() {
+        conversationSearchQuery.value = ""
+        conversationDateTimeFilter.value = ChatDateTimeFilter()
     }
 
     // Conversation Details page state
@@ -213,6 +247,7 @@ class InstagramViewModel(
         targetMessageId.value = messageId
         selectedConversationId.value = id
         conversationSearchQuery.value = ""
+        conversationDateTimeFilter.value = ChatDateTimeFilter()
         isViewingConversationDetails.value = false
         activeExpandedMediaList.value = null
         viewModelScope.launch {
@@ -230,6 +265,7 @@ class InstagramViewModel(
         selectedConversationId.value = null
         targetMessageId.value = null
         conversationSearchQuery.value = ""
+        conversationDateTimeFilter.value = ChatDateTimeFilter()
         isViewingConversationDetails.value = false
         activeExpandedMediaList.value = null
     }
@@ -300,6 +336,8 @@ class InstagramViewModel(
                         val totalFolders = allFolders.size
                         var processedIndex = 0
 
+                        val existingConversations = instagramDao.getAllConversations().firstOrNull().orEmpty()
+                        val parsedMessagesMap = linkedMapOf<String, List<InstagramMessageEntity>>()
                         for (folderId in allFolders) {
                             processedIndex++
                             _importUiState.value = ImportUiState.Loading(
@@ -339,7 +377,6 @@ class InstagramViewModel(
                             }
 
                             if (folderMessages.isNotEmpty()) {
-                                // Messages are chronological (oldest to newest), so last element is latest
                                 val latest = folderMessages.last()
                                 lastMessagePreview = when {
                                     latest.content.isNotBlank() -> latest.content
@@ -353,13 +390,7 @@ class InstagramViewModel(
                                 lastMessageTime = latest.timestamp
                             }
 
-                            // Insert messages in batches
-                            if (folderMessages.isNotEmpty()) {
-                                folderMessages.chunked(500).forEach { chunk ->
-                                    instagramDao.insertMessages(chunk)
-                                }
-                                totalParsedMessagesCount += folderMessages.size
-                            }
+                            parsedMessagesMap[folderId] = folderMessages
 
                             conversationsList.add(
                                 InstagramConversationEntity(
@@ -374,7 +405,35 @@ class InstagramViewModel(
                             )
                         }
 
-                        // Save conversations
+                        val allMatchExisting = conversationsList.isNotEmpty() &&
+                            conversationsList.all { imported ->
+                                existingConversations.any { ex ->
+                                    ex.id == imported.id &&
+                                        ex.messageCount == imported.messageCount &&
+                                        ex.lastTimestamp == imported.lastTimestamp
+                                }
+                            }
+                        if (allMatchExisting) {
+                            val target = conversationsList.maxByOrNull { it.messageCount } ?: conversationsList.first()
+                            _importUiState.value = ImportUiState.Duplicate(
+                                platform = "instagram",
+                                conversationId = target.id,
+                                title = target.title,
+                                messageCount = target.messageCount
+                            )
+                            return@withContext
+                        }
+
+                        // Insert messages & conversations cleanly only when not a duplicate export
+                        for ((_, msgs) in parsedMessagesMap) {
+                            if (msgs.isNotEmpty()) {
+                                msgs.chunked(500).forEach { chunk ->
+                                    instagramDao.insertMessages(chunk)
+                                }
+                                totalParsedMessagesCount += msgs.size
+                            }
+                        }
+
                         instagramDao.insertConversations(conversationsList)
 
                         // Save updated account profile
@@ -498,6 +557,23 @@ class InstagramViewModel(
                     instagramDao.updateConversationAvatar(conversationId, dest.absolutePath)
                 }
             } catch (_: Exception) {
+            }
+        }
+    }
+
+    fun updateConversationAvatar(conversationId: String, croppedFile: File) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                if (!croppedFile.exists() || croppedFile.length() <= 0L) return@launch
+                val avatarsDir = File(instagramBaseDir, "_avatars").apply { mkdirs() }
+                val dest = File(avatarsDir, "ig_${conversationId}_${System.currentTimeMillis()}.jpg")
+                croppedFile.copyTo(dest, overwrite = true)
+                if (dest.length() > 0L) {
+                    instagramDao.updateConversationAvatar(conversationId, dest.absolutePath)
+                }
+            } catch (_: Exception) {
+            } finally {
+                runCatching { croppedFile.delete() }
             }
         }
     }

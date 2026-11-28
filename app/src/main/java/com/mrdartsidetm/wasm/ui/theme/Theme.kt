@@ -161,6 +161,7 @@ data class ChatWallpaperConfig(
 
 val LocalIsDarkTheme = staticCompositionLocalOf { false }
 val LocalChatWallpaper = staticCompositionLocalOf { ChatWallpaperConfig() }
+val LocalWasmMonoFontFamily = staticCompositionLocalOf { GoogleSansCodeFontFamily }
 
 private val DarkColorScheme = darkColorScheme(
     primary = Color(0xFF80D4FF),
@@ -647,6 +648,8 @@ fun WasmTheme(
     dynamicVariant: String = DynamicVariantOption.TONAL_SPOT.id,
     fontSelection: String = AppFontOption.GOOGLE_SANS_FLEX.id,
     axisConfig: GoogleSansFlexAxisConfig = GoogleSansFlexAxisConfig(),
+    emojiFont: String = EmojiPackOption.DEFAULT.id,
+    emojiRevision: Int = 0,
     content: @Composable () -> Unit
 ) {
     val systemDark = isSystemInDarkTheme()
@@ -687,14 +690,20 @@ fun WasmTheme(
     }
 
     val isGoogleSansFlex = AppFontOption.fromId(fontSelection) == AppFontOption.GOOGLE_SANS_FLEX
-    val appFontFamily = remember(context, fontSelection, axisConfig) {
-        getSelectedAppFontFamily(context, fontSelection, axisConfig)
+    val appFontFamily = remember(context, fontSelection, axisConfig, emojiFont, emojiRevision) {
+        getSelectedAppFontFamily(context, fontSelection, axisConfig, emojiFont, emojiRevision)
+    }
+    val monoFontFamily = remember(context, emojiFont, emojiRevision) {
+        getGoogleSansCodeFontFamily(context, emojiFont, emojiRevision)
     }
     val typography = remember(appFontFamily, axisConfig, isGoogleSansFlex) {
         buildWasmTypography(appFontFamily, axisConfig, isGoogleSansFlex)
     }
 
-    CompositionLocalProvider(LocalIsDarkTheme provides darkTheme) {
+    CompositionLocalProvider(
+        LocalIsDarkTheme provides darkTheme,
+        LocalWasmMonoFontFamily provides monoFontFamily
+    ) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = typography,

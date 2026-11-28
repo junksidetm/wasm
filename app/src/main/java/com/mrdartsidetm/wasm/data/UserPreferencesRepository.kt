@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -25,6 +26,8 @@ class UserPreferencesRepository(private val context: Context) {
     private val CHAT_WALLPAPER_KEY = stringPreferencesKey("chat_wallpaper")
     private val CHAT_WALLPAPER_IMAGE_PATH_KEY = stringPreferencesKey("chat_wallpaper_image_path")
     private val FONT_SELECTION_KEY = stringPreferencesKey("font_selection")
+    private val EMOJI_FONT_KEY = stringPreferencesKey("emoji_font")
+    private val EMOJI_REVISION_KEY = intPreferencesKey("emoji_revision")
     private val ARCHIVE_HIDDEN_KEY = booleanPreferencesKey("archive_hidden")
 
     // Google Sans Flex variable font axes
@@ -95,6 +98,20 @@ class UserPreferencesRepository(private val context: Context) {
         prefs[FONT_SELECTION_KEY] ?: "google_sans_flex"
     }
 
+    // Selected emoji font pack: defaults to "whatsapp" (WhatsApp 2.26.8.72)
+    val emojiFont: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[EMOJI_FONT_KEY] ?: "whatsapp"
+    }
+
+    // Monotonic revision bumped whenever a runtime emoji TTF update is installed or reset
+    val emojiRevision: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[EMOJI_REVISION_KEY] ?: 0
+    }
+
+    fun emojiOverrideLabelFlow(packId: String): Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[stringPreferencesKey("emoji_override_label_$packId")]
+    }
+
     // Whether the Archive card on Home is hidden by long-press
     val isArchiveHidden: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[ARCHIVE_HIDDEN_KEY] ?: false
@@ -144,6 +161,27 @@ class UserPreferencesRepository(private val context: Context) {
 
     suspend fun saveFontSelection(font: String) {
         context.dataStore.edit { prefs -> prefs[FONT_SELECTION_KEY] = font }
+    }
+
+    suspend fun saveEmojiFont(emojiPackId: String) {
+        context.dataStore.edit { prefs -> prefs[EMOJI_FONT_KEY] = emojiPackId }
+    }
+
+    suspend fun recordEmojiOverride(packId: String, label: String?) {
+        val labelKey = stringPreferencesKey("emoji_override_label_$packId")
+        context.dataStore.edit { prefs ->
+            if (label.isNullOrBlank()) prefs.remove(labelKey) else prefs[labelKey] = label
+            prefs[EMOJI_REVISION_KEY] = (prefs[EMOJI_REVISION_KEY] ?: 0) + 1
+            prefs[EMOJI_FONT_KEY] = packId
+        }
+    }
+
+    suspend fun bumpEmojiRevisionOnly(packId: String) {
+        val labelKey = stringPreferencesKey("emoji_override_label_$packId")
+        context.dataStore.edit { prefs ->
+            prefs.remove(labelKey)
+            prefs[EMOJI_REVISION_KEY] = (prefs[EMOJI_REVISION_KEY] ?: 0) + 1
+        }
     }
 
     suspend fun saveArchiveHidden(hidden: Boolean) {

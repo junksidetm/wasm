@@ -8,6 +8,10 @@ import com.mrdartsidetm.wasm.data.ChatDao
 import com.mrdartsidetm.wasm.data.MessageEntity
 import com.mrdartsidetm.wasm.data.UserPreferencesRepository
 import com.mrdartsidetm.wasm.data.WhatsAppConversationEntity
+import com.mrdartsidetm.wasm.util.AudioPlayerManager
+import com.mrdartsidetm.wasm.util.ChatDateTimeFilter
+import com.mrdartsidetm.wasm.util.ChatSearchFilter
+import com.mrdartsidetm.wasm.util.DateOrderPreference
 import com.mrdartsidetm.wasm.util.MediaCategoryBreakdown
 import com.mrdartsidetm.wasm.util.StorageMediaCategory
 import com.mrdartsidetm.wasm.util.StorageMediaHelper
@@ -26,6 +30,12 @@ sealed interface ImportUiState {
     object Idle : ImportUiState
     data class Loading(val step: String) : ImportUiState
     data class Success(val count: Int) : ImportUiState
+    data class Duplicate(
+        val platform: String,
+        val conversationId: String,
+        val title: String,
+        val messageCount: Int
+    ) : ImportUiState
     data class Error(val message: String) : ImportUiState
 }
 
@@ -87,17 +97,39 @@ class ChatViewModel(
         }
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    // Search query and filtered messages for in-chat search
+    val audioPlayerManager = AudioPlayerManager(viewModelScope)
+
+    // Inferred DD/MM vs MM/DD ordering for the currently opened conversation
+    val activeDateOrder: StateFlow<DateOrderPreference> = activeMessages.map { list ->
+        ChatSearchFilter.inferDateOrder(list.take(200).map { it.timestamp })
+    }.stateIn(viewModelScope, SharingStarted.Lazily, DateOrderPreference.DAY_FIRST)
+
+    // Search query and date/time filters for in-chat search
     val searchQuery = MutableStateFlow("")
+    val dateTimeFilter = MutableStateFlow(ChatDateTimeFilter())
+
     val filteredMessages: StateFlow<List<MessageEntity>> = combine(
         activeMessages,
-        searchQuery
-    ) { list, query ->
-        if (query.isBlank()) {
+        searchQuery,
+        dateTimeFilter,
+        activeDateOrder
+    ) { list, query, filter, dateOrder ->
+        val q = query.trim().lowercase()
+        if (q.isBlank() && !filter.isActive) {
             list
         } else {
-            val q = query.trim().lowercase()
-            list.filter { it.content.lowercase().contains(q) || it.sender.lowercase().contains(q) }
+            list.filter { msg ->
+                val matchesKeyword = q.isBlank() ||
+                    msg.content.lowercase().contains(q) ||
+                    msg.sender.lowercase().contains(q)
+                val matchesDt = if (!filter.isActive) {
+                    true
+                } else {
+                    val parsed = ChatSearchFilter.parseWhatsAppDateTime(msg.timestamp, dateOrder)
+                    ChatSearchFilter.matchesFilter(parsed?.first, parsed?.second, filter)
+                }
+                matchesKeyword && matchesDt
+            }
         }
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
@@ -113,6 +145,30 @@ class ChatViewModel(
             .distinct()
             .filter { it.isNotBlank() && !it.equals("System", ignoreCase = true) }
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    // Group detection: true only when >2 participants or group system events are present
+    val isGroupConversation: StateFlow<Boolean> = activeMessages.map { list ->
+        val distinctSenders = list.asSequence()
+            .filter { !it.isSystemMessage && it.sender.isNotBlank() && !it.sender.equals("System", ignoreCase = true) }
+            .map { it.sender }
+            .distinct()
+            .take(4)
+            .toList()
+        if (distinctSenders.size > 2) return@map true
+        list.any {
+            it.isSystemMessage && (
+                it.content.contains("created group", ignoreCase = true) ||
+                    it.content.contains("added ", ignoreCase = true) ||
+                    it.content.contains("were added", ignoreCase = true) ||
+                    it.content.contains("changed this group", ignoreCase = true) ||
+                    it.content.contains("changed the group name", ignoreCase = true) ||
+                    it.content.contains("group's icon", ignoreCase = true) ||
+                    it.content.contains("joined using", ignoreCase = true) ||
+                    it.content.contains("removed ", ignoreCase = true) ||
+                    it.content.endsWith(" left", ignoreCase = true)
+                )
+        }
+    }.stateIn(viewModelScope, SharingStarted.Lazily, false)
 
     // Total counts across all WhatsApp chats
     val totalConversationCount = chatDao.getTotalConversationCount()
@@ -132,6 +188,15 @@ class ChatViewModel(
         searchQuery.value = query
     }
 
+    fun setDateTimeFilter(filter: ChatDateTimeFilter) {
+        dateTimeFilter.value = filter
+    }
+
+    fun clearSearchFilters() {
+        searchQuery.value = ""
+        dateTimeFilter.value = ChatDateTimeFilter()
+    }
+
     fun setHomeSearchQuery(query: String) {
         homeSearchQuery.value = query
     }
@@ -140,6 +205,7 @@ class ChatViewModel(
         targetMessageId.value = messageId
         selectedConversationId.value = id
         searchQuery.value = ""
+        dateTimeFilter.value = ChatDateTimeFilter()
     }
 
     fun consumeTargetMessage() {
@@ -147,9 +213,16 @@ class ChatViewModel(
     }
 
     fun closeConversation() {
+        audioPlayerManager.stop()
         selectedConversationId.value = null
         targetMessageId.value = null
         searchQuery.value = ""
+        dateTimeFilter.value = ChatDateTimeFilter()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        audioPlayerManager.release()
     }
 
     fun setConversationArchived(conversationId: String, archived: Boolean) {
@@ -205,9 +278,25 @@ class ChatViewModel(
         return "WhatsApp Chat"
     }
 
+    private suspend fun findDuplicateWhatsApp(
+        title: String,
+        rawEntities: List<MessageEntity>
+    ): WhatsAppConversationEntity? {
+        if (rawEntities.isEmpty()) return null
+        val lastMsg = rawEntities.lastOrNull { it.content.isNotBlank() }?.content?.take(100) ?: ""
+        val lastTs = rawEntities.lastOrNull()?.timestamp ?: ""
+        val existing = chatDao.getAllConversations().firstOrNull().orEmpty()
+        return existing.firstOrNull { conv ->
+            conv.title.equals(title, ignoreCase = true) &&
+                conv.messageCount == rawEntities.size &&
+                conv.lastTimestamp == lastTs &&
+                conv.lastMessage == lastMsg
+        }
+    }
+
     /**
      * Imports chat from an Android content URI (.txt export) without erasing previous chats.
-     * Saves each chat individually just like Instagram.
+     * Detects duplicates and reports them cleanly instead of creating duplicate entries.
      */
     fun importChatUri(contentResolver: ContentResolver, uri: Uri, fileName: String? = null) {
         viewModelScope.launch {
@@ -226,6 +315,16 @@ class ChatViewModel(
                     }
 
                     val title = extractChatTitle(fileName, rawEntities)
+                    val duplicate = findDuplicateWhatsApp(title, rawEntities)
+                    if (duplicate != null) {
+                        _importUiState.value = ImportUiState.Duplicate(
+                            platform = "whatsapp",
+                            conversationId = duplicate.id,
+                            title = duplicate.title,
+                            messageCount = duplicate.messageCount
+                        )
+                        return@withContext
+                    }
                     val safeSlug = title.filter { it.isLetterOrDigit() }.take(16).lowercase()
                     val conversationId = "wa_${System.currentTimeMillis()}_${safeSlug.ifEmpty { "chat" }}"
 
@@ -317,6 +416,16 @@ class ChatViewModel(
                         }
 
                         val title = extractChatTitle(fileName, rawEntities)
+                        val duplicate = findDuplicateWhatsApp(title, rawEntities)
+                        if (duplicate != null) {
+                            _importUiState.value = ImportUiState.Duplicate(
+                                platform = "whatsapp",
+                                conversationId = duplicate.id,
+                                title = duplicate.title,
+                                messageCount = duplicate.messageCount
+                            )
+                            return@withContext
+                        }
                         val safeSlug = title.filter { it.isLetterOrDigit() }.take(16).lowercase()
                         val conversationId = "wa_${System.currentTimeMillis()}_${safeSlug.ifEmpty { "chat" }}"
 
@@ -470,6 +579,23 @@ class ChatViewModel(
                     chatDao.updateConversationAvatar(conversationId, dest.absolutePath)
                 }
             } catch (_: Exception) {
+            }
+        }
+    }
+
+    fun updateConversationAvatar(conversationId: String, croppedFile: File) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                if (!croppedFile.exists() || croppedFile.length() <= 0L) return@launch
+                val avatarsDir = File(mediaDir, "_avatars").apply { mkdirs() }
+                val dest = File(avatarsDir, "wa_${conversationId}_${System.currentTimeMillis()}.jpg")
+                croppedFile.copyTo(dest, overwrite = true)
+                if (dest.length() > 0L) {
+                    chatDao.updateConversationAvatar(conversationId, dest.absolutePath)
+                }
+            } catch (_: Exception) {
+            } finally {
+                runCatching { croppedFile.delete() }
             }
         }
     }

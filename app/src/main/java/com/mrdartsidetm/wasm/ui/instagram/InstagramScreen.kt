@@ -56,6 +56,18 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mrdartsidetm.wasm.ui.ChatWallpaperContainer
+import com.mrdartsidetm.wasm.ui.ConversationAvatar
+import com.mrdartsidetm.wasm.ui.components.ChatSearchFilterBar
+import com.mrdartsidetm.wasm.ui.components.WasmAvatarCropperDialog
+import com.mrdartsidetm.wasm.ui.components.WasmClickableAnnotatedText
+import com.mrdartsidetm.wasm.ui.components.WasmInlineAudioBubble
+import com.mrdartsidetm.wasm.ui.components.WasmInlineStickerOrGif
+import com.mrdartsidetm.wasm.ui.components.WasmMediaViewerScreen
+import com.mrdartsidetm.wasm.ui.components.WasmViewerMediaItem
+import com.mrdartsidetm.wasm.ui.components.WasmViewerMediaType
+import com.mrdartsidetm.wasm.ui.motion.wasmElasticClickable
+import com.mrdartsidetm.wasm.ui.motion.wasmFeatheredVerticalViewport
+import com.mrdartsidetm.wasm.ui.motion.wasmLuminousElasticClickable
 import com.mrdartsidetm.wasm.ui.theme.LocalIsDarkTheme
 import com.mrdartsidetm.wasm.data.InstagramAccountEntity
 import com.mrdartsidetm.wasm.data.InstagramConversationEntity
@@ -63,13 +75,14 @@ import com.mrdartsidetm.wasm.data.InstagramMessageEntity
 import com.mrdartsidetm.wasm.ui.BitmapMemoryCache
 import com.mrdartsidetm.wasm.ui.ConversationAvatar
 import com.mrdartsidetm.wasm.ui.DateSeparatorHeader
-import com.mrdartsidetm.wasm.ui.FullScreenImageDialog
 import com.mrdartsidetm.wasm.ui.IdentitySelectionDialog
 import com.mrdartsidetm.wasm.ui.ImportUiState
 import com.mrdartsidetm.wasm.ui.decodeSampledBitmap
 import com.mrdartsidetm.wasm.ui.extractDate
 import com.mrdartsidetm.wasm.ui.formatFileSize
+import com.mrdartsidetm.wasm.ui.surfaceContainerHigh
 import com.mrdartsidetm.wasm.ui.onboarding.ContainedExpressiveLoadingIndicator
+import com.mrdartsidetm.wasm.util.AttachmentOpenHelper
 import com.mrdartsidetm.wasm.util.AudioPlayerManager
 import com.mrdartsidetm.wasm.util.ChatRichTextParser
 import com.mrdartsidetm.wasm.util.GalleryDownloader
@@ -101,7 +114,7 @@ val AvatarColors = listOf(
 )
 
 fun getAvatarColor(name: String): Color {
-    val hash = abs(name.hashCode())
+    val hash = name.hashCode() and 0x7fffffff
     return AvatarColors[hash % AvatarColors.size]
 }
 
@@ -112,7 +125,8 @@ fun InstagramScreen(
     onImportClick: () -> Unit,
     onBackToPlatformChooser: (() -> Unit)? = null,
     onCloseConversation: (() -> Unit)? = null,
-    onOpenWallpaper: () -> Unit = {}
+    onOpenWallpaper: () -> Unit = {},
+    onConfirmation: (String) -> Unit = {}
 ) {
     val account by viewModel.account.collectAsStateWithLifecycle()
     val importState by viewModel.importUiState.collectAsStateWithLifecycle()
@@ -121,8 +135,7 @@ fun InstagramScreen(
     val expandedMediaList by viewModel.activeExpandedMediaList.collectAsStateWithLifecycle()
 
     var showClearDialog by remember { mutableStateOf(false) }
-    var fullScreenImageFile by remember { mutableStateOf<File?>(null) }
-    var activeVideoFile by remember { mutableStateOf<File?>(null) }
+    var viewerMediaItem by remember { mutableStateOf<WasmViewerMediaItem?>(null) }
 
     if (showClearDialog) {
         AlertDialog(
@@ -146,12 +159,12 @@ fun InstagramScreen(
         )
     }
 
-    fullScreenImageFile?.let { file ->
-        FullScreenImageDialog(file = file, onDismiss = { fullScreenImageFile = null })
-    }
-
-    activeVideoFile?.let { file ->
-        InstagramVideoPlayerDialog(file = file, onDismiss = { activeVideoFile = null })
+    viewerMediaItem?.let { item ->
+        WasmMediaViewerScreen(
+            item = item,
+            onDismiss = { viewerMediaItem = null },
+            onConfirmation = onConfirmation
+        )
     }
 
     // Determine current screen index
@@ -208,16 +221,17 @@ fun InstagramScreen(
                     onBack = { (onCloseConversation ?: { viewModel.closeConversation() }).invoke() },
                     onOpenDetails = { viewModel.openConversationDetails() },
                     onOpenWallpaper = onOpenWallpaper,
-                    onImageClick = { fullScreenImageFile = it },
-                    onVideoClick = { activeVideoFile = it },
-                    onOpenGroupMedia = { list, title -> viewModel.openExpandedMedia(list, title) }
+                    onImageClick = { viewerMediaItem = WasmViewerMediaItem(it, WasmViewerMediaType.PHOTO) },
+                    onVideoClick = { viewerMediaItem = WasmViewerMediaItem(it, WasmViewerMediaType.VIDEO) },
+                    onOpenGroupMedia = { list, title -> viewModel.openExpandedMedia(list, title) },
+                    onConfirmation = onConfirmation
                 )
                 4 -> expandedMediaList?.let { list ->
                     InstagramExpandedMediaViewerScreen(
                         mediaList = list,
                         title = viewModel.activeMediaViewerTitle.collectAsStateWithLifecycle().value,
                         onBack = { viewModel.closeExpandedMedia() },
-                        onPlayVideo = { activeVideoFile = it }
+                        onPlayVideo = { viewerMediaItem = WasmViewerMediaItem(it, WasmViewerMediaType.VIDEO) }
                     )
                 }
                 5 -> InstagramConversationDetailsScreen(
@@ -612,7 +626,15 @@ fun InstagramConversationsList(
 
     Scaffold(
         topBar = {
-            if (isSearchOpen) {
+            AnimatedContent(
+                targetState = isSearchOpen,
+                transitionSpec = {
+                    (fadeIn(tween(180)) + slideInVertically { -it / 4 }) togetherWith
+                        (fadeOut(tween(140)) + slideOutVertically { -it / 4 })
+                },
+                label = "igListSearchTopBar"
+            ) { searching ->
+            if (searching) {
                 TopAppBar(
                     title = {
                         TextField(
@@ -706,6 +728,7 @@ fun InstagramConversationsList(
                         }
                     }
                 )
+            }
             }
         }
     ) { padding ->
@@ -868,29 +891,57 @@ fun InstagramDmThreadScreen(
     onOpenWallpaper: () -> Unit = {},
     onImageClick: (File) -> Unit,
     onVideoClick: (File) -> Unit,
-    onOpenGroupMedia: (List<Pair<String, File>>, String) -> Unit
+    onOpenGroupMedia: (List<Pair<String, File>>, String) -> Unit,
+    onConfirmation: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val conversation by viewModel.currentConversation.collectAsStateWithLifecycle()
     val messages by viewModel.currentMessages.collectAsStateWithLifecycle()
     val searchQuery by viewModel.conversationSearchQuery.collectAsStateWithLifecycle()
+    val dateTimeFilter by viewModel.conversationDateTimeFilter.collectAsStateWithLifecycle()
     val targetMessageId by viewModel.targetMessageId.collectAsStateWithLifecycle()
     val senders by viewModel.uniqueSenders.collectAsStateWithLifecycle()
     val activeIdentity by viewModel.activeIdentity.collectAsStateWithLifecycle()
+    val isGroupChat by viewModel.isGroupConversation.collectAsStateWithLifecycle()
 
     var isSearchActive by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
     var showIdentityDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
+    var initialScrollDoneForId by remember(conversation?.id) { mutableStateOf(false) }
+
+    val showScrollToBottom by remember(messages.size) {
+        derivedStateOf {
+            messages.isNotEmpty() &&
+                (listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) < messages.lastIndex
+        }
+    }
+
+    var pendingAvatarCropUri by remember { mutableStateOf<Uri?>(null) }
 
     val avatarPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
-        val convId = conversation?.id ?: return@rememberLauncherForActivityResult
-        if (uri != null) {
-            viewModel.updateConversationAvatar(convId, uri, context.contentResolver)
+        if (uri != null && conversation != null) {
+            pendingAvatarCropUri = uri
         }
+    }
+
+    pendingAvatarCropUri?.let { cropUri ->
+        WasmAvatarCropperDialog(
+            imageUri = cropUri,
+            onDismiss = { pendingAvatarCropUri = null },
+            onCroppedFile = { croppedFile ->
+                conversation?.id?.let { convId ->
+                    viewModel.updateConversationAvatar(convId, croppedFile)
+                    onConfirmation("Avatar updated")
+                }
+                pendingAvatarCropUri = null
+            },
+            onError = { msg -> onConfirmation(msg) }
+        )
     }
 
     if (showIdentityDialog && senders.isNotEmpty() && conversation != null) {
@@ -933,152 +984,177 @@ fun InstagramDmThreadScreen(
         )
     }
 
-    LaunchedEffect(messages.size, targetMessageId) {
+    LaunchedEffect(messages.size, targetMessageId, conversation?.id) {
         if (messages.isNotEmpty()) {
             val targetId = targetMessageId
             if (targetId != null) {
                 val idx = messages.indexOfFirst { it.id == targetId }
                 if (idx >= 0) {
                     listState.scrollToItem(idx)
+                    initialScrollDoneForId = true
                     viewModel.consumeTargetMessage()
                 }
-            } else {
+            } else if (!initialScrollDoneForId) {
                 listState.scrollToItem(messages.size - 1)
+                initialScrollDoneForId = true
             }
         }
     }
 
     Scaffold(
         topBar = {
-            if (isSearchActive) {
-                TopAppBar(
-                    title = {
-                        TextField(
-                            value = searchQuery,
-                            onValueChange = { viewModel.setConversationSearchQuery(it) },
-                            placeholder = { Text("Search in conversation...") },
-                            singleLine = true,
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        )
+            Column {
+                AnimatedContent(
+                    targetState = isSearchActive,
+                    transitionSpec = {
+                        (fadeIn(tween(180)) + slideInVertically { -it / 4 }) togetherWith
+                            (fadeOut(tween(140)) + slideOutVertically { -it / 4 })
                     },
-                    navigationIcon = {
-                        IconButton(onClick = {
-                            isSearchActive = false
-                            viewModel.setConversationSearchQuery("")
-                        }) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Exit search")
-                        }
-                    },
-                    actions = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { viewModel.setConversationSearchQuery("") }) {
-                                Icon(Icons.Default.Close, contentDescription = "Clear")
-                            }
-                        }
-                    }
-                )
-            } else {
-                TopAppBar(
-                    title = {
-                        // Tapping the avatar/name opens the Conversation Details & Media Gallery page
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable(onClick = onOpenDetails)
-                                .padding(horizontal = 4.dp, vertical = 2.dp)
-                        ) {
-                            ConversationAvatar(
-                                title = conversation?.title ?: "Chat",
-                                avatarPath = conversation?.avatarPath,
-                                fallbackColor = getAvatarColor(conversation?.title ?: "Chat"),
-                                modifier = Modifier.size(38.dp),
-                                textStyle = MaterialTheme.typography.titleSmall
+                    label = "igDetailSearchTopBar"
+                ) { searching ->
+                if (searching) {
+                    TopAppBar(
+                        title = {
+                            TextField(
+                                value = searchQuery,
+                                onValueChange = { viewModel.setConversationSearchQuery(it) },
+                                placeholder = { Text("Search in conversation...") },
+                                singleLine = true,
+                                colors = TextFieldDefaults.colors(
+                                    focusedContainerColor = Color.Transparent,
+                                    unfocusedContainerColor = Color.Transparent,
+                                    focusedIndicatorColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent
+                                ),
+                                modifier = Modifier.fillMaxWidth()
                             )
-                            Text(
-                                text = conversation?.title ?: "Instagram DM",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back to Inbox")
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = { isSearchActive = true }) {
-                            Icon(Icons.Default.Search, contentDescription = "Search messages")
-                        }
-                        if (senders.isNotEmpty()) {
-                            IconButton(onClick = { showIdentityDialog = true }) {
-                                Icon(Icons.Default.Person, contentDescription = "Switch Identity")
+                        },
+                        navigationIcon = {
+                            IconButton(onClick = {
+                                isSearchActive = false
+                                viewModel.clearConversationSearchFilters()
+                            }) {
+                                Icon(Icons.Default.ArrowBack, contentDescription = "Exit search")
+                            }
+                        },
+                        actions = {
+                            if (searchQuery.isNotEmpty() || dateTimeFilter.isActive) {
+                                IconButton(onClick = { viewModel.clearConversationSearchFilters() }) {
+                                    Icon(Icons.Default.Close, contentDescription = "Clear")
+                                }
                             }
                         }
-                        Box {
-                            IconButton(onClick = { showMenu = true }) {
-                                Icon(Icons.Default.MoreVert, contentDescription = "More options")
-                            }
-                            DropdownMenu(
-                                expanded = showMenu,
-                                onDismissRequest = { showMenu = false }
+                    )
+                } else {
+                    TopAppBar(
+                        title = {
+                            // Tapping the avatar/name opens the Conversation Details & Media Gallery page
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable(onClick = onOpenDetails)
+                                    .padding(horizontal = 4.dp, vertical = 2.dp)
                             ) {
-                                DropdownMenuItem(
-                                    text = { Text("Change Wallpaper") },
-                                    leadingIcon = { Icon(Icons.Default.Wallpaper, contentDescription = null) },
-                                    onClick = {
-                                        showMenu = false
-                                        onOpenWallpaper()
-                                    }
+                                ConversationAvatar(
+                                    title = conversation?.title ?: "Chat",
+                                    avatarPath = conversation?.avatarPath,
+                                    fallbackColor = getAvatarColor(conversation?.title ?: "Chat"),
+                                    modifier = Modifier.size(38.dp),
+                                    textStyle = MaterialTheme.typography.titleSmall
                                 )
-                                DropdownMenuItem(
-                                    text = { Text("Switch Identity") },
-                                    leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
-                                    onClick = {
-                                        showMenu = false
-                                        if (senders.isNotEmpty()) {
-                                            showIdentityDialog = true
-                                        }
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Change Avatar Photo") },
-                                    leadingIcon = { Icon(Icons.Default.AccountCircle, contentDescription = null) },
-                                    onClick = {
-                                        showMenu = false
-                                        avatarPickerLauncher.launch(
-                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                                        )
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Delete Chat") },
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.Default.DeleteSweep,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.error
-                                        )
-                                    },
-                                    onClick = {
-                                        showMenu = false
-                                        showDeleteDialog = true
-                                    }
+                                Text(
+                                    text = conversation?.title ?: "Instagram DM",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
+                        },
+                        navigationIcon = {
+                            IconButton(onClick = onBack) {
+                                Icon(Icons.Default.ArrowBack, contentDescription = "Back to Inbox")
+                            }
+                        },
+                        actions = {
+                            IconButton(onClick = { isSearchActive = true }) {
+                                Icon(Icons.Default.Search, contentDescription = "Search messages")
+                            }
+                            Box {
+                                IconButton(onClick = { showMenu = true }) {
+                                    Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                                }
+                                DropdownMenu(
+                                    expanded = showMenu,
+                                    onDismissRequest = { showMenu = false }
+                                ) {
+                                    if (messages.isNotEmpty()) {
+                                        DropdownMenuItem(
+                                            text = { Text("Go to top Message") },
+                                            leadingIcon = { Icon(Icons.Default.VerticalAlignTop, contentDescription = null) },
+                                            onClick = {
+                                                showMenu = false
+                                                scope.launch { listState.animateScrollToItem(0) }
+                                            }
+                                        )
+                                    }
+                                    DropdownMenuItem(
+                                        text = { Text("Change Wallpaper") },
+                                        leadingIcon = { Icon(Icons.Default.Wallpaper, contentDescription = null) },
+                                        onClick = {
+                                            showMenu = false
+                                            onOpenWallpaper()
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Switch Identity") },
+                                        leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+                                        onClick = {
+                                            showMenu = false
+                                            if (senders.isNotEmpty()) {
+                                                showIdentityDialog = true
+                                            }
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Change Avatar Photo") },
+                                        leadingIcon = { Icon(Icons.Default.AccountCircle, contentDescription = null) },
+                                        onClick = {
+                                            showMenu = false
+                                            avatarPickerLauncher.launch(
+                                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                            )
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Delete Chat") },
+                                        leadingIcon = {
+                                            Icon(
+                                                Icons.Default.DeleteSweep,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.error
+                                            )
+                                        },
+                                        onClick = {
+                                            showMenu = false
+                                            showDeleteDialog = true
+                                        }
+                                    )
+                                }
+                            }
                         }
-                    }
-                )
+                    )
+                }
+                }
+                AnimatedVisibility(visible = isSearchActive) {
+                    ChatSearchFilterBar(
+                        filter = dateTimeFilter,
+                        resultCount = messages.size,
+                        onFilterChange = { viewModel.setConversationDateTimeFilter(it) }
+                    )
+                }
             }
         }
     ) { padding ->
@@ -1102,57 +1178,93 @@ fun InstagramDmThreadScreen(
                     )
                 }
             } else {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
-                ) {
-                    itemsIndexed(messages, key = { _, message -> message.id }) { index, message ->
-                        val currentDate = extractDate(message.timestamp)
-                        val prevMessage = if (index > 0) messages[index - 1] else null
-                        val prevDate = prevMessage?.let { extractDate(it.timestamp) } ?: ""
-                        val isDateBreak = currentDate != prevDate && currentDate.isNotEmpty()
+                Box(modifier = Modifier.fillMaxSize()) {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                    ) {
+                        itemsIndexed(messages, key = { _, message -> message.id }) { index, message ->
+                            val currentDate = extractDate(message.timestamp)
+                            val prevMessage = if (index > 0) messages[index - 1] else null
+                            val prevDate = prevMessage?.let { extractDate(it.timestamp) } ?: ""
+                            val isDateBreak = currentDate != prevDate && currentDate.isNotEmpty()
 
-                        if (isDateBreak) {
-                            DateSeparatorHeader(date = currentDate)
-                        }
-
-                        val isMe = message.isOutgoing
-
-                        // Grouping rule:
-                        // Sender name is shown only on the first message of a consecutive sender sequence.
-                        // Exception: When a message crosses another day break, show the sender name again on the first message.
-                        val isFirstInGroup = prevMessage == null ||
-                                prevMessage.sender != message.sender ||
-                                isDateBreak
-
-                        val nextMessage = if (index < messages.size - 1) messages[index + 1] else null
-                        val nextDate = nextMessage?.let { extractDate(it.timestamp) } ?: ""
-                        val isNextDateBreak = nextDate != currentDate && nextDate.isNotEmpty()
-                        val isLastInGroup = nextMessage == null ||
-                                nextMessage.sender != message.sender ||
-                                isNextDateBreak
-
-                        val showSenderName = !isMe && message.sender.isNotBlank() && isFirstInGroup
-
-                        val resolvedMediaList = remember(message.mediaPaths, message.mediaPath) {
-                            viewModel.resolveMessageMedia(message)
-                        }
-
-                        InstagramChatBubble(
-                            message = message,
-                            mediaList = resolvedMediaList,
-                            isMe = isMe,
-                            showSenderName = showSenderName,
-                            isFirstInGroup = isFirstInGroup,
-                            isLastInGroup = isLastInGroup,
-                            audioPlayerManager = viewModel.audioPlayerManager,
-                            onImageClick = { onImageClick(it) },
-                            onVideoClick = { onVideoClick(it) },
-                            onOpenGroupMedia = { list ->
-                                onOpenGroupMedia(list, "${conversation?.title ?: "Chat"} Media")
+                            if (isDateBreak) {
+                                DateSeparatorHeader(date = currentDate)
                             }
-                        )
+
+                            val isMe = message.isOutgoing
+
+                            val isFirstInGroup = prevMessage == null ||
+                                    prevMessage.sender != message.sender ||
+                                    isDateBreak
+
+                            val nextMessage = if (index < messages.size - 1) messages[index + 1] else null
+                            val nextDate = nextMessage?.let { extractDate(it.timestamp) } ?: ""
+                            val isNextDateBreak = nextDate != currentDate && nextDate.isNotEmpty()
+                            val isLastInGroup = nextMessage == null ||
+                                    nextMessage.sender != message.sender ||
+                                    isNextDateBreak
+
+                            // Hide sender name on 1-on-1 DMs; display name + avatar ONLY on group DMs
+                            val showSenderName = isGroupChat && !isMe && message.sender.isNotBlank() && isFirstInGroup
+                            val showGroupAvatar = isGroupChat && !isMe && message.sender.isNotBlank()
+
+                            val resolvedMediaList = remember(message.mediaPaths, message.mediaPath) {
+                                viewModel.resolveMessageMedia(message)
+                            }
+
+                            InstagramChatBubble(
+                                message = message,
+                                mediaList = resolvedMediaList,
+                                isMe = isMe,
+                                showSenderName = showSenderName,
+                                showGroupAvatar = showGroupAvatar,
+                                isFirstInGroup = isFirstInGroup,
+                                isLastInGroup = isLastInGroup,
+                                audioPlayerManager = viewModel.audioPlayerManager,
+                                onImageClick = { onImageClick(it) },
+                                onVideoClick = { onVideoClick(it) },
+                                onOpenGroupMedia = { list ->
+                                    onOpenGroupMedia(list, "${conversation?.title ?: "Chat"} Media")
+                                },
+                                onConfirmation = onConfirmation
+                            )
+                        }
+                    }
+
+                    AnimatedVisibility(
+                        visible = showScrollToBottom,
+                        enter = scaleIn(initialScale = 0.78f) + fadeIn(tween(150)),
+                        exit = scaleOut(targetScale = 0.78f) + fadeOut(tween(130)),
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(end = 14.dp, bottom = 14.dp)
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.94f),
+                            contentColor = MaterialTheme.colorScheme.onSurface,
+                            shadowElevation = 3.dp,
+                            modifier = Modifier
+                                .size(44.dp)
+                                .wasmElasticClickable(shape = CircleShape) {
+                                    scope.launch {
+                                        if (messages.isNotEmpty()) {
+                                            listState.animateScrollToItem(messages.lastIndex)
+                                        }
+                                    }
+                                }
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.KeyboardArrowDown,
+                                    contentDescription = "Go to latest message",
+                                    modifier = Modifier.size(26.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -1171,12 +1283,14 @@ fun InstagramChatBubble(
     mediaList: List<Pair<String, File>>,
     isMe: Boolean = message.isOutgoing,
     showSenderName: Boolean = false,
+    showGroupAvatar: Boolean = false,
     isFirstInGroup: Boolean = true,
     isLastInGroup: Boolean = true,
     audioPlayerManager: AudioPlayerManager,
     onImageClick: (File) -> Unit,
     onVideoClick: (File) -> Unit,
-    onOpenGroupMedia: (List<Pair<String, File>>) -> Unit
+    onOpenGroupMedia: (List<Pair<String, File>>) -> Unit,
+    onConfirmation: (String) -> Unit = {}
 ) {
     val isDark = LocalIsDarkTheme.current
 
@@ -1208,13 +1322,30 @@ fun InstagramChatBubble(
             .padding(bottom = bottomSpacing),
         horizontalAlignment = if (isMe) Alignment.End else Alignment.Start
     ) {
-        Box(
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            contentAlignment = bubbleAlignment
+            horizontalArrangement = if (isMe) Arrangement.End else Arrangement.Start,
+            verticalAlignment = Alignment.Top
         ) {
+            if (showGroupAvatar) {
+                if (isFirstInGroup) {
+                    ConversationAvatar(
+                        title = message.sender,
+                        avatarPath = null,
+                        fallbackColor = getAvatarColor(message.sender),
+                        modifier = Modifier
+                            .padding(end = 6.dp, top = 2.dp)
+                            .size(28.dp),
+                        textStyle = MaterialTheme.typography.labelSmall
+                    )
+                } else {
+                    Spacer(modifier = Modifier.width(34.dp))
+                }
+            }
+
             Column(
                 modifier = Modifier
-                    .widthIn(max = 310.dp)
+                    .widthIn(max = 300.dp)
                     .clip(bubbleShape)
                     .then(
                         if (isMe) {
@@ -1225,7 +1356,7 @@ fun InstagramChatBubble(
                     )
                     .padding(horizontal = 12.dp, vertical = 8.dp)
             ) {
-                // Sender name
+                // Sender name (only rendered in Group chats)
                 if (showSenderName) {
                     Text(
                         text = message.sender,
@@ -1243,15 +1374,23 @@ fun InstagramChatBubble(
                         mediaList = visualMedia,
                         onImageClick = onImageClick,
                         onVideoClick = onVideoClick,
-                        onExpandGroup = { onOpenGroupMedia(visualMedia) }
+                        onExpandGroup = { onOpenGroupMedia(visualMedia) },
+                        onConfirmation = onConfirmation
                     )
                     Spacer(Modifier.height(4.dp))
                 }
 
-                // Voice notes (Audio)
+                // Voice notes (Audio) with long-press Downloads/!WASM support
                 val audioMedia = mediaList.filter { it.first == "audio" }
                 for ((_, audioFile) in audioMedia) {
-                    InstagramAudioItem(file = audioFile, audioPlayerManager = audioPlayerManager, isMe = isMe)
+                    WasmInlineAudioBubble(
+                        file = audioFile,
+                        audioPlayerManager = audioPlayerManager,
+                        accentColor = if (isMe) Color.White else InstagramDirectBlue,
+                        contentColor = if (isMe) Color.White else incomingTextColor,
+                        containerColor = if (isMe) Color.White.copy(alpha = 0.16f) else MaterialTheme.colorScheme.surface,
+                        onConfirmation = onConfirmation
+                    )
                     Spacer(Modifier.height(4.dp))
                 }
 
@@ -1266,7 +1405,7 @@ fun InstagramChatBubble(
                     Spacer(Modifier.height(4.dp))
                 }
 
-                // Text Content (single-line rich formatting: *bold*, _italic_, ~strike~, ```mono``` / `code`)
+                // Text Content (single-line rich formatting + clickable links, numbers & codes)
                 if (message.content.isNotBlank() && (mediaList.isEmpty() || message.content != message.sharedTitle)) {
                     val bubbleTextColor = if (isMe) Color.White else incomingTextColor
                     val formatted = remember(message.content, isDark, bubbleTextColor) {
@@ -1276,10 +1415,11 @@ fun InstagramChatBubble(
                             textColor = bubbleTextColor
                         )
                     }
-                    Text(
+                    WasmClickableAnnotatedText(
                         text = formatted,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = bubbleTextColor
+                        color = bubbleTextColor,
+                        onConfirmation = onConfirmation
                     )
                 }
 
@@ -1323,15 +1463,20 @@ fun InstagramMediaCollage(
     mediaList: List<Pair<String, File>>,
     onImageClick: (File) -> Unit,
     onVideoClick: (File) -> Unit,
-    onExpandGroup: () -> Unit
+    onExpandGroup: () -> Unit,
+    onConfirmation: (String) -> Unit = {}
 ) {
     when (mediaList.size) {
         1 -> {
             val (type, file) = mediaList[0]
             if (type == "video") {
                 InstagramVideoItem(file = file, onVideoClick = { onVideoClick(file) })
-            } else if (type == "gif") {
-                InstagramGifItem(file = file)
+            } else if (type == "gif" || file.name.endsWith(".gif", true) || file.name.endsWith(".webp", true)) {
+                WasmInlineStickerOrGif(
+                    file = file,
+                    isSticker = file.name.endsWith(".webp", true),
+                    onConfirmation = onConfirmation
+                )
             } else {
                 InstagramPhotoItem(file = file, onImageClick = { onImageClick(file) })
             }
@@ -1580,7 +1725,11 @@ fun InstagramExpandedMediaViewerScreen(
             )
         },
         bottomBar = {
-            if (isSelectionMode) {
+            AnimatedVisibility(
+                visible = isSelectionMode,
+                enter = slideInVertically { it } + fadeIn(tween(180)),
+                exit = slideOutVertically { it } + fadeOut(tween(140))
+            ) {
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     tonalElevation = 4.dp
@@ -1627,10 +1776,11 @@ fun InstagramExpandedMediaViewerScreen(
                     border = if (isSelected) androidx.compose.foundation.BorderStroke(2.5.dp, InstagramDirectBlue) else null,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .combinedClickable(
-                            onLongClick = {
-                                toggleSelection(index)
-                            },
+                        .wasmLuminousElasticClickable(
+                            shape = RoundedCornerShape(16.dp),
+                            maxStretchPercent = 0.025f,
+                            pressedScale = 0.978f,
+                            onLongClick = { toggleSelection(index) },
                             onClick = {
                                 if (isSelectionMode) {
                                     toggleSelection(index)
@@ -1739,20 +1889,15 @@ fun InstagramConversationDetailsScreen(
                     .padding(vertical = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Box(
+                ConversationAvatar(
+                    title = conversation?.title ?: "",
+                    avatarPath = conversation?.avatarPath,
+                    fallbackColor = getAvatarColor(conversation?.title ?: ""),
                     modifier = Modifier
                         .size(86.dp)
-                        .clip(CircleShape)
-                        .background(getAvatarColor(conversation?.title ?: "")),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = (conversation?.title ?: "").take(1).uppercase(),
-                        color = Color.White,
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                        .clip(CircleShape),
+                    textStyle = MaterialTheme.typography.headlineMedium
+                )
 
                 Spacer(Modifier.height(12.dp))
 
@@ -1857,10 +2002,12 @@ fun InstagramConversationDetailsScreen(
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                             Spacer(Modifier.height(4.dp))
-                                            InstagramAudioItem(
+                                            WasmInlineAudioBubble(
                                                 file = audioFile,
                                                 audioPlayerManager = viewModel.audioPlayerManager,
-                                                isMe = false
+                                                accentColor = InstagramDirectBlue,
+                                                contentColor = MaterialTheme.colorScheme.onSurface,
+                                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
                                             )
                                         }
                                     }
@@ -2143,12 +2290,7 @@ fun InstagramSharedLinkItem(url: String, title: String, isReel: Boolean, isMe: B
         modifier = Modifier
             .fillMaxWidth()
             .clickable {
-                try {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                    context.startActivity(intent)
-                } catch (e: Exception) {
-                    // ignore intent errors
-                }
+                AttachmentOpenHelper.openExternalUrl(context, url)
             }
     ) {
         Row(

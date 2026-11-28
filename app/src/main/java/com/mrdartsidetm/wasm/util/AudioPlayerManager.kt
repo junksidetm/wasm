@@ -1,6 +1,7 @@
 package com.mrdartsidetm.wasm.util
 
 import android.media.MediaPlayer
+import android.media.PlaybackParams
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -8,8 +9,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.io.File
 
 /**
- * Manages native audio playback for Instagram voice notes (.mp4 audio container).
- * Ensures single active audio playback at a time with play/pause, seeking, and position tracking.
+ * Manages native audio playback for WhatsApp (.opus/.m4a/.mp3/.aac) and Instagram (.mp4) voice notes.
+ * Ensures single active audio playback at a time with play/pause, seeking, speed control, and position tracking.
  */
 class AudioPlayerManager(
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -28,6 +29,26 @@ class AudioPlayerManager(
 
     private val _durationMs = MutableStateFlow(0)
     val durationMs: StateFlow<Int> = _durationMs.asStateFlow()
+
+    private val _playbackSpeed = MutableStateFlow(1.0f)
+    val playbackSpeed: StateFlow<Float> = _playbackSpeed.asStateFlow()
+
+    fun cycleSpeed() {
+        val next = when (_playbackSpeed.value) {
+            1.0f -> 1.5f
+            1.5f -> 2.0f
+            else -> 1.0f
+        }
+        _playbackSpeed.value = next
+        mediaPlayer?.let { player ->
+            try {
+                if (player.isPlaying) {
+                    player.playbackParams = PlaybackParams().setSpeed(next)
+                }
+            } catch (_: Exception) {
+            }
+        }
+    }
 
     fun togglePlay(file: File) {
         val path = file.absolutePath
@@ -66,6 +87,12 @@ class AudioPlayerManager(
             _durationMs.value = player.duration
             _currentPositionMs.value = 0
             player.start()
+            try {
+                if (_playbackSpeed.value != 1.0f) {
+                    player.playbackParams = PlaybackParams().setSpeed(_playbackSpeed.value)
+                }
+            } catch (_: Exception) {
+            }
             _isPlaying.value = true
 
             startProgressTracking()
@@ -87,6 +114,12 @@ class AudioPlayerManager(
     fun resume() {
         mediaPlayer?.let { player ->
             player.start()
+            try {
+                if (_playbackSpeed.value != 1.0f) {
+                    player.playbackParams = PlaybackParams().setSpeed(_playbackSpeed.value)
+                }
+            } catch (_: Exception) {
+            }
             _isPlaying.value = true
             startProgressTracking()
         }

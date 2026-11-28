@@ -29,6 +29,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mrdartsidetm.wasm.data.UserPreferencesRepository
 import com.mrdartsidetm.wasm.ui.localization.LocalWasmStrings
+import com.mrdartsidetm.wasm.ui.motion.wasmElasticClickable
+import com.mrdartsidetm.wasm.ui.motion.wasmLuminousElasticClickable
 import com.mrdartsidetm.wasm.ui.theme.AppFontOption
 import com.mrdartsidetm.wasm.ui.theme.ChatWallpaperPreset
 import com.mrdartsidetm.wasm.ui.theme.ColorVariantOption
@@ -127,7 +129,9 @@ fun GeneralScreen(
                         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                         contentColor = MaterialTheme.colorScheme.onSurface
                     ),
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier
+                        .size(40.dp)
+                        .wasmElasticClickable(shape = CircleShape, onClick = onBack)
                 ) {
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
@@ -244,10 +248,16 @@ fun GeneralScreen(
                         }
                         GeneralEntryKey.DYNAMIC_COLOR -> {
                             Surface(
-                                onClick = onOpenColorVariants,
                                 shape = shape,
                                 color = MaterialTheme.colorScheme.surfaceContainerLow,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .wasmLuminousElasticClickable(
+                                        shape = shape,
+                                        maxStretchPercent = 0.025f,
+                                        pressedScale = 0.975f,
+                                        onClick = onOpenColorVariants
+                                    )
                             ) {
                                 Row(
                                     modifier = Modifier
@@ -515,10 +525,16 @@ private fun GeneralSimpleRowCard(
     onClick: () -> Unit
 ) {
     Surface(
-        onClick = onClick,
         shape = shape,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .wasmLuminousElasticClickable(
+                shape = shape,
+                maxStretchPercent = 0.025f,
+                pressedScale = 0.975f,
+                onClick = onClick
+            )
     ) {
         Row(
             modifier = Modifier

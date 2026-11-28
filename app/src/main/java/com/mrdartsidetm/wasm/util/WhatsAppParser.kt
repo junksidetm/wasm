@@ -19,12 +19,12 @@ object WhatsAppParser {
     // Matches: 1-2 digits/1-2 digits/2-4 digits, time with optional seconds and AM/PM,
     // followed by hyphen/en-dash/em-dash separator, and either "Sender: Content" or "System Content".
     private val standardPattern = Pattern.compile(
-        "^(\\d{1,2}[/.-]\\d{1,2}[/.-]\\d{2,4},\\s\\d{1,2}:\\d{2}(?::\\d{2})?(?:\\s?[aApP][mM])?)\\s(?:-|–|—)\\s(?:([^:]+):\\s([\\s\\S]*)|(.*))$"
+        "^(\\d{1,2}[/.-]\\d{1,2}[/.-]\\d{2,4},\\s\\d{1,2}:\\d{2}(?::\\d{2})?(?:\\s?[aApP][mM])?)\\s(?:-|–|—)\\s(?:([^:]+):(?:\\s([\\s\\S]*)|$)|(.*))$"
     )
 
     // Regex for iOS export: "[Date, Time] (Sender: Message | System Message)"
     private val iosPattern = Pattern.compile(
-        "^\\[(\\d{1,2}[/.-]\\d{1,2}[/.-]\\d{2,4},\\s\\d{1,2}:\\d{2}(?::\\d{2})?(?:\\s?[aApP][mM])?)\\]\\s(?:([^:]+):\\s([\\s\\S]*)|(.*))$"
+        "^\\[(\\d{1,2}[/.-]\\d{1,2}[/.-]\\d{2,4},\\s\\d{1,2}:\\d{2}(?::\\d{2})?(?:\\s?[aApP][mM])?)\\]\\s(?:([^:]+):(?:\\s([\\s\\S]*)|$)|(.*))$"
     )
 
     // Regex for Android attachment: "filename.ext (file attached)"
@@ -36,7 +36,7 @@ object WhatsAppParser {
     /**
      * Cleans hidden Unicode formatting characters commonly inserted by mobile keyboards and WhatsApp.
      */
-    private fun sanitizeLine(line: String): String {
+    fun sanitizeLine(line: String): String {
         return line
             .replace("\u200E", "") // Left-to-Right mark
             .replace("\u200F", "") // Right-to-Left mark
@@ -46,6 +46,10 @@ object WhatsAppParser {
             .replace("\u202C", "")
             .replace("\u202D", "")
             .replace("\u202E", "")
+            .replace("\u2066", "") // Left-to-Right isolate (mentions)
+            .replace("\u2067", "") // Right-to-Left isolate
+            .replace("\u2068", "") // First Strong isolate
+            .replace("\u2069", "") // Pop Directional isolate
             .replace("\u202F", " ") // Narrow no-break space (used before AM/PM)
             .replace("\u00A0", " ") // Non-breaking space
     }

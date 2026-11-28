@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <files-path name="wasm_media" path="media/" />
+    <files-path name="wasm_instagram" path="instagram_data/" />
+    <files-path name="wasm_files" path="." />
+    <cache-path name="wasm_cache" path="." />
+</paths>

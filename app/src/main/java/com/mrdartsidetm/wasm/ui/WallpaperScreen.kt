@@ -4,10 +4,19 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -23,7 +32,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -33,6 +41,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mrdartsidetm.wasm.data.UserPreferencesRepository
+import com.mrdartsidetm.wasm.ui.motion.WasmMotionTokens
+import com.mrdartsidetm.wasm.ui.motion.wasmFeatheredVerticalViewport
+import com.mrdartsidetm.wasm.ui.motion.wasmLuminousElasticClickable
 import com.mrdartsidetm.wasm.ui.theme.ChatWallpaperPreset
 import com.mrdartsidetm.wasm.ui.theme.LocalIsDarkTheme
 import kotlinx.coroutines.Dispatchers
@@ -46,7 +57,7 @@ import java.io.FileOutputStream
  * Features a full-width top button to pick a custom photo from the gallery and
  * a 9:16 rounded box HUD displaying all built-in and custom chat wallpapers.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun WallpaperScreen(
     prefs: UserPreferencesRepository,
@@ -167,6 +178,7 @@ fun WallpaperScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
+                    .wasmFeatheredVerticalViewport(topFadeFraction = 0.02f, bottomFadeFraction = 0.06f)
             ) {
                 items(presetItems, key = { it.id }) { preset ->
                     val isSelected = preset.id == selectedPresetId
@@ -177,7 +189,8 @@ fun WallpaperScreen(
                         isSelected = isSelected,
                         onClick = {
                             scope.launch { prefs.saveChatWallpaper(preset.id) }
-                        }
+                        },
+                        modifier = Modifier.animateItemPlacement(WasmMotionTokens.SpringListPlacement)
                     )
                 }
             }
@@ -191,7 +204,8 @@ private fun WallpaperHudTile(
     customImagePath: String?,
     isDark: Boolean,
     isSelected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val bgColor = if (isDark) preset.darkColor else preset.lightColor
     val outgoingColor = preset.accentBubblePreview
@@ -210,18 +224,28 @@ private fun WallpaperHudTile(
         } else null
     }
 
+    val borderWidth by animateDpAsState(
+        targetValue = if (isSelected) 2.5.dp else 1.dp,
+        animationSpec = spring(stiffness = 500f, dampingRatio = 0.72f),
+        label = "wallpaperBorderWidth"
+    )
+    val borderColor by animateColorAsState(
+        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+        animationSpec = tween(220),
+        label = "wallpaperBorderColor"
+    )
+
     Card(
         shape = RoundedCornerShape(20.dp),
-        border = BorderStroke(
-            width = if (isSelected) 2.5.dp else 1.dp,
-            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        ),
+        border = BorderStroke(borderWidth, borderColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .aspectRatio(9f / 16f)
-            .clip(RoundedCornerShape(20.dp))
-            .clickable(onClick = onClick)
+            .wasmLuminousElasticClickable(
+                shape = RoundedCornerShape(20.dp),
+                onClick = onClick
+            )
     ) {
         Box(
             modifier = Modifier
@@ -270,14 +294,18 @@ private fun WallpaperHudTile(
             }
 
             // Active check indicator
-            if (isSelected) {
+            AnimatedVisibility(
+                visible = isSelected,
+                enter = scaleIn(initialScale = 0.55f, animationSpec = WasmMotionTokens.SpringSelectionTick) + fadeIn(tween(110)),
+                exit = scaleOut(targetScale = 0.7f, animationSpec = tween(140)) + fadeOut(tween(110)),
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
+            ) {
                 Surface(
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                        .size(22.dp)
+                    modifier = Modifier.size(22.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
