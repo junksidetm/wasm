@@ -7,11 +7,11 @@
     android:viewportHeight="108">
     <group>
         <clip-path
-            android:pathData="M16,0 H92 A16,16 0 0 1 108,16 V92 A16,16 0 0 1 92,108 H16 A16,16 0 0 1 0,92 V16 A16,16 0 0 1 16,0 Z" />
+            android:pathData="M0,0 H108 V108 H0 Z" />
 
         <!-- Full-bleed gradient background matching assests/WASM - Logo.svg -->
         <path
-            android:pathData="M16,0 H92 A16,16 0 0 1 108,16 V92 A16,16 0 0 1 92,108 H16 A16,16 0 0 1 0,92 V16 A16,16 0 0 1 16,0 Z">
+            android:pathData="M0,0 H108 V108 H0 Z">
             <aapt:attr name="android:fillColor">
                 <gradient
                     android:type="linear"

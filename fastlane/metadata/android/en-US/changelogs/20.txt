@@ -1,0 +1,2 @@
+- Updated About screen hero card so the full-bleed Wasm logo fills the entire 200dp rounded container edge-to-edge without inner inset padding or corner clipping of bottom-left sparkles.
+- Simplified `app_logo.xml` clip-path to a pure rectangular `108x108` boundary for crisp Android VectorDrawable rendering.

@@ -277,24 +277,17 @@ fun AboutScreen(
                             .border(
                                 width = 2.dp,
                                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f),
-                                shape = RoundedCornerShape(44.dp)
+                                shape = RoundedCornerShape(30.dp)
                             ),
-                        shape = RoundedCornerShape(44.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerLowest
+                        shape = RoundedCornerShape(30.dp),
+                        color = Color.Transparent
                     ) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.app_logo),
-                                contentDescription = "Wasm Logo",
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .size(150.dp)
-                                    .clip(RoundedCornerShape(32.dp))
-                            )
-                        }
+                        Image(
+                            painter = painterResource(id = R.drawable.app_logo),
+                            contentDescription = "Wasm Logo",
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier.fillMaxSize()
+                        )
                     }
                 }
 

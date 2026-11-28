@@ -1378,3 +1378,13 @@
   - Bumped `versionCode = 19`, `versionName = "0.11.3"` in `app/build.gradle.kts`, updated `README.md` and `docs/index.html` badges, and added Fastlane changelog `19.txt`.
 - **Status**:
   - Pending tag `v0.11.3` CI build, multi-platform tag sync, and GitHub Release publication.
+
+## [0.11.4] - 2026-11-28 23:18:00 IST
+### Full-Bleed About Hero Logo Fix (`v0.11.4`, Build `20`)
+- **About Hero Logo (`ui/AboutScreen.kt`, `res/drawable/app_logo.xml`)**:
+  - Updated `AboutScreen` hero container (`200.dp`, `RoundedCornerShape(30.dp)` matching `WASM - Logo.svg`'s `16/108` radius ratio) so `R.drawable.app_logo` fills `Modifier.fillMaxSize()` edge-to-edge with `ContentScale.Fit`, removing the `150.dp` inner inset and `surfaceContainerLowest` padding frame.
+  - Simplified `app_logo.xml` `<clip-path>` and background path to `M0,0 H108 V108 H0 Z` so all gradient stops, polygonal accents, and bottom-left sparkles render completely without arc-clipping artifacts.
+- **Release `v0.11.4` (Build `20`)**:
+  - Bumped `versionCode = 20`, `versionName = "0.11.4"` in `app/build.gradle.kts`, updated `README.md` and `docs/index.html` badges, and added Fastlane changelog `20.txt`.
+- **Status**:
+  - Pending tag `v0.11.4` CI build, multi-platform tag sync, and GitHub Release publication.
