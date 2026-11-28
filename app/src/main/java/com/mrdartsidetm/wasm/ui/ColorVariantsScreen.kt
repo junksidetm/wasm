@@ -1,5 +1,6 @@
 package com.mrdartsidetm.wasm.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
@@ -49,6 +50,7 @@ fun ColorVariantsScreen(
     onBack: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
+    BackHandler(onBack = onBack)
     val dynamicEnabled by prefs.dynamicColorEnabled.collectAsStateWithLifecycle(initialValue = true)
     val selectedDynamicId by prefs.dynamicVariant.collectAsStateWithLifecycle(initialValue = DynamicVariantOption.TONAL_SPOT.id)
     val selectedStaticId by prefs.colorVariant.collectAsStateWithLifecycle(initialValue = ColorVariantOption.DEFAULT.id)

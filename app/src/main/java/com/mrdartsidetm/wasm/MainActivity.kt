@@ -180,6 +180,9 @@ class MainActivity : ComponentActivity() {
                                     }
                                     activeMessagesPlatform = null
                                     showImportScreen = false
+                                    isSettingsSubScreen = false
+                                    showWallpaperModal = false
+                                    showStorageDataModal = false
                                     selectedTab = 0
                                 }
                             )

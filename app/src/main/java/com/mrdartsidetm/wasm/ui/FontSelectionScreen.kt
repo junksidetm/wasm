@@ -1,5 +1,6 @@
 package com.mrdartsidetm.wasm.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -46,6 +47,7 @@ fun FontSelectionScreen(
     onBack: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
+    BackHandler(onBack = onBack)
     val selectedFontId by prefs.fontSelection.collectAsStateWithLifecycle(initialValue = AppFontOption.GOOGLE_SANS_FLEX.id)
     val selectedFont = AppFontOption.fromId(selectedFontId)
 

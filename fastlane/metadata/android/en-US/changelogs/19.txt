@@ -1,0 +1,3 @@
+- Enforced Home as the sole root exit page after onboarding (Wallet-Flutter PopScope pattern): Storage and Settings tabs always navigate back to Home before exiting.
+- Added system BackHandler support to ColorVariantsScreen, WallpaperScreen, FontSelectionScreen, StorageDataScreen, and SettingsScreen so nested flows (e.g., Dynamic Color -> General -> Settings -> Home -> Exit) step back cleanly through each parent screen.
+- Ensured onboarding completion resets all modal/sub-screen state so Home is always the landing page.

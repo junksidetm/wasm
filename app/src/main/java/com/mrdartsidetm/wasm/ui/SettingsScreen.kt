@@ -1,5 +1,6 @@
 package com.mrdartsidetm.wasm.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -194,6 +195,10 @@ fun SettingsScreen(
             onBack = { showAboutScreen = false }
         )
         return
+    }
+
+    BackHandler(enabled = onBackToHome != null) {
+        onBackToHome?.invoke()
     }
 
     val categories = remember(strings) {

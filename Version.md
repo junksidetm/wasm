@@ -1367,3 +1367,14 @@
   - Connected button color fix (`primary`/`onPrimary` + `surfaceContainerHigh`/`onSurfaceVariant`), `22.dp` Archive icon sizing, full-bleed `app_logo.xml` from `WASM - Logo.svg`, and LongShotPDF-aligned `AboutScreen.kt` (verified in CI run `46166904903`).
 - **Status**:
   - Pending tag `v0.11.2` CI build, multi-platform tag sync, and GitHub Release publication.
+
+## [0.11.3] - 2026-11-28 23:05:00 IST
+### Home-Root Navigation & Step-by-Step Backstack (`v0.11.3`, Build `19`)
+- **Enforced Home-Root Back Navigation (`MainActivity.kt`, `SettingsScreen.kt`, `ColorVariantsScreen.kt`, `WallpaperScreen.kt`, `FontSelectionScreen.kt`, `StorageDataScreen.kt`)**:
+  - Added `BackHandler` to `ColorVariantsScreen`, `WallpaperScreen`, `FontSelectionScreen`, and `StorageDataScreen` so system back steps cleanly up each nested level (e.g. `Dynamic Color & Variants` -> `General` -> `Settings` -> `Home` -> Exit, or `Wallpaper` -> `General` / Chat -> `Home` -> Exit).
+  - Wired `BackHandler` in `SettingsScreen` root (`onBackToHome`) alongside `MainActivity`'s root tab handler so both `Storage` and `Settings` always navigate back to `HomeScreen` (`selectedTab = 0`) before exiting (matching `Wallet-Flutter`'s `AppShell` `PopScope(canPop: location == '/')` pattern).
+  - Ensured `onFinishOnboarding` clears `isSettingsSubScreen`, `showWallpaperModal`, and `showStorageDataModal` in addition to `activeMessagesPlatform`, `showImportScreen`, and `selectedTab = 0`, guaranteeing `HomeScreen` is always the main landing page after onboarding.
+- **Release `v0.11.3` (Build `19`)**:
+  - Bumped `versionCode = 19`, `versionName = "0.11.3"` in `app/build.gradle.kts`, updated `README.md` and `docs/index.html` badges, and added Fastlane changelog `19.txt`.
+- **Status**:
+  - Pending tag `v0.11.3` CI build, multi-platform tag sync, and GitHub Release publication.

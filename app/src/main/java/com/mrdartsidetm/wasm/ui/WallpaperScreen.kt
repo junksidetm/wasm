@@ -1,5 +1,6 @@
 package com.mrdartsidetm.wasm.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -53,6 +54,7 @@ fun WallpaperScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    BackHandler(onBack = onBack)
     val selectedPresetId by prefs.chatWallpaper.collectAsStateWithLifecycle(initialValue = ChatWallpaperPreset.DEFAULT.id)
     val customImagePath by prefs.chatWallpaperImagePath.collectAsStateWithLifecycle(initialValue = null)
     val isDark = LocalIsDarkTheme.current
