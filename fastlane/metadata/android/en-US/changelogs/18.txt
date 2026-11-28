@@ -1,0 +1,4 @@
+- Unified connected button group colors across Home, Storage & Data, and General Settings (`primary`/`onPrimary` selected, `surfaceContainerHigh`/`onSurfaceVariant` unselected).
+- Scaled Home Archive banner icon to `22.dp` matching Settings icon proportions.
+- Rebuilt About screen to match the LongShotPDF Universal About Page (animated Bun & 9-Side Cookie M3 Expressive shapes, dynamic version badge with 7-tap Developer Mode, Developer Profile Card, spring-morphing FOSS links, and in-app Apache 2.0 License sheet).
+- Replaced adaptive icon safe-zone foreground in About with full-bleed `app_logo` converted from `WASM - Logo.svg`.

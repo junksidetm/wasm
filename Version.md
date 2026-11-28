@@ -1357,3 +1357,13 @@
   - Rebuilt `AboutScreen` matching `LongShotPDF`'s Universal About Page: `CenterAlignedTopAppBar`, `200.dp` squircle hero housing `R.drawable.app_logo` at `150.dp` (`75%`) flanked by animated `shape_bun` and `shape_9_side_cookie` M3 Expressive shapes, clickable dynamic version badge with 7-tap Developer Mode easter egg, Developer Profile Card (`R.drawable.developer` + GitHub & Email pills), `JuneAboutGroup` / `JuneAboutTile` spring-morphing FOSS list (Updates, GitHub Main, GitLab & Codeberg Mirrors, Material 3 Guidelines, and in-app Apache 2.0 License `ModalBottomSheet`), and `"Made with ❤️"` footer.
 - **Status**:
   - Pending remote GitHub Actions CI build and unit test verification.
+
+## [0.11.2] - 2026-11-28 22:25:30 IST
+### Release `v0.11.2` (Build `18`)
+- **Version Bump (`app/build.gradle.kts`, `README.md`, `docs/index.html`, `fastlane/metadata/android/en-US/changelogs/18.txt`)**:
+  - Bumped `versionCode = 18` and `versionName = "0.11.2"` (`AboutScreen` reads `BuildConfig.VERSION_NAME` and `BuildConfig.VERSION_CODE` automatically).
+  - Updated `README.md` release badge and `docs/index.html` navbar badge to `v0.11.2`, and added Fastlane changelog `18.txt`.
+- **Includes All Verified `0.11.1-r1` Changes**:
+  - Connected button color fix (`primary`/`onPrimary` + `surfaceContainerHigh`/`onSurfaceVariant`), `22.dp` Archive icon sizing, full-bleed `app_logo.xml` from `WASM - Logo.svg`, and LongShotPDF-aligned `AboutScreen.kt` (verified in CI run `46166904903`).
+- **Status**:
+  - Pending tag `v0.11.2` CI build, multi-platform tag sync, and GitHub Release publication.
