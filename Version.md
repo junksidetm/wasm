@@ -1259,3 +1259,47 @@
 - **Storage Classification & Instagram Parser Fixes (`util/StorageMediaHelper.kt`, `ui/StorageScreen.kt`, `util/InstagramHtmlParser.kt`, `util/ChatRichTextParserTest.kt`, `util/RealZipVerificationTest.kt`)**:
   - Added folder-aware media classification (`StorageMediaHelper`) so extensionless `photos/` images and `audio/*.mp4` voice clips vs `videos/*.mp4` categorize accurately.
   - Fixed `InstagramHtmlParser` numeric HTML entity decoding (`&#9889;`, hex/decimal entities), HTML document order for `mediaItems`, and chronological timestamp ordering for ascending fixtures vs newest-first real Instagram exports.
+
+
+## [0.11.0-checkpoint] - 2026-11-28 20:01:30 IST
+### Saved Session Progress & Next-Step Instructions (Before PC Restart)
+
+#### 1. Progress Saved & Pushed
+- **Commit Pushed (`main`)**: `fd2d116` (`feat(ui): add Archive hide/style, chat TopBar/avatar/single-line formatting, sub-pages, storage purge & parser fixes`) — cryptographically signed with `id_ed25519_junksidetm` (`junksidetm`).
+- **Multi-Platform Mirror Parity Completed**:
+  - **GitHub Main (`origin`)**: `fd2d116` pushed.
+  - **GitLab Mirror (`mrdarksidetm`)**: Synced & verified via `git sync-mirrors`.
+  - **Codeberg Mirror (`mrdarksidetm`)**: Synced & verified via `git sync-mirrors`.
+- **Implemented Files in `fd2d116` (all verified 0 brace/paren mismatches across 46 `.kt` files)**:
+  - Room v5 -> v6 migration (`MIGRATION_5_6`): added `avatarPath` to `WhatsAppConversationEntity.kt`, `InstagramEntities.kt`, `ChatDao.kt`, `InstagramDao.kt`, `ChatDatabase.kt`.
+  - ViewModels: `ChatViewModel.kt` and `InstagramViewModel.kt` updated with `updateConversationAvatar`, per-conversation/per-category media deletion via `StorageMediaHelper.kt`, single-chat delete + identity switching for Instagram.
+  - `ChatScreen.kt` & `InstagramScreen.kt`: standardized opened chat `TopAppBar` (Back -> `ConversationAvatar` -> Title -> Search -> Person Switch Identity -> `⋮` Menu with `Change Wallpaper`, `Switch Identity`, `Change Avatar Photo`, `Delete Chat`), removed message count / `• Me:` subtitle, wired single-line rich formatting (`ChatRichTextParser` + bundled `res/font/google_sans_code.ttf`), and replaced translucent `surfaceContainer*` alpha copies with `ColorScheme.opaqueContainer`.
+  - Dedicated sub-screens created: `ColorVariantsScreen.kt` (all 9 M3 dynamic scheme variants + 6 static palettes), `WallpaperScreen.kt` (top full-width Add Photo button + 9:16 HUD grid), `FontSelectionScreen.kt` (live tester + Google Sans Code monospace + conditional 6-axis `GoogleSansFlex` sliders), `StorageDataScreen.kt` (connected Whatsapp/Instagram toggle + category & per-chat purge).
+  - Updated `HomeScreen.kt` (14.dp `0.5x` Archive icon, list-matched Archive style, hide platform toggle in Archive view, long-press to hide Archive + `"Show Archive"` in `⋮` menu), `ImportScreen.kt` (auto-close immediately on success, stay with error snackbar on failure), `SettingsScreen.kt` (title-only rows), `GeneralScreen.kt` (`System Default` pill width fix, `VerticalDivider` before Switch, removed secondary Profile/Identity/Replay section), `StorageScreen.kt` (folder-aware `StorageMediaHelper` scan + bottom `"Delete Storage"` button), `AboutScreen.kt`, `MainActivity.kt`.
+  - Updated `InstagramHtmlParser.kt` + added `ChatRichTextParserTest.kt` and `RealZipVerificationTest.kt`.
+
+#### 2. Current CI Status & Exact Instructions for Next Session
+- **GitHub Actions Run ID**: `46154513165` (for commit `fd2d116`) failed in `Verify Build Success` (`Build Universal Production APK` job `141008359855`) and exited non-zero inside `Analysis & Unit Tests` (`141008083437`, likely one compile/lint/test error). Also note `Push Build Diagnostics to Repo` ran in `141008359855`!
+- **Next Steps to Execute Immediately After Restart**:
+  1. Follow `GEMINI.md` Pre-Work Protocol (`read_file` on `D:\code\Wasm\Version.md` and `D:\code\GEMINI.md`).
+  2. Run `cd D:\code\Wasm && git pull origin main` (to pull the pushed `build-diagnostics/` artifact/log from CI if pushed, and check status).
+  3. Inspect the exact failure lines from CI run `46154513165` quickly without downloading full logs:
+     - Check `build-diagnostics/` in the repo (if pushed) OR run:
+       `gh run view 46154513165 --job=141008359855 --log | Select-String -Pattern "e: file://|FAILURE:|What went wrong:|Unresolved reference" -Context 1,2`
+     - Also check unit test & lint failures in job `141008083437`:
+       `gh run view 46154513165 --job=141008083437 --log | Select-String -Pattern "e: file://|FAILED|AssertionError|Error:" -Context 0,2`
+  4. Fix every reported Kotlin compilation, Compose M3 API (remember Compose BOM is `2023.10.01`, e.g., check if `VerticalDivider` vs `Divider`, icon availability such as `Icons.Default.Public` / `Icons.Default.Wallpaper` / `Icons.Default.FontDownload` / `Icons.Default.DeleteSweep` in Material Icons Extended vs Core), lint, or unit test error across the codebase.
+  5. Test/verify parsing & real ZIP fixtures (`D:\code\temp\Chats\instagram-kajal.23.sinha-2026-09-14-sxQHlayj.zip` and `D:\code\temp\Chats\WhatsApp Chat with Deepanjali COC.zip`), append the fix changelog entry to `Version.md` (`Append = true`), commit cleanly with SSH signing, push to `origin main`, run `git sync-mirrors`, and watch the new GitHub Actions CI run until BOTH `Analysis & Unit Tests` and `Build Universal Production APK` pass green across all checks!
+
+
+## [0.11.0-r4] - 2026-11-28 20:22:30 IST
+### Fix CI KSP Unclosed Comment & Material 3 `2023.10.01` Divider Compatibility
+- **Nested KDoc Block Comment Fix (`util/StorageMediaHelper.kt`)**:
+  - Removed `/*` character sequences (`audio/*.mp4`, `videos/*.mp4`) from inside the `/** ... */` KDoc comment on `StorageMediaHelper` that Kotlin parsed as nested block comments, resolving the `:app:kspDebugKotlin` / `:app:kspReleaseKotlin` `Unclosed comment` failure in CI run `46154513165`.
+- **Material 3 `1.1.2` (`compose-bom:2023.10.01`) Divider Compatibility (`AboutScreen.kt`, `FontSelectionScreen.kt`, `StorageDataScreen.kt`, `ColorVariantsScreen.kt`, `GeneralScreen.kt`)**:
+  - Replaced `HorizontalDivider(...)` (added in Material3 `1.2.0`) with `Divider(...)` in `AboutScreen.kt`, `FontSelectionScreen.kt`, and `StorageDataScreen.kt`.
+  - Replaced `VerticalDivider(...)` (added in Material3 `1.2.0`) with `1.dp` `Box` vertical dividers using `MaterialTheme.colorScheme.outlineVariant` in `ColorVariantsScreen.kt` and `GeneralScreen.kt`.
+- **Static Verification**:
+  - Verified zero remaining `HorizontalDivider` / `VerticalDivider` references, zero unclosed/nested block comments, and balanced braces/parentheses across all Kotlin files in `app/src`.
+- **Status**:
+  - Pending remote GitHub Actions CI build, lint, and unit test verification.

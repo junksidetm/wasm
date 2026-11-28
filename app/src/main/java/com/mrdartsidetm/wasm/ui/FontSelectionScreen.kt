@@ -195,7 +195,7 @@ fun FontSelectionScreen(
                             }
                         }
                         if (idx < AppFontOption.values().lastIndex) {
-                            HorizontalDivider(
+                            Divider(
                                 modifier = Modifier.padding(horizontal = 16.dp),
                                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
                             )

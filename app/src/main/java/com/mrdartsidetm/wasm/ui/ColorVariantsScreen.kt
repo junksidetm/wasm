@@ -3,6 +3,7 @@ package com.mrdartsidetm.wasm.ui
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -130,11 +131,12 @@ fun ColorVariantsScreen(
                         )
                     }
 
-                    VerticalDivider(
+                    Box(
                         modifier = Modifier
+                            .padding(horizontal = 2.dp)
+                            .width(1.dp)
                             .height(28.dp)
-                            .padding(horizontal = 2.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant
+                            .background(MaterialTheme.colorScheme.outlineVariant)
                     )
 
                     Switch(

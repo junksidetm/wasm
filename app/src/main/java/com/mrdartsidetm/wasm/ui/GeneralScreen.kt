@@ -286,9 +286,11 @@ fun GeneralScreen(
                                     }
 
                                     // Separator between heading and Dynamic Color switch
-                                    VerticalDivider(
-                                        modifier = Modifier.height(28.dp),
-                                        color = MaterialTheme.colorScheme.outlineVariant
+                                    Box(
+                                        modifier = Modifier
+                                            .width(1.dp)
+                                            .height(28.dp)
+                                            .background(MaterialTheme.colorScheme.outlineVariant)
                                     )
 
                                     Switch(

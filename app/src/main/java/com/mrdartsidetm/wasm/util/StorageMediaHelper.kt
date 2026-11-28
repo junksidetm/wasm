@@ -42,7 +42,7 @@ data class MediaCategoryBreakdown(
 
 /**
  * Classifies exported WhatsApp and Instagram media files accurately—including
- * extensionless Instagram `photos/` files and `audio/*.mp4` voice clips vs `videos/*.mp4`.
+ * extensionless Instagram `photos` files and `audio` `.mp4` voice clips vs `videos` `.mp4`.
  */
 object StorageMediaHelper {
 

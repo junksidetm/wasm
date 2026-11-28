@@ -290,7 +290,7 @@ fun StorageDataScreen(
                             }
                         }
 
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                        Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
                         Text(
                             text = "Delete by Media Category",

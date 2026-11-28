@@ -191,7 +191,7 @@ fun AboutScreen(
                         }
                     }
 
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
                     AboutLinkRow(
                         icon = Icons.Default.Code,
