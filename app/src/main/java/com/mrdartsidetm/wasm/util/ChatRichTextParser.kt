@@ -84,13 +84,18 @@ object ChatRichTextParser {
                     )
                     i = closeIdx + 3
                     continue
+                } else {
+                    // Emit unclosed triple backticks literally so they cannot pair with a single backtick
+                    builder.append("```")
+                    i += 3
+                    continue
                 }
             }
 
             // Single backtick inline code on the same line: `text`
             if (segment[i] == '`') {
                 val closeIdx = segment.indexOf('`', i + 1)
-                if (closeIdx > i + 1) {
+                if (closeIdx > i + 1 && !segment.startsWith("```", closeIdx)) {
                     val inner = segment.substring(i + 1, closeIdx)
                     val start = builder.length
                     builder.append(inner)
@@ -156,12 +161,8 @@ object ChatRichTextParser {
                 }
             }
 
-            // Plain character
-            val charStart = builder.length
+            // Plain character (enclosing delimiter recursion applies SpanStyle over the full span)
             builder.append(segment[i])
-            if (active.bold || active.italic || active.strike) {
-                builder.addStyle(spanStyleFor(active, textColor), charStart, builder.length)
-            }
             i++
         }
     }

@@ -1323,3 +1323,13 @@
   - Updated lines 23 and 83 to `DetectedArchivePlatform.INSTAGRAM_ZIP` / `DetectedArchivePlatform.WHATSAPP_ZIP` and `ZipArchiveDetector.detectFromFile(...)` matching `ZipArchiveDetector.kt`.
 - **Status**:
   - Pending final remote GitHub Actions CI run verification with clean `:app:testDebugUnitTest` execution.
+
+## [0.11.0-r7] - 2026-11-28 20:42:30 IST
+### Fix `ChatRichTextParser` Span Deduplication & Unclosed Triple-Backtick Handling
+- **CI Run `46158079019` Follow-up**:
+  - `Build Universal Production APK` (`141019700907`) **passed** green.
+  - `Analysis & Unit Tests` (`141019030564`) executed `:app:testDebugUnitTest` and reported 2 failures in `ChatRichTextParserTest`:
+    1. `testMixedMultiLineWithSingleLineFormattedSegments`: Per-character `SpanStyle` emission inside `parseLine` duplicated the enclosing span (`4` bold spans instead of `1` for `*one*`). Removed the redundant per-character style addition.
+    2. `testNewlineBreaksInlineFormatting`: An unclosed ```` ``` ```` sequence fell through to single-backtick `` ` `` matching and paired its third backtick with a later single backtick on the same line. Now unclosed ```` ``` ```` sequences are emitted literally (`i += 3`) and single-backtick closing ignores ```` ``` ```` markers.
+- **Status**:
+  - Pending remote GitHub Actions CI run verification across both `Analysis & Unit Tests` (with zero unit test failures) and `Build Universal Production APK`.
