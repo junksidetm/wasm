@@ -74,6 +74,7 @@ import com.mrdartsidetm.wasm.ui.theme.LocalIsDarkTheme
 import com.mrdartsidetm.wasm.ui.theme.LocalWasmMonoFontFamily
 import com.mrdartsidetm.wasm.ui.theme.opaqueContainer
 import com.mrdartsidetm.wasm.util.ChatRichTextParser
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File

@@ -2,8 +2,10 @@ package com.mrdartsidetm.wasm.ui.motion
 
 import android.os.Build
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
@@ -43,6 +45,7 @@ import kotlin.math.roundToInt
  * each glyph scrolls vertically inside a clipped slot with subtle 3D X-axis tilt.
  * Automatically degrades to static text when system animations are disabled (`minSdk = 26` safe).
  */
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun WasmMechanicalText(
     text: String,
@@ -112,9 +115,8 @@ fun WasmMechanicalText(
                     },
                     label = "mechanicalGlyph_$index"
                 ) { targetGlyph ->
-                    val transitionProgress = transition
-                    val isEntering = transitionProgress.targetState == targetGlyph &&
-                        transitionProgress.currentState != transitionProgress.targetState
+                    val isEntering = transition.targetState == EnterExitState.Visible &&
+                        transition.currentState != transition.targetState
 
                     Text(
                         text = targetGlyph,

@@ -1467,3 +1467,12 @@
 - **Tests & Verification (`WhatsAppGroupAndEmojiTest.kt`)**:
   - Added JVM unit tests for group system notices, empty-body sender lines, mention bidi cleanup, real group archive parsing, and `EmojiPackOption` / header validation.
   - Verified all 56 main `.kt` files, 10 test `.kt` files, and bundled emoji TTF headers (`00010000`) statically cleanly. Prepared signed multi-remote push across GitHub, GitLab, and Codeberg.
+
+
+## [0.11.4-r5] - 2026-11-29 01:48 IST
+- **CI Kotlin Compilation Fixes (`ChatScreen.kt`, `InstagramScreen.kt`, `ColorVariantsScreen.kt`, `WallpaperScreen.kt`, `StorageDataScreen.kt`, `WasmAvatarCropperDialog.kt`, `WasmElasticModifiers.kt`, `WasmMechanicalText.kt`)**:
+  - Added missing `kotlinx.coroutines.launch` imports in `ChatScreen.kt` and `InstagramScreen.kt` for scroll-to-top and scroll-to-bottom FAB coroutines.
+  - Resolved `ColumnScope.AnimatedVisibility` receiver ambiguity in `ColorVariantsScreen.kt` and `WallpaperScreen.kt` using explicit `androidx.compose.animation.AnimatedVisibility`.
+  - Added missing `androidx.compose.foundation.clickable` and `androidx.compose.ui.draw.clip` imports in `StorageDataScreen.kt`.
+  - Fixed `WasmAvatarCropperDialog.kt` loading indicator parameter (`modifier = Modifier.size(48.dp)`) and extension call syntax (`view.performWasmTickHaptic(true)`).
+  - Removed illegal non-local `return` inside `composed {}` in `WasmElasticModifiers.kt` and updated `WasmMechanicalText.kt` transition check to `EnterExitState.Visible` with `@OptIn(ExperimentalAnimationApi::class)`.

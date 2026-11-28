@@ -87,6 +87,7 @@ import com.mrdartsidetm.wasm.util.AudioPlayerManager
 import com.mrdartsidetm.wasm.util.ChatRichTextParser
 import com.mrdartsidetm.wasm.util.GalleryDownloader
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import kotlin.math.abs

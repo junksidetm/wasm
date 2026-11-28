@@ -110,7 +110,7 @@ fun WasmAvatarCropperDialog(
             val bmp = sourceBitmap
             if (bmp == null && !loadFailed) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    ContainedExpressiveLoadingIndicator(size = 48.dp)
+                    ContainedExpressiveLoadingIndicator(modifier = Modifier.size(48.dp))
                 }
                 return@Surface
             }
@@ -164,7 +164,7 @@ fun WasmAvatarCropperDialog(
 
                     IconButton(
                         onClick = {
-                            performWasmTickHaptic(view)
+                            view.performWasmTickHaptic(true)
                             rotationDegrees = 0
                             zoom = 1f
                             offsetX = 0f
@@ -355,7 +355,7 @@ fun WasmAvatarCropperDialog(
                     ) {
                         FilledTonalButton(
                             onClick = {
-                                performWasmTickHaptic(view)
+                                view.performWasmTickHaptic(true)
                                 rotationDegrees = (rotationDegrees + 90) % 360
                                 offsetX = 0f
                                 offsetY = 0f
@@ -377,7 +377,7 @@ fun WasmAvatarCropperDialog(
                             onClick = {
                                 if (isSaving || cropSidePx <= 0f) return@Button
                                 isSaving = true
-                                performWasmTickHaptic(view)
+                                view.performWasmTickHaptic(true)
                                 scope.launch {
                                     val croppedFile = withContext(Dispatchers.IO) {
                                         exportSquareCropJpeg(

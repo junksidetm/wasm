@@ -268,7 +268,7 @@ fun Modifier.wasmLuminousElasticClickable(
             }
         }
 
-    return if (onClick != null) {
+    if (onClick != null) {
         mod.combinedClickable(
             enabled = enabled,
             interactionSource = interactionSource,

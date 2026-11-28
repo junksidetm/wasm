@@ -340,7 +340,7 @@ private fun TriTonePaletteCard(
                     )
                 }
 
-                AnimatedVisibility(
+                androidx.compose.animation.AnimatedVisibility(
                     visible = isSelected,
                     enter = scaleIn(initialScale = 0.55f, animationSpec = WasmMotionTokens.SpringSelectionTick) + fadeIn(tween(110)),
                     exit = scaleOut(targetScale = 0.7f, animationSpec = tween(140)) + fadeOut(tween(110))
