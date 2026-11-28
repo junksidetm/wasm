@@ -106,7 +106,7 @@ fun AboutScreen(
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Image(
-                                painter = painterResource(id = R.mipmap.ic_launcher_foreground),
+                                painter = painterResource(id = R.drawable.ic_launcher_foreground),
                                 contentDescription = "Wasm Logo",
                                 contentScale = ContentScale.Fit,
                                 modifier = Modifier.size(64.dp)

@@ -81,7 +81,7 @@ private val AvatarColorsList = listOf(
     Color(0xFF4CAF50), Color(0xFFFF9800), Color(0xFFFF5722)
 )
 
-private fun getWhatsAppAvatarColor(name: String): Color {
+fun getWhatsAppAvatarColor(name: String): Color {
     val hash = abs(name.hashCode())
     return AvatarColorsList[hash % AvatarColorsList.size]
 }

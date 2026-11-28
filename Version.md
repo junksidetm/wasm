@@ -1303,3 +1303,13 @@
   - Verified zero remaining `HorizontalDivider` / `VerticalDivider` references, zero unclosed/nested block comments, and balanced braces/parentheses across all Kotlin files in `app/src`.
 - **Status**:
   - Pending remote GitHub Actions CI build, lint, and unit test verification.
+
+## [0.11.0-r5] - 2026-11-28 20:29:30 IST
+### Fix Release Compilation Errors (`AboutScreen.kt`, `ChatScreen.kt`)
+- **CI Run `46157011988` Follow-up**:
+  - `Analysis & Unit Tests` (`141015784526`) passed (`Run Android Lint` and `Run Unit Tests`).
+  - `Build Universal Production APK` (`141016187325`) reported 3 errors in `:app:compileReleaseKotlin`:
+    1. `AboutScreen.kt:109`: Fixed `R.mipmap.ic_launcher_foreground` to `R.drawable.ic_launcher_foreground` (where `ic_launcher_foreground.xml` resides).
+    2. `ChatScreen.kt:84`: Changed `getWhatsAppAvatarColor` visibility from `private` to `public` so `HomeScreen.kt:986` and `StorageDataScreen.kt:76` can access it directly.
+- **Status**:
+  - Pending remote GitHub Actions CI verification for `assembleRelease` and full release packaging.
